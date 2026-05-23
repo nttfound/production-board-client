@@ -10,23 +10,39 @@ export const CARGA_POR_DIA = {
 // Itapira aparece sempre, sem prefixo CARGA
 export const CIDADE_SEMPRE = 'Itapira';
 
-// Dia efetivo considerando troca às 11h
+/**
+ * Retorna o dia de carga efetivo agora.
+ *
+ * Regra: a carga do dia X fica ativa das 11h de X até as 11h de X+1.
+ * Mapeamento:
+ *   Sex ≥11h  → até Seg 11h  → Segunda
+ *   Sab       → até Seg 11h  → Segunda
+ *   Dom       → até Seg 11h  → Segunda
+ *   Seg <11h  → ainda é carga de Seg  (transição ainda não ocorreu)
+ *   Seg ≥11h  → Terca
+ *   Ter <11h  → Terca
+ *   Ter ≥11h  → Quarta
+ *   Qua <11h  → Quarta
+ *   Qua ≥11h  → Quinta
+ *   Qui <11h  → Quinta
+ *   Qui ≥11h  → Sexta
+ *   Sex <11h  → Sexta
+ */
 function getDiaEfetivo() {
   const agora = new Date();
-  const dia = agora.getDay(); // 0=Dom, 6=Sab
-  const hora = agora.getHours();
-  const depoisDas11 = hora >= 11;
+  const dia   = agora.getDay(); // 0=Dom,1=Seg,2=Ter,3=Qua,4=Qui,5=Sex,6=Sab
+  const hora  = agora.getHours();
+  const depois = hora >= 11;
 
-  // Fim de semana
-  if (dia === 0 || dia === 6) return null;
-  // Sexta depois das 11h — sem carga até segunda
-  if (dia === 5 && depoisDas11) return null;
+  // Fim de semana ou sexta depois das 11h → carga de Segunda
+  if (dia === 0 || dia === 6) return 'Segunda';
+  if (dia === 5 && depois)    return 'Segunda';
 
-  const proximos = { 1: 'Terca', 2: 'Quarta', 3: 'Quinta', 4: 'Sexta', 5: null };
-  const nomes    = { 1: 'Segunda', 2: 'Terca', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta' };
+  // Dias úteis
+  const atual  = { 1: 'Segunda', 2: 'Terca', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta' };
+  const proximo = { 1: 'Terca',   2: 'Quarta', 3: 'Quinta', 4: 'Sexta',  5: 'Segunda' };
 
-  if (depoisDas11) return proximos[dia];
-  return nomes[dia];
+  return depois ? proximo[dia] : atual[dia];
 }
 
 export function getLabelDia() {

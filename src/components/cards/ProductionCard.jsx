@@ -4,7 +4,7 @@ import StatusModal from './StatusModal';
 import ImageModal from './ImageModal';
 import ObservacaoEdit from './ObservacaoEdit';
 import { useAuth } from '../../contexts/AuthContext';
-import { getStatus, URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConfig';
+import { getStatus, URGENTE_COLOR, CARGA_COLOR, CALANDRA_COLOR } from '../../services/statusConfig';
 import { cargaAtivaAgora } from '../../services/cargaConfig';
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
@@ -12,12 +12,21 @@ const CORTE_COLOR = '#06b6d4';
 const DOBRA_COLOR = '#8b5cf6';
 const MAO_COLOR   = '#f59e0b';
 
-export default function ProductionCard({ card, onStatusChange, onDelete }) {
-  const { user } = useAuth();
+export default function ProductionCard({
+  card,
+  onStatusChange,
+  onDelete,
+  selectionMode = false,
+  selected      = false,
+  onToggleSelect,
+}) {
+  const { can } = useAuth();
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showImageModal,  setShowImageModal]  = useState(false);
   const [showObsModal,    setShowObsModal]    = useState(false);
   const [localCard,       setLocalCard]       = useState(card);
+
+  React.useEffect(() => { setLocalCard(card); }, [card]);
 
   const imageUrl = localCard.image_path
     ? localCard.image_path.startsWith('http') ? localCard.image_path : `${BASE_URL}${localCard.image_path}`
@@ -34,35 +43,65 @@ export default function ProductionCard({ card, onStatusChange, onDelete }) {
     ? new Date(localCard.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : null;
 
-  const borderColor = localCard.urgente
-    ? `${URGENTE_COLOR}70`
-    : mostrarCarga ? `${CARGA_COLOR}70` : `${s.color}50`;
+  const borderColor = selected
+    ? '#2563eb'
+    : localCard.urgente
+      ? `${URGENTE_COLOR}70`
+      : mostrarCarga ? `${CARGA_COLOR}70` : `${s.color}50`;
 
-  const canEdit = user?.role === 'creator' || user?.role === 'operator';
+  // Pode alterar status se tem permissão mudar_status
+  const canEdit   = can('mudar_status') || can('alterar_observacao');
+  const canStatus = can('mudar_status');
+  const canObs    = can('alterar_observacao');
+  const canDelete = can('criar_card'); // só quem cria pode deletar
 
   const tags = [
-    localCard.corte       && { label: 'Corte',       color: CORTE_COLOR },
-    localCard.dobra       && { label: 'Dobra',       color: DOBRA_COLOR },
-    localCard.mao_de_obra && { label: 'Mao de Obra', color: MAO_COLOR   },
+    localCard.corte       && { label: 'Corte',      color: CORTE_COLOR    },
+    localCard.dobra       && { label: 'Dobra',       color: DOBRA_COLOR    },
+    localCard.mao_de_obra && { label: 'Mao de Obra', color: MAO_COLOR      },
+    localCard.calandra    && { label: 'Calandra',    color: CALANDRA_COLOR },
   ].filter(Boolean);
+
+  const handleCardClick = (e) => {
+    if (!selectionMode) return;
+    e.stopPropagation();
+    onToggleSelect?.(localCard.id);
+  };
 
   return (
     <>
       <div
         className="group bg-[#141414] rounded-card shadow-card hover:shadow-card-hover transition-all duration-200 flex flex-col overflow-hidden animate-fade-in"
-        style={{ border: `1.5px solid ${borderColor}` }}
+        style={{
+          border: `1.5px solid ${borderColor}`,
+          cursor: selectionMode ? 'pointer' : 'default',
+          background: selected ? '#1a1f2e' : '#141414',
+          transition: 'border-color 0.15s, background 0.15s',
+        }}
+        onClick={handleCardClick}
       >
+        {/* Imagem */}
         {imageUrl ? (
-          <div className="relative h-44 bg-[#1c1c1c] overflow-hidden cursor-zoom-in" onClick={() => setShowImageModal(true)}>
+          <div
+            className="relative h-44 bg-[#1c1c1c] overflow-hidden"
+            style={{ cursor: selectionMode ? 'pointer' : 'zoom-in' }}
+            onClick={selectionMode ? handleCardClick : () => setShowImageModal(true)}
+          >
             <img src={imageUrl} alt={localCard.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+            {selectionMode && <div className="absolute top-2 left-2"><Checkbox checked={selected} /></div>}
+            {selected && <div className="absolute inset-0" style={{ background: '#2563eb10' }} />}
           </div>
         ) : (
-          <div className="h-28 bg-[#1c1c1c] flex items-center justify-center">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
-            </svg>
+          <div className="h-28 bg-[#1c1c1c] flex items-center justify-center relative">
+            {selectionMode ? (
+              <div className="absolute top-2 left-2"><Checkbox checked={selected} /></div>
+            ) : (
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            )}
           </div>
         )}
 
@@ -81,7 +120,7 @@ export default function ProductionCard({ card, onStatusChange, onDelete }) {
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
                   style={{ color: CARGA_COLOR, background: `${CARGA_COLOR}15`, border: `1px solid ${CARGA_COLOR}35` }}>
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CARGA_COLOR }} />
-                  {localCard.carga === 'Itapira' ? 'Itapira' : localCard.carga}
+                  {localCard.carga}
                 </span>
               )}
               {tags.map(tag => (
@@ -93,41 +132,44 @@ export default function ProductionCard({ card, onStatusChange, onDelete }) {
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
-              {canEdit && (
-                <button onClick={() => setShowStatusModal(true)}
-                  className="text-[#555] hover:text-[#8a8a8a] transition-colors text-xs underline underline-offset-2">
-                  alterar
-                </button>
-              )}
-              {user?.role === 'creator' && (
-                <button onClick={() => onDelete(localCard.id)}
-                  className="text-[#555] hover:text-[#ef4444] transition-colors opacity-0 group-hover:opacity-100">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6l-1 14H6L5 6"/>
-                    <path d="M10 11v6M14 11v6"/>
-                  </svg>
-                </button>
-              )}
-            </div>
+            {!selectionMode && (
+              <div className="flex items-center gap-2">
+                {canStatus && (
+                  <button onClick={() => setShowStatusModal(true)}
+                    className="text-[#555] hover:text-[#8a8a8a] transition-colors text-xs underline underline-offset-2">
+                    alterar
+                  </button>
+                )}
+                {canDelete && (
+                  <button onClick={() => onDelete(localCard.id)}
+                    className="text-[#555] hover:text-[#ef4444] transition-colors opacity-0 group-hover:opacity-100">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14H6L5 6"/>
+                      <path d="M10 11v6M14 11v6"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {selectionMode && !imageUrl && <Checkbox checked={selected} />}
           </div>
 
           <h3 className="text-[#f0f0f0] font-medium text-sm leading-snug line-clamp-2">{localCard.title}</h3>
 
-        <div className="relative group/obs">
-          {localCard.observation
-            ? (
+          <div className="relative group/obs">
+            {localCard.observation ? (
               <div>
                 <p className="text-[#8a8a8a] text-xs leading-relaxed line-clamp-3">{localCard.observation}</p>
                 {localCard.observation_by && (
                   <p className="text-[#444] text-[10px] mt-1 font-mono">editado por {localCard.observation_by}</p>
                 )}
               </div>
-            )
-            : <p className="text-[#444] text-xs italic">Sem observacao</p>
-          }
-            {canEdit && (
+            ) : (
+              <p className="text-[#444] text-xs italic">Sem observacao</p>
+            )}
+            {canObs && !selectionMode && (
               <button onClick={() => setShowObsModal(true)}
                 className="absolute top-0 right-0 opacity-0 group-hover/obs:opacity-100 transition-opacity text-[#555] hover:text-[#8a8a8a]">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -173,5 +215,22 @@ export default function ProductionCard({ card, onStatusChange, onDelete }) {
         <ImageModal src={imageUrl} alt={localCard.title} onClose={() => setShowImageModal(false)} />
       )}
     </>
+  );
+}
+
+function Checkbox({ checked }) {
+  return (
+    <div className="w-5 h-5 rounded-md flex items-center justify-center transition-all"
+      style={{
+        background: checked ? '#2563eb' : 'rgba(0,0,0,0.6)',
+        border: checked ? '1.5px solid #2563eb' : '1.5px solid #555',
+        backdropFilter: 'blur(4px)',
+      }}>
+      {checked && (
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      )}
+    </div>
   );
 }
