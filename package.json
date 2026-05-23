@@ -1,6 +1,6 @@
 {
   "name": "producao-laser",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "Controle de Producao - Itadobras",
   "author": "Itadobras",
   "main": "electron/main.js",
