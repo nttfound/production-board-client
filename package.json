@@ -57,8 +57,9 @@
       "icon": "public/icon.ico"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
     }
   },
   "browserslist": {

@@ -36,12 +36,20 @@ function createWindow() {
     minWidth:        1024,
     minHeight:       680,
     backgroundColor: '#0d0d0d',
+    title:           `ITADOBRAS LASER v${app.getVersion()}`,
     icon: path.join(__dirname, '../public/icon.png'),
     webPreferences: {
       preload:          path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration:  false,
     },
+  });
+
+  mainWindow.setMenu(null);
+
+  // Impede o React de sobrescrever o título
+  mainWindow.on('page-title-updated', (e) => {
+    e.preventDefault();
   });
 
   mainWindow.setMenu(null);
