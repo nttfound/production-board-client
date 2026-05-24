@@ -170,7 +170,7 @@ export default function ProductionCard({
               <div>
                 <p className="text-[#c0c0c0] text-xs leading-relaxed line-clamp-3">{localCard.observation}</p>
                 {localCard.observation_by && (
-                  <p className="text-[##6B6B6B] text-[10px] mt-1 font-mono">editado por - {localCard.observation_by}</p>
+                  <p className="text-[#666666] text-[10px] mt-1 font-mono">editado por - {localCard.observation_by}</p>
                 )}
               </div>
             ) : (
