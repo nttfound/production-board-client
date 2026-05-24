@@ -130,21 +130,28 @@ ipcMain.handle('notify', () => {
   if (!mainWindow || mainWindow.isFocused()) return;
   badgeCount++;
   try {
-    const size = 16;
+    const size = 32;
     const buffer = Buffer.alloc(size * size * 4);
-    const cx = size / 2;
-    const cy = size / 2;
-    const r  = size / 2 - 1;
+    const cx = size / 2 - 0.5;
+    const cy = size / 2 - 0.5;
+    const r  = size / 2 - 2;
 
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
         const idx  = (y * size + x) * 4;
         const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
         if (dist <= r) {
-          buffer[idx]     = 220; // R
-          buffer[idx + 1] = 38;  // G
-          buffer[idx + 2] = 38;  // B
-          buffer[idx + 3] = 255; // A
+          buffer[idx]     = 220;
+          buffer[idx + 1] = 38;
+          buffer[idx + 2] = 38;
+          buffer[idx + 3] = 255;
+        } else if (dist <= r + 1.5) {
+          // borda suave anti-aliasing
+          const alpha = Math.round((r + 1.5 - dist) * 170);
+          buffer[idx]     = 220;
+          buffer[idx + 1] = 38;
+          buffer[idx + 2] = 38;
+          buffer[idx + 3] = alpha;
         } else {
           buffer[idx + 3] = 0;
         }

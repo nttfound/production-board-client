@@ -127,7 +127,7 @@ function GrupoLog({ grupo }) {
               <div className="flex-1 min-w-0">
                 <span className="text-[#6b7280] text-[11px] leading-relaxed">{item.acao}</span>
                 {grupo.acoes.length > 1 && (
-                  <span className="text-[#2a2a2a] text-[10px] font-mono ml-2">{formatHora(item.hora)}</span>
+                  <span className="text-[#666] text-[10px] font-mono ml-2">{formatHora(item.hora)}</span>
                 )}
               </div>
             </div>
