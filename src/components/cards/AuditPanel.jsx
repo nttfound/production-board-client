@@ -70,7 +70,7 @@ function agruparLogs(logs) {
 }
 
 function GrupoLog({ grupo }) {
-  const [expandido, setExpandido] = useState(true);
+  const [expandido, setExpandido] = useState(false);
   const cor = acaoCor(grupo.acoes[0].acao);
 
   return (
@@ -120,10 +120,10 @@ function GrupoLog({ grupo }) {
         <div className="pb-2 px-4 pl-[52px]">
           {grupo.acoes.map((item, i) => (
             <div key={item.id} className="flex items-start gap-2 py-1">
-              <span className="text-[#333] text-[10px] font-mono w-4 flex-shrink-0 mt-0.5 text-right">
+              <span className="text-[#666] text-[10px] font-mono w-4 flex-shrink-0 mt-0.5 text-right">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <span className="text-[#333] text-[10px] flex-shrink-0 mt-0.5">—</span>
+              <span className="text-[#555] text-[10px] flex-shrink-0 mt-0.5">—</span>
               <div className="flex-1 min-w-0">
                 <span className="text-[#6b7280] text-[11px] leading-relaxed">{item.acao}</span>
                 {grupo.acoes.length > 1 && (
