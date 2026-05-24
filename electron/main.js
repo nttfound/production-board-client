@@ -130,7 +130,17 @@ ipcMain.handle('notify', () => {
   if (!mainWindow || mainWindow.isFocused()) return;
   badgeCount++;
   try {
-    const badge = nativeImage.createFromPath(path.join(__dirname, '../public/icon.png'));
+    const iconPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'app', 'public', 'icon.png')
+      : path.join(__dirname, '../public/icon.png');
+
+    const badge = nativeImage.createFromPath(iconPath);
+    if (badge.isEmpty()) {
+      console.error('[BADGE] Ícone vazio, caminho:', iconPath);
+      return;
+    }
     mainWindow.setOverlayIcon(badge, `${badgeCount} atualizacao`);
-  } catch (e) {}
+  } catch (e) {
+    console.error('[BADGE] Erro:', e.message);
+  }
 });
