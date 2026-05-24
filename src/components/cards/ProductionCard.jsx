@@ -168,13 +168,13 @@ export default function ProductionCard({
           <div className="relative group/obs">
             {localCard.observation ? (
               <div>
-                <p className="text-[#8a8a8a] text-xs leading-relaxed line-clamp-3">{localCard.observation}</p>
+                <p className="text-[#c0c0c0] text-xs leading-relaxed line-clamp-3">{localCard.observation}</p>
                 {localCard.observation_by && (
-                  <p className="text-[#444] text-[10px] mt-1 font-mono">editado por {localCard.observation_by}</p>
+                  <p className="text-[##6B6B6B] text-[10px] mt-1 font-mono">editado por - {localCard.observation_by}</p>
                 )}
               </div>
             ) : (
-              <p className="text-[#444] text-xs italic">Sem observacao</p>
+              <p className="text-[#666666] text-xs italic">Sem observacao</p>
             )}
             {canObs && !selectionMode && (
               <button onClick={() => setShowObsModal(true)}

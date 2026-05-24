@@ -102,6 +102,20 @@ export default function BoardPage() {
     return matchStatus && matchSearch;
   });
 
+  // ── Sorting ───────────────────────────────────────────────
+  const sorted = [...filtered].sort((a, b) => {
+    // No filtro carga: Ready vai para o final
+    if (filterStatus === 'carga') {
+      const aReady = a.status === 'Ready' ? 1 : 0;
+      const bReady = b.status === 'Ready' ? 1 : 0;
+      if (aReady !== bReady) return aReady - bReady;
+    }
+    // Urgente sobe para o topo em qualquer filtro
+    if (a.urgente !== b.urgente) return b.urgente ? 1 : -1;
+    // Padrão: mais novo primeiro
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
   // ── Handlers de seleção ───────────────────────────────────
   const toggleSelectionMode = () => {
     setSelectionMode(prev => !prev);
@@ -116,7 +130,7 @@ export default function BoardPage() {
     });
   }, []);
 
-  const selectAll    = () => setSelectedIds(new Set(filtered.map(c => c.id)));
+  const selectAll    = () => setSelectedIds(new Set(sorted.map(c => c.id)));
   const deselectAll  = () => setSelectedIds(new Set());
   const exitSelection = () => { setSelectionMode(false); setSelectedIds(new Set()); };
 
@@ -168,7 +182,7 @@ export default function BoardPage() {
         selectedCount={selectedIds.size}
         onSelectAll={selectAll}
         onDeselectAll={deselectAll}
-        filteredCount={filtered.length}
+        filteredCount={sorted.length}
         showAudit={showAudit}
         onToggleAudit={() => setShowAudit(prev => !prev)}
       />
@@ -182,7 +196,7 @@ export default function BoardPage() {
               <span className="text-sm">Carregando...</span>
             </div>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <svg className="mx-auto mb-4 text-[#2a2a2a]" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
@@ -200,7 +214,7 @@ export default function BoardPage() {
               paddingBottom: selectionMode ? '5rem' : '0',
             }}
           >
-            {filtered.map(card => (
+            {sorted.map(card => (
               <ProductionCard
                 key={card.id}
                 card={card}
