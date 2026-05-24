@@ -52,8 +52,15 @@ export default function ProductionCard({
   // Pode alterar status se tem permissão mudar_status
   const canEdit   = can('mudar_status') || can('alterar_observacao');
   const canStatus = can('mudar_status');
+  const canCardActions = canStatus
+    || can('marcar_urgente')
+    || can('marcar_carga')
+    || can('servico_corte')
+    || can('servico_dobra')
+    || can('servico_mao_de_obra')
+    || can('servico_calandra');
   const canObs    = can('alterar_observacao');
-  const canDelete = can('criar_card'); // só quem cria pode deletar
+  const canDelete = can('deletar_card');
 
   const tags = [
     localCard.corte       && { label: 'Corte',      color: CORTE_COLOR    },
@@ -134,7 +141,7 @@ export default function ProductionCard({
 
             {!selectionMode && (
               <div className="flex items-center gap-2">
-                {canStatus && (
+                {canCardActions && (
                   <button onClick={() => setShowStatusModal(true)}
                     className="text-[#555] hover:text-[#8a8a8a] transition-colors text-xs underline underline-offset-2">
                     alterar
@@ -195,9 +202,9 @@ export default function ProductionCard({
         <StatusModal
           card={localCard}
           onClose={() => setShowStatusModal(false)}
-          onSave={(status, date, updates) => {
+          onSave={(status, date, updates, options = {}) => {
             setLocalCard(prev => ({ ...prev, status, scheduled_date: date, ...updates }));
-            onStatusChange(localCard.id, status, date);
+            if (options.updateStatus) onStatusChange(localCard.id, status, date);
             setShowStatusModal(false);
           }}
         />

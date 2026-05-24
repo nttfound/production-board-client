@@ -7,23 +7,26 @@ import React, { useState } from 'react';
 import { URGENTE_COLOR, CARGA_COLOR, CALANDRA_COLOR } from '../../services/statusConfig';
 import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { STATUSES } from '../../services/statusConfig';
+import { useAuth } from '../../contexts/AuthContext';
 
 const CORTE_COLOR = '#06b6d4';
 const DOBRA_COLOR = '#8b5cf6';
 const MAO_COLOR   = '#f59e0b';
 
 const TAGS = [
-  { key: 'urgente',    label: 'Urgente',     color: URGENTE_COLOR },
-  { key: 'corte',      label: 'Corte',       color: CORTE_COLOR   },
-  { key: 'dobra',      label: 'Dobra',       color: DOBRA_COLOR   },
-  { key: 'mao_de_obra',label: 'Mão de Obra', color: MAO_COLOR     },
-  { key: 'calandra',   label: 'Calandra',    color: CALANDRA_COLOR },
+  { key: 'urgente',     perm: 'marcar_urgente',      label: 'Urgente',     color: URGENTE_COLOR },
+  { key: 'corte',       perm: 'servico_corte',       label: 'Corte',       color: CORTE_COLOR   },
+  { key: 'dobra',       perm: 'servico_dobra',       label: 'Dobra',       color: DOBRA_COLOR   },
+  { key: 'mao_de_obra', perm: 'servico_mao_de_obra', label: 'Mao de Obra', color: MAO_COLOR     },
+  { key: 'calandra',    perm: 'servico_calandra',    label: 'Calandra',    color: CALANDRA_COLOR },
 ];
 
 export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onApplyCarga, onCancel }) {
+  const { can } = useAuth();
   const [activePanel, setActivePanel] = useState(null); // 'tag' | 'status' | 'carga'
   const [diaAberto,   setDiaAberto]   = useState(null);
   const [loading,     setLoading]     = useState(false);
+  const allowedTags = TAGS.filter(tag => can(tag.perm));
 
   const closePanel = () => {
     setActivePanel(null);
@@ -85,6 +88,7 @@ export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onAppl
           </div>
 
           {/* Botão: Tags */}
+          {allowedTags.length > 0 && (
           <div className="relative">
             <button
               onClick={() => setActivePanel(activePanel === 'tag' ? null : 'tag')}
@@ -114,7 +118,7 @@ export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onAppl
               >
                 <p className="text-[#555] text-[10px] uppercase tracking-wider mb-2 px-1">Ativar ou remover tag em todos</p>
                 <div className="space-y-1">
-                  {TAGS.map(tag => (
+                  {allowedTags.map(tag => (
                     <div
                       key={tag.key}
                       className="flex items-center gap-2 px-3 py-2 rounded-xl"
@@ -144,8 +148,10 @@ export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onAppl
               </div>
             )}
           </div>
+          )}
 
           {/* Botão: Status */}
+          {can('mudar_status') && (
           <div className="relative">
             <button
               onClick={() => setActivePanel(activePanel === 'status' ? null : 'status')}
@@ -190,8 +196,10 @@ export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onAppl
               </div>
             )}
           </div>
+          )}
 
           {/* Botão: Carga */}
+          {can('marcar_carga') && (
           <div className="relative">
             <button
               onClick={() => setActivePanel(activePanel === 'carga' ? null : 'carga')}
@@ -274,6 +282,7 @@ export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onAppl
               </div>
             )}
           </div>
+          )}
 
           {/* Separador */}
           <div className="w-px h-5 bg-[#2a2a2a]" />

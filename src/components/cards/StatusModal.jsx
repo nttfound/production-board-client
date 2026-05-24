@@ -9,6 +9,13 @@ const DOBRA_COLOR = '#8b5cf6';
 const MAO_COLOR   = '#f59e0b';
 const CALA_COLOR  = CALANDRA_COLOR;
 
+const SERVICE_OPTIONS = [
+  { key: 'corte',       perm: 'servico_corte',       label: 'Corte',       color: CORTE_COLOR },
+  { key: 'dobra',       perm: 'servico_dobra',       label: 'Dobra',       color: DOBRA_COLOR },
+  { key: 'mao_de_obra', perm: 'servico_mao_de_obra', label: 'Mao de Obra', color: MAO_COLOR },
+  { key: 'calandra',    perm: 'servico_calandra',    label: 'Calandra',    color: CALA_COLOR },
+];
+
 export default function StatusModal({ card, onClose, onSave }) {
   const { can } = useAuth();
   const [selected,  setSelected]  = useState(card.status);
@@ -22,13 +29,18 @@ export default function StatusModal({ card, onClose, onSave }) {
   const [tab,       setTab]       = useState('status');
   const [diaAberto, setDiaAberto] = useState(null);
 
-  const tabs = [{ key: 'status', label: 'Status' }];
+  const canStatus = can('mudar_status');
+  const allowedServices = SERVICE_OPTIONS.filter(service => can(service.perm));
+  const canServices = allowedServices.length > 0;
+  const tabs = [];
+  if (canStatus)             tabs.push({ key: 'status',   label: 'Status'   });
   if (can('marcar_urgente'))   tabs.push({ key: 'urgente',  label: 'Urgente'   });
   if (can('marcar_carga'))     tabs.push({ key: 'carga',    label: 'Carga'     });
-  if (can('alterar_servicos')) tabs.push({ key: 'servicos', label: 'Servicos'  });
+  if (canServices)             tabs.push({ key: 'servicos', label: 'Servicos'  });
+  const activeTab = tabs.some(t => t.key === tab) ? tab : tabs[0]?.key;
 
   const handleSave = async () => {
-    if (selected === 'Scheduled' && !schedDate) return;
+    if (canStatus && selected === 'Scheduled' && !schedDate) return;
     const updates = {};
     if (can('marcar_urgente') && urgente !== (card.urgente || false)) {
       await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
@@ -38,17 +50,21 @@ export default function StatusModal({ card, onClose, onSave }) {
       await api.patch(`/api/cards/${card.id}/carga`, { carga });
       updates.carga = carga;
     }
-    if (can('alterar_servicos') && (
+    if (canServices && (
       corte !== (card.corte || false) ||
       dobra !== (card.dobra || false) ||
       maoDeObra !== (card.mao_de_obra || false) ||
       calandra !== (card.calandra || false)
     )) {
-      await api.patch(`/api/cards/${card.id}/servicos`, { corte, dobra, mao_de_obra: maoDeObra, calandra });
-      updates.corte = corte; updates.dobra = dobra;
-      updates.mao_de_obra = maoDeObra; updates.calandra = calandra;
+      const servicePayload = {};
+      if (can('servico_corte')) servicePayload.corte = corte;
+      if (can('servico_dobra')) servicePayload.dobra = dobra;
+      if (can('servico_mao_de_obra')) servicePayload.mao_de_obra = maoDeObra;
+      if (can('servico_calandra')) servicePayload.calandra = calandra;
+      await api.patch(`/api/cards/${card.id}/servicos`, servicePayload);
+      Object.assign(updates, servicePayload);
     }
-    onSave(selected, schedDate || null, updates);
+    onSave(canStatus ? selected : card.status, canStatus ? (schedDate || null) : card.scheduled_date, updates, { updateStatus: canStatus });
   };
 
   const ToggleBtn = ({ label, value, onChange, color }) => (
@@ -79,14 +95,14 @@ export default function StatusModal({ card, onClose, onSave }) {
         <div className="flex gap-1 mb-5 bg-[#1c1c1c] p-1 rounded-xl">
           {tabs.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${tab === t.key ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#8a8a8a]'}`}>
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === t.key ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#8a8a8a]'}`}>
               {t.label}
             </button>
           ))}
         </div>
 
         {/* STATUS */}
-        {tab === 'status' && (
+        {activeTab === 'status' && canStatus && (
           <div className="space-y-2">
             {STATUSES.map(s => (
               <button key={s.value} onClick={() => setSelected(s.value)}
@@ -111,7 +127,7 @@ export default function StatusModal({ card, onClose, onSave }) {
         )}
 
         {/* URGENTE */}
-        {tab === 'urgente' && can('marcar_urgente') && (
+        {activeTab === 'urgente' && can('marcar_urgente') && (
           <div className="flex flex-col items-center gap-5 py-4">
             <div
               className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl cursor-pointer transition-all duration-200 border-2"
@@ -134,7 +150,7 @@ export default function StatusModal({ card, onClose, onSave }) {
         )}
 
         {/* CARGA */}
-        {tab === 'carga' && can('marcar_carga') && (
+        {activeTab === 'carga' && can('marcar_carga') && (
           <div className="space-y-3">
             <div>
               <p className="text-[#8a8a8a] text-xs uppercase tracking-wider mb-2">Sempre disponivel</p>
@@ -181,13 +197,18 @@ export default function StatusModal({ card, onClose, onSave }) {
         )}
 
         {/* SERVICOS */}
-        {tab === 'servicos' && can('alterar_servicos') && (
+        {activeTab === 'servicos' && canServices && (
           <div className="space-y-2">
             <p className="text-[#8a8a8a] text-xs uppercase tracking-wider mb-3">Servicos</p>
-            <ToggleBtn label="Corte"       value={corte}     onChange={setCorte}     color={CORTE_COLOR} />
-            <ToggleBtn label="Dobra"       value={dobra}     onChange={setDobra}     color={DOBRA_COLOR} />
-            <ToggleBtn label="Mao de Obra" value={maoDeObra} onChange={setMaoDeObra} color={MAO_COLOR}   />
-            <ToggleBtn label="Calandra"    value={calandra}  onChange={setCalandra}  color={CALA_COLOR}  />
+            {allowedServices.map(service => {
+              const state = {
+                corte: [corte, setCorte],
+                dobra: [dobra, setDobra],
+                mao_de_obra: [maoDeObra, setMaoDeObra],
+                calandra: [calandra, setCalandra],
+              }[service.key];
+              return <ToggleBtn key={service.key} label={service.label} value={state[0]} onChange={state[1]} color={service.color} />;
+            })}
           </div>
         )}
 

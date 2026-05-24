@@ -2,20 +2,41 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 
 const PERMISSIONS = [
-  { key: 'criar_card',         label: 'Criar Card' },
-  { key: 'mudar_status',       label: 'Mudar Status' },
-  { key: 'alterar_observacao', label: 'Alterar Observação' },
-  { key: 'selecionar',         label: 'Selecionar (bulk)' },
-  { key: 'marcar_urgente',     label: 'Marcar Urgente' },
-  { key: 'marcar_carga',       label: 'Marcar Carga' },
-  { key: 'alterar_servicos',   label: 'Alterar Serviços' },
-  { key: 'ver_registro',       label: 'Ver Registro' },
-  { key: 'upload_anexo',       label: 'Upload de Anexo' },
+  { key: 'criar_card',          label: 'Criar Card' },
+  { key: 'deletar_card',        label: 'Deletar Card' },
+  { key: 'mudar_status',        label: 'Mudar Status' },
+  { key: 'alterar_observacao',  label: 'Alterar Observacao' },
+  { key: 'selecionar',          label: 'Selecionar (bulk)' },
+  { key: 'marcar_urgente',      label: 'Marcar Urgente' },
+  { key: 'marcar_carga',        label: 'Marcar Carga' },
+  { key: 'servico_corte',       label: 'Servico Corte' },
+  { key: 'servico_dobra',       label: 'Servico Dobra' },
+  { key: 'servico_mao_de_obra', label: 'Servico Mao de Obra' },
+  { key: 'servico_calandra',    label: 'Servico Calandra' },
+  { key: 'ver_registro',        label: 'Ver Registro' },
+  { key: 'upload_anexo',        label: 'Upload de Anexo' },
 ];
 
+const PERMISSION_KEYS = PERMISSIONS.map(p => p.key);
+const SERVICE_KEYS = ['servico_corte', 'servico_dobra', 'servico_mao_de_obra', 'servico_calandra'];
 const EMPTY_PERMS = Object.fromEntries(PERMISSIONS.map(p => [p.key, false]));
-
 const EMPTY_FORM = { display_name: '', username: '', password: '', permissions: { ...EMPTY_PERMS } };
+
+function normalizePermissions(permissions = {}) {
+  const normalized = { ...EMPTY_PERMS };
+  for (const key of PERMISSION_KEYS) normalized[key] = Boolean(permissions[key]);
+
+  const hasNewServiceKeys = SERVICE_KEYS.some(key => Object.prototype.hasOwnProperty.call(permissions, key));
+  if (permissions.alterar_servicos && !hasNewServiceKeys) {
+    for (const key of SERVICE_KEYS) normalized[key] = true;
+  }
+
+  return normalized;
+}
+
+function cleanPermissions(permissions) {
+  return Object.fromEntries(PERMISSION_KEYS.map(key => [key, Boolean(permissions[key])]));
+}
 
 function Toggle({ value, onChange }) {
   return (
@@ -35,7 +56,7 @@ function Toggle({ value, onChange }) {
 export default function UserManager({ onClose }) {
   const [users,     setUsers]     = useState([]);
   const [loading,   setLoading]   = useState(true);
-  const [selected,  setSelected]  = useState(null); // user sendo editado
+  const [selected,  setSelected]  = useState(null);
   const [form,      setForm]      = useState(EMPTY_FORM);
   const [isNew,     setIsNew]     = useState(false);
   const [saving,    setSaving]    = useState(false);
@@ -48,7 +69,7 @@ export default function UserManager({ onClose }) {
     try {
       const res = await api.get('/api/auth/users');
       setUsers(res.data.filter(u => u.username !== 'itadobras'));
-    } catch { setError('Erro ao carregar usuários'); }
+    } catch { setError('Erro ao carregar usuarios'); }
     finally { setLoading(false); }
   }
 
@@ -60,7 +81,7 @@ export default function UserManager({ onClose }) {
       display_name: u.display_name,
       username:     u.username,
       password:     '',
-      permissions:  { ...EMPTY_PERMS, ...(u.permissions || {}) },
+      permissions:  normalizePermissions(u.permissions),
     });
   }
 
@@ -81,14 +102,14 @@ export default function UserManager({ onClose }) {
     try {
       if (isNew) {
         if (!form.username || !form.display_name || !form.password)
-          return setError('Preencha usuário, nome e senha');
-        const res = await api.post('/api/auth/users', form);
+          return setError('Preencha usuario, nome e senha');
+        const res = await api.post('/api/auth/users', { ...form, permissions: cleanPermissions(form.permissions) });
         setUsers(u => [...u, res.data]);
         setSelected(res.data);
         setIsNew(false);
         setForm(f => ({ ...f, password: '' }));
       } else {
-        const payload = { display_name: form.display_name, permissions: form.permissions };
+        const payload = { display_name: form.display_name, permissions: cleanPermissions(form.permissions) };
         if (form.password) payload.password = form.password;
         const res = await api.put(`/api/auth/users/${selected.id}`, payload);
         setUsers(u => u.map(x => x.id === res.data.id ? res.data : x));
@@ -126,10 +147,9 @@ export default function UserManager({ onClose }) {
           className="w-full max-w-2xl rounded-2xl flex flex-col overflow-hidden"
           style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', maxHeight: '85vh' }}
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1c1c1c] flex-shrink-0">
             <div>
-              <p className="text-[#f0f0f0] text-sm font-semibold">Gerenciar Usuários</p>
+              <p className="text-[#f0f0f0] text-sm font-semibold">Gerenciar Usuarios</p>
               <p className="text-[#555] text-[10px]">Somente itadobras</p>
             </div>
             <button onClick={onClose} className="text-[#555] hover:text-[#8a8a8a] transition-colors">
@@ -140,7 +160,6 @@ export default function UserManager({ onClose }) {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* Lista de usuários */}
             <div className="w-48 border-r border-[#1c1c1c] flex flex-col flex-shrink-0">
               <div className="flex-1 overflow-y-auto py-2">
                 {loading ? (
@@ -171,22 +190,20 @@ export default function UserManager({ onClose }) {
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                   </svg>
-                  Novo Usuário
+                  Novo Usuario
                 </button>
               </div>
             </div>
 
-            {/* Formulário */}
             <div className="flex-1 flex flex-col overflow-hidden">
               {!selected && !isNew ? (
                 <div className="flex-1 flex items-center justify-center">
-                  <p className="text-[#444] text-xs">Selecione um usuário ou crie um novo</p>
+                  <p className="text-[#444] text-xs">Selecione um usuario ou crie um novo</p>
                 </div>
               ) : (
                 <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
-                  {/* Nome */}
                   <div>
-                    <label className="text-[#555] text-[10px] uppercase tracking-wider mb-1.5 block">Nome de Exibição</label>
+                    <label className="text-[#555] text-[10px] uppercase tracking-wider mb-1.5 block">Nome de Exibicao</label>
                     <input
                       value={form.display_name}
                       onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
@@ -195,10 +212,9 @@ export default function UserManager({ onClose }) {
                     />
                   </div>
 
-                  {/* Usuário (só no create) */}
                   {isNew && (
                     <div>
-                      <label className="text-[#555] text-[10px] uppercase tracking-wider mb-1.5 block">Usuário (login)</label>
+                      <label className="text-[#555] text-[10px] uppercase tracking-wider mb-1.5 block">Usuario (login)</label>
                       <input
                         value={form.username}
                         onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g,'') }))}
@@ -208,23 +224,21 @@ export default function UserManager({ onClose }) {
                     </div>
                   )}
 
-                  {/* Senha */}
                   <div>
                     <label className="text-[#555] text-[10px] uppercase tracking-wider mb-1.5 block">
-                      {isNew ? 'Senha' : 'Nova Senha (deixe vazio para não alterar)'}
+                      {isNew ? 'Senha' : 'Nova Senha (deixe vazio para nao alterar)'}
                     </label>
                     <input
                       type="password"
                       value={form.password}
                       onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                      placeholder={isNew ? 'Senha' : '••••••'}
+                      placeholder={isNew ? 'Senha' : '******'}
                       className="w-full bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl px-3 py-2 text-[#f0f0f0] text-sm outline-none focus:border-[#2563eb] transition-all"
                     />
                   </div>
 
-                  {/* Permissões */}
                   <div>
-                    <label className="text-[#555] text-[10px] uppercase tracking-wider mb-2 block">Permissões</label>
+                    <label className="text-[#555] text-[10px] uppercase tracking-wider mb-2 block">Permissoes</label>
                     <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1c1c1c' }}>
                       {PERMISSIONS.map((p, i) => (
                         <div
@@ -243,7 +257,6 @@ export default function UserManager({ onClose }) {
                 </div>
               )}
 
-              {/* Footer actions */}
               {(selected || isNew) && (
                 <div className="px-6 py-4 border-t border-[#1c1c1c] flex items-center gap-2 flex-shrink-0">
                   {selected && !isNew && (
@@ -271,7 +284,7 @@ export default function UserManager({ onClose }) {
                     className="px-4 py-2 rounded-xl text-xs font-medium text-white transition-all"
                     style={{ background: saving ? '#1d4ed860' : '#2563eb' }}
                   >
-                    {saving ? 'Salvando...' : isNew ? 'Criar Usuário' : 'Salvar'}
+                    {saving ? 'Salvando...' : isNew ? 'Criar Usuario' : 'Salvar'}
                   </button>
                 </div>
               )}

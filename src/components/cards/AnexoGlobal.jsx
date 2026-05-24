@@ -62,6 +62,8 @@ export default function AnexoGlobal() {
     finally { setLoading(false); }
   };
 
+  if (!canUpload && !canDownload) return null;
+
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1c1c1c] border border-[#2a2a2a] min-w-[200px] max-w-[280px]">
       <input ref={inputRef} type="file" className="hidden" accept=".dxf,.dwg,.png,.jpg,.jpeg" onChange={handleUpload} />
@@ -74,24 +76,26 @@ export default function AnexoGlobal() {
           <span className="text-[#f0f0f0] text-xs truncate flex-1">{anexo.nome}</span>
           <span className="text-[#555] text-[10px] font-mono flex-shrink-0">{tempo}</span>
 
-          <button
-            onClick={async () => {
-              try {
-                const res = await fetch(anexo.url);
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = anexo.nome; a.click();
-                URL.revokeObjectURL(url);
-              } catch { window.open(anexo.url, '_blank'); }
-            }}
-            className="text-[#2563eb] hover:text-[#1d4ed8] transition-colors flex-shrink-0" title="Baixar">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
+          {canDownload && (
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch(anexo.url);
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = anexo.nome; a.click();
+                  URL.revokeObjectURL(url);
+                } catch { window.open(anexo.url, '_blank'); }
+              }}
+              className="text-[#2563eb] hover:text-[#1d4ed8] transition-colors flex-shrink-0" title="Baixar">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          )}
 
           {canUpload && (
             <button onClick={handleRemove} disabled={loading}

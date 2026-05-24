@@ -49,6 +49,7 @@ export function AuthProvider({ children }) {
   const can = (perm) => {
     if (!user) return false;
     if (user.username === 'itadobras') return true;
+    if (perm.startsWith('servico_') && user.permissions?.alterar_servicos) return true;
     return !!user.permissions?.[perm];
   };
 
