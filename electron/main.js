@@ -130,17 +130,31 @@ ipcMain.handle('notify', () => {
   if (!mainWindow || mainWindow.isFocused()) return;
   badgeCount++;
   try {
-    const size = 16;
+    const size = 32;
     const buffer = Buffer.alloc(size * size * 4);
-    for (let i = 0; i < size * size; i++) {
-      buffer[i * 4]     = 231; // R
-      buffer[i * 4 + 1] = 76;  // G
-      buffer[i * 4 + 2] = 60;  // B
-      buffer[i * 4 + 3] = 255; // A
+
+    // Desenha círculo vermelho
+    const cx = size / 2;
+    const cy = size / 2;
+    const r  = size / 2 - 1;
+
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const idx = (y * size + x) * 4;
+        const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+        if (dist <= r) {
+          buffer[idx]     = 220; // R
+          buffer[idx + 1] = 38;  // G
+          buffer[idx + 2] = 38;  // B
+          buffer[idx + 3] = 255; // A
+        } else {
+          buffer[idx + 3] = 0; // transparente
+        }
+      }
     }
+
     const badge = nativeImage.createFromBuffer(buffer, { width: size, height: size });
     mainWindow.setOverlayIcon(badge, `${badgeCount} atualizacao`);
-    console.log('[BADGE] overlay setado, count:', badgeCount);
   } catch (e) {
     console.error('[BADGE] Erro:', e.message);
   }
