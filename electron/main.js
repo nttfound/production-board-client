@@ -44,7 +44,7 @@ function createWindow() {
       nodeIntegration:  false,
     },
   });
-
+  mainWindow.maximize();
   mainWindow.setMenu(null);
 
   // Impede o React de sobrescrever o título

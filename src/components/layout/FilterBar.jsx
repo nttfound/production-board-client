@@ -3,17 +3,14 @@ import { STATUSES, URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConfi
 import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { useAuth } from '../../contexts/AuthContext';
 
-// Todas as cidades disponíveis (Itapira + todas dos dias)
-const TODAS_CIDADES = [
-  CIDADE_SEMPRE,
-  ...Object.values(CARGA_POR_DIA).flat().filter((v, i, a) => a.indexOf(v) === i),
-];
-
 const SERVICOS = [
   { key: 'corte',    label: 'Corte',    color: '#06b6d4' },
   { key: 'dobra',    label: 'Dobra',    color: '#8b5cf6' },
   { key: 'calandra', label: 'Calandra', color: '#ec4899' },
 ];
+
+// Dias com cidades únicas agrupadas
+const DIAS_CARGA = Object.entries(CARGA_POR_DIA);
 
 export default function FilterBar({
   search,
@@ -29,7 +26,6 @@ export default function FilterBar({
   filteredCount,
   showAudit,
   onToggleAudit,
-  // filtros avançados
   filterCidades,
   onFilterCidades,
   filterServicos,
@@ -41,13 +37,11 @@ export default function FilterBar({
 
   const totalAtivos = filterCidades.length + filterServicos.length;
 
-  // Fecha dropdown ao clicar fora
   useEffect(() => {
     if (!showAdvanced) return;
     const handler = (e) => {
-      if (advancedRef.current && !advancedRef.current.contains(e.target)) {
+      if (advancedRef.current && !advancedRef.current.contains(e.target))
         setShowAdvanced(false);
-      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -127,10 +121,8 @@ export default function FilterBar({
             </svg>
             Filtrar
             {totalAtivos > 0 && (
-              <span
-                className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
-                style={{ background: '#7c3aed', color: '#fff' }}
-              >
+              <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+                style={{ background: '#7c3aed', color: '#fff' }}>
                 {totalAtivos}
               </span>
             )}
@@ -139,30 +131,66 @@ export default function FilterBar({
           {/* Dropdown */}
           {showAdvanced && (
             <div
-              className="absolute right-0 top-full mt-2 z-50 rounded-2xl border border-[#2a2a2a] shadow-2xl"
-              style={{ width: '280px', background: '#141414' }}
+              className="absolute right-0 top-full mt-2 z-50 rounded-2xl border border-[#2a2a2a] shadow-2xl overflow-hidden"
+              style={{ width: '320px', background: '#111111' }}
             >
-              {/* Cidades */}
-              <div className="px-4 pt-4 pb-3">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[#8a8a8a] text-[10px] uppercase tracking-wider font-medium">Cidade / Carga</p>
-                  {filterCidades.length > 0 && (
-                    <button onClick={() => onFilterCidades([])} className="text-[#555] text-[10px] hover:text-[#8a8a8a]">limpar</button>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {TODAS_CIDADES.map(cidade => (
-                    <button
-                      key={cidade}
-                      onClick={() => toggleCidade(cidade)}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all"
-                      style={filterCidades.includes(cidade)
-                        ? { background: `${CARGA_COLOR}25`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
-                        : { background: '#1c1c1c', color: '#555', border: '1px solid #2a2a2a' }
-                      }
-                    >
-                      {cidade}
-                    </button>
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#1c1c1c]">
+                <p className="text-[#f0f0f0] text-xs font-semibold">Filtros avancados</p>
+                {totalAtivos > 0 && (
+                  <button onClick={limparAvancado} className="text-[10px] text-[#555] hover:text-[#ef4444] transition-colors">
+                    Limpar tudo
+                  </button>
+                )}
+              </div>
+
+              {/* Itapira — sempre visível */}
+              <div className="px-4 pt-3 pb-2">
+                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-2 font-medium">Sempre disponível</p>
+                <button
+                  onClick={() => toggleCidade(CIDADE_SEMPRE)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all w-full"
+                  style={filterCidades.includes(CIDADE_SEMPRE)
+                    ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
+                    : { background: '#1c1c1c', color: '#8a8a8a', border: '1px solid #2a2a2a' }
+                  }
+                >
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ background: filterCidades.includes(CIDADE_SEMPRE) ? CARGA_COLOR : '#444' }} />
+                  {CIDADE_SEMPRE}
+                </button>
+              </div>
+
+              <div style={{ height: 1, background: '#1c1c1c', margin: '0 16px' }} />
+
+              {/* Cidades por dia */}
+              <div className="px-4 py-3 max-h-64 overflow-y-auto">
+                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-3 font-medium">Por dia de carga</p>
+                <div className="flex flex-col gap-3">
+                  {DIAS_CARGA.map(([dia, cidades]) => (
+                    <div key={dia}>
+                      <p className="text-[#555] text-[10px] font-semibold mb-1.5 uppercase tracking-wider">{dia}</p>
+                      <div className="flex flex-wrap gap-1.5 pl-1">
+                        {cidades.map(cidade => (
+                          <button
+                            key={cidade}
+                            onClick={() => toggleCidade(cidade)}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1.5"
+                            style={filterCidades.includes(cidade)
+                              ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
+                              : { background: '#1c1c1c', color: '#666', border: '1px solid #222' }
+                            }
+                          >
+                            {filterCidades.includes(cidade) && (
+                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                            )}
+                            {cidade}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -171,43 +199,28 @@ export default function FilterBar({
 
               {/* Serviços */}
               <div className="px-4 py-3">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[#8a8a8a] text-[10px] uppercase tracking-wider font-medium">Serviços</p>
-                  {filterServicos.length > 0 && (
-                    <button onClick={() => onFilterServicos([])} className="text-[#555] text-[10px] hover:text-[#8a8a8a]">limpar</button>
-                  )}
-                </div>
+                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-2.5 font-medium">Serviços</p>
                 <div className="flex gap-2">
                   {SERVICOS.map(s => (
                     <button
                       key={s.key}
                       onClick={() => toggleServico(s.key)}
-                      className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+                      className="flex-1 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5"
                       style={filterServicos.includes(s.key)
                         ? { background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}50` }
-                        : { background: '#1c1c1c', color: '#555', border: '1px solid #2a2a2a' }
+                        : { background: '#1c1c1c', color: '#666', border: '1px solid #222' }
                       }
                     >
+                      {filterServicos.includes(s.key) && (
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
                       {s.label}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Limpar tudo */}
-              {totalAtivos > 0 && (
-                <>
-                  <div style={{ height: 1, background: '#1c1c1c' }} />
-                  <div className="px-4 py-3">
-                    <button
-                      onClick={() => { limparAvancado(); setShowAdvanced(false); }}
-                      className="w-full py-2 rounded-xl text-xs text-[#555] hover:text-[#8a8a8a] hover:bg-[#1c1c1c] transition-all"
-                    >
-                      Limpar todos os filtros
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
           )}
         </div>
@@ -300,12 +313,14 @@ export default function FilterBar({
             {filterCidades.map(cidade => (
               <span
                 key={cidade}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-80"
                 style={{ background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}40` }}
                 onClick={() => toggleCidade(cidade)}
               >
                 {cidade}
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
               </span>
             ))}
             {filterServicos.map(key => {
@@ -313,12 +328,14 @@ export default function FilterBar({
               return (
                 <span
                   key={key}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-80"
                   style={{ background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}40` }}
                   onClick={() => toggleServico(key)}
                 >
                   {s.label}
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
                 </span>
               );
             })}

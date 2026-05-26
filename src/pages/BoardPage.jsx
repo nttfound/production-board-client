@@ -127,18 +127,16 @@ export default function BoardPage() {
   });
 
   // ── Sorting ───────────────────────────────────────────────
-  const sorted = [...filtered].sort((a, b) => {
-    // No filtro carga: Ready vai para o final
-    if (filterStatus === 'carga') {
-      const aReady = a.status === 'Ready' ? 1 : 0;
-      const bReady = b.status === 'Ready' ? 1 : 0;
-      if (aReady !== bReady) return aReady - bReady;
-    }
-    // Urgente sobe para o topo em qualquer filtro
-    if (a.urgente !== b.urgente) return b.urgente ? 1 : -1;
-    // Padrão: mais novo primeiro
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
+const sorted = [...filtered].sort((a, b) => {
+  // Ready sempre vai para o final
+  const aReady = a.status === 'Ready' ? 1 : 0;
+  const bReady = b.status === 'Ready' ? 1 : 0;
+  if (aReady !== bReady) return aReady - bReady;
+  // Urgente sobe para o topo
+  if (a.urgente !== b.urgente) return b.urgente ? 1 : -1;
+  // Padrão: mais novo primeiro
+  return new Date(b.created_at) - new Date(a.created_at);
+});
 
   // ── Handlers de seleção ───────────────────────────────────
   const toggleSelectionMode = () => {
