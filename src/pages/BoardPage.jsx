@@ -104,7 +104,7 @@ export default function BoardPage() {
     const matchSearch = !q
       || c.title.toLowerCase().includes(q)
       || c.observation?.toLowerCase().includes(q)
-      || c.created_by.toLowerCase().includes(q);
+      || c.created_by.toLowerCase().includes(q) || c.carga?.toLowerCase().includes(q);
 
     // Filtro avançado: cidades (independente do dia/hora)
     let matchCidade = true;

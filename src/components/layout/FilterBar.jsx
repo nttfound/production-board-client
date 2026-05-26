@@ -9,8 +9,43 @@ const SERVICOS = [
   { key: 'calandra', label: 'Calandra', color: '#ec4899' },
 ];
 
-// Dias com cidades únicas agrupadas
 const DIAS_CARGA = Object.entries(CARGA_POR_DIA);
+
+// Dias que compartilham cidades entre si (podem ser selecionados juntos)
+const IRMAOS = {
+  'Segunda': 'Quarta',
+  'Quarta':  'Segunda',
+  'Terca':   'Quinta',
+  'Quinta':  'Terca',
+};
+
+// Retorna o dia ao qual uma cidade pertence
+function getDiaDaCidade(cidade) {
+  for (const [dia, cidades] of DIAS_CARGA) {
+    if (cidades.includes(cidade)) return dia;
+  }
+  return null;
+}
+
+// Dado o conjunto de cidades selecionadas, retorna quais dias estão bloqueados
+function getDiasBloqueados(filterCidades) {
+  if (filterCidades.length === 0) return new Set();
+  const diasAtivos = new Set(
+    filterCidades
+      .filter(c => c !== CIDADE_SEMPRE)
+      .map(getDiaDaCidade)
+      .filter(Boolean)
+  );
+  if (diasAtivos.size === 0) return new Set();
+
+  const bloqueados = new Set();
+  for (const [dia] of DIAS_CARGA) {
+    if (!diasAtivos.has(dia) && ![...diasAtivos].some(d => IRMAOS[d] === dia)) {
+      bloqueados.add(dia);
+    }
+  }
+  return bloqueados;
+}
 
 export default function FilterBar({
   search,
@@ -33,9 +68,11 @@ export default function FilterBar({
 }) {
   const { can } = useAuth();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [diasAbertos,  setDiasAbertos]  = useState(new Set());
   const advancedRef = useRef(null);
 
-  const totalAtivos = filterCidades.length + filterServicos.length;
+  const totalAtivos   = filterCidades.length + filterServicos.length;
+  const diasBloqueados = getDiasBloqueados(filterCidades);
 
   useEffect(() => {
     if (!showAdvanced) return;
@@ -46,6 +83,14 @@ export default function FilterBar({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showAdvanced]);
+
+  const toggleDia = (dia) => {
+    setDiasAbertos(prev => {
+      const next = new Set(prev);
+      next.has(dia) ? next.delete(dia) : next.add(dia);
+      return next;
+    });
+  };
 
   const toggleCidade = (cidade) => {
     onFilterCidades(prev =>
@@ -132,7 +177,7 @@ export default function FilterBar({
           {showAdvanced && (
             <div
               className="absolute right-0 top-full mt-2 z-50 rounded-2xl border border-[#2a2a2a] shadow-2xl overflow-hidden"
-              style={{ width: '320px', background: '#111111' }}
+              style={{ width: '300px', background: '#111111' }}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-[#1c1c1c]">
@@ -155,43 +200,84 @@ export default function FilterBar({
                     : { background: '#1c1c1c', color: '#8a8a8a', border: '1px solid #2a2a2a' }
                   }
                 >
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ background: filterCidades.includes(CIDADE_SEMPRE) ? CARGA_COLOR : '#444' }} />
+                  {filterCidades.includes(CIDADE_SEMPRE) && (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  )}
                   {CIDADE_SEMPRE}
                 </button>
               </div>
 
               <div style={{ height: 1, background: '#1c1c1c', margin: '0 16px' }} />
 
-              {/* Cidades por dia */}
-              <div className="px-4 py-3 max-h-64 overflow-y-auto">
-                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-3 font-medium">Por dia de carga</p>
-                <div className="flex flex-col gap-3">
-                  {DIAS_CARGA.map(([dia, cidades]) => (
-                    <div key={dia}>
-                      <p className="text-[#555] text-[10px] font-semibold mb-1.5 uppercase tracking-wider">{dia}</p>
-                      <div className="flex flex-wrap gap-1.5 pl-1">
-                        {cidades.map(cidade => (
-                          <button
-                            key={cidade}
-                            onClick={() => toggleCidade(cidade)}
-                            className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1.5"
-                            style={filterCidades.includes(cidade)
-                              ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
-                              : { background: '#1c1c1c', color: '#666', border: '1px solid #222' }
-                            }
-                          >
-                            {filterCidades.includes(cidade) && (
-                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12"/>
-                              </svg>
+              {/* Cidades por dia — colapsáveis */}
+              <div className="px-4 py-3 max-h-72 overflow-y-auto">
+                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-2 font-medium">Por dia de carga</p>
+                <div className="flex flex-col gap-1">
+                  {DIAS_CARGA.map(([dia, cidades]) => {
+                    const bloqueado  = diasBloqueados.has(dia);
+                    const aberto     = diasAbertos.has(dia);
+                    const temAtivo   = cidades.some(c => filterCidades.includes(c));
+                    const qtdAtiva   = cidades.filter(c => filterCidades.includes(c)).length;
+
+                    return (
+                      <div key={dia}>
+                        {/* Header do dia */}
+                        <button
+                          onClick={() => !bloqueado && toggleDia(dia)}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all"
+                          style={bloqueado
+                            ? { opacity: 0.3, cursor: 'not-allowed' }
+                            : aberto || temAtivo
+                              ? { background: `${CARGA_COLOR}10`, color: CARGA_COLOR }
+                              : { color: '#666', hover: '#1c1c1c' }
+                          }
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider">{dia}</span>
+                            {qtdAtiva > 0 && (
+                              <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+                                style={{ background: CARGA_COLOR, color: '#fff' }}>
+                                {qtdAtiva}
+                              </span>
                             )}
-                            {cidade}
-                          </button>
-                        ))}
+                          </div>
+                          <svg
+                            width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                            strokeLinecap="round" strokeLinejoin="round"
+                            style={{ transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
+                          >
+                            <polyline points="6 9 12 15 18 9"/>
+                          </svg>
+                        </button>
+
+                        {/* Cidades do dia */}
+                        {aberto && !bloqueado && (
+                          <div className="flex flex-wrap gap-1.5 px-3 pb-2 pt-1">
+                            {cidades.map(cidade => (
+                              <button
+                                key={cidade}
+                                onClick={() => toggleCidade(cidade)}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1.5"
+                                style={filterCidades.includes(cidade)
+                                  ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
+                                  : { background: '#1c1c1c', color: '#666', border: '1px solid #222' }
+                                }
+                              >
+                                {filterCidades.includes(cidade) && (
+                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                  </svg>
+                                )}
+                                {cidade}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -309,7 +395,7 @@ export default function FilterBar({
               Carga
             </button>
 
-            {/* Chips dos filtros avançados ativos */}
+            {/* Chips ativos */}
             {filterCidades.map(cidade => (
               <span
                 key={cidade}
