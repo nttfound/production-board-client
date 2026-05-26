@@ -11,14 +11,6 @@ const SERVICOS = [
 
 const DIAS_CARGA = Object.entries(CARGA_POR_DIA);
 
-// Dias que compartilham cidades entre si (podem ser selecionados juntos)
-const IRMAOS = {
-  'Segunda': 'Quarta',
-  'Quarta':  'Segunda',
-  'Terca':   'Quinta',
-  'Quinta':  'Terca',
-};
-
 // Retorna o dia ao qual uma cidade pertence
 function getDiaDaCidade(cidade) {
   for (const [dia, cidades] of DIAS_CARGA) {
@@ -40,7 +32,7 @@ function getDiasBloqueados(filterCidades) {
 
   const bloqueados = new Set();
   for (const [dia] of DIAS_CARGA) {
-    if (!diasAtivos.has(dia) && ![...diasAtivos].some(d => IRMAOS[d] === dia)) {
+    if (!diasAtivos.has(dia)) {
       bloqueados.add(dia);
     }
   }
