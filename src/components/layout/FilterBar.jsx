@@ -1,6 +1,19 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { STATUSES, URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConfig';
+import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { useAuth } from '../../contexts/AuthContext';
+
+// Todas as cidades disponíveis (Itapira + todas dos dias)
+const TODAS_CIDADES = [
+  CIDADE_SEMPRE,
+  ...Object.values(CARGA_POR_DIA).flat().filter((v, i, a) => a.indexOf(v) === i),
+];
+
+const SERVICOS = [
+  { key: 'corte',    label: 'Corte',    color: '#06b6d4' },
+  { key: 'dobra',    label: 'Dobra',    color: '#8b5cf6' },
+  { key: 'calandra', label: 'Calandra', color: '#ec4899' },
+];
 
 export default function FilterBar({
   search,
@@ -16,8 +29,46 @@ export default function FilterBar({
   filteredCount,
   showAudit,
   onToggleAudit,
+  // filtros avançados
+  filterCidades,
+  onFilterCidades,
+  filterServicos,
+  onFilterServicos,
 }) {
   const { can } = useAuth();
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const advancedRef = useRef(null);
+
+  const totalAtivos = filterCidades.length + filterServicos.length;
+
+  // Fecha dropdown ao clicar fora
+  useEffect(() => {
+    if (!showAdvanced) return;
+    const handler = (e) => {
+      if (advancedRef.current && !advancedRef.current.contains(e.target)) {
+        setShowAdvanced(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showAdvanced]);
+
+  const toggleCidade = (cidade) => {
+    onFilterCidades(prev =>
+      prev.includes(cidade) ? prev.filter(c => c !== cidade) : [...prev, cidade]
+    );
+  };
+
+  const toggleServico = (key) => {
+    onFilterServicos(prev =>
+      prev.includes(key) ? prev.filter(s => s !== key) : [...prev, key]
+    );
+  };
+
+  const limparAvancado = () => {
+    onFilterCidades([]);
+    onFilterServicos([]);
+  };
 
   return (
     <div className="flex flex-col gap-3 px-6 py-4 border-b border-[#1c1c1c] flex-shrink-0">
@@ -58,6 +109,108 @@ export default function FilterBar({
         )}
 
         <div className="flex-1" />
+
+        {/* Botão Filtro Avançado */}
+        <div className="relative flex-shrink-0" ref={advancedRef}>
+          <button
+            onClick={() => setShowAdvanced(p => !p)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all"
+            style={showAdvanced || totalAtivos > 0
+              ? { background: '#7c3aed20', color: '#7c3aed', border: '1px solid #7c3aed50' }
+              : { background: 'transparent', color: '#555', border: '1px solid #2a2a2a' }
+            }
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" y1="6" x2="20" y2="6"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+              <line x1="11" y1="18" x2="13" y2="18"/>
+            </svg>
+            Filtrar
+            {totalAtivos > 0 && (
+              <span
+                className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+                style={{ background: '#7c3aed', color: '#fff' }}
+              >
+                {totalAtivos}
+              </span>
+            )}
+          </button>
+
+          {/* Dropdown */}
+          {showAdvanced && (
+            <div
+              className="absolute right-0 top-full mt-2 z-50 rounded-2xl border border-[#2a2a2a] shadow-2xl"
+              style={{ width: '280px', background: '#141414' }}
+            >
+              {/* Cidades */}
+              <div className="px-4 pt-4 pb-3">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[#8a8a8a] text-[10px] uppercase tracking-wider font-medium">Cidade / Carga</p>
+                  {filterCidades.length > 0 && (
+                    <button onClick={() => onFilterCidades([])} className="text-[#555] text-[10px] hover:text-[#8a8a8a]">limpar</button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {TODAS_CIDADES.map(cidade => (
+                    <button
+                      key={cidade}
+                      onClick={() => toggleCidade(cidade)}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all"
+                      style={filterCidades.includes(cidade)
+                        ? { background: `${CARGA_COLOR}25`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
+                        : { background: '#1c1c1c', color: '#555', border: '1px solid #2a2a2a' }
+                      }
+                    >
+                      {cidade}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ height: 1, background: '#1c1c1c' }} />
+
+              {/* Serviços */}
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[#8a8a8a] text-[10px] uppercase tracking-wider font-medium">Serviços</p>
+                  {filterServicos.length > 0 && (
+                    <button onClick={() => onFilterServicos([])} className="text-[#555] text-[10px] hover:text-[#8a8a8a]">limpar</button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {SERVICOS.map(s => (
+                    <button
+                      key={s.key}
+                      onClick={() => toggleServico(s.key)}
+                      className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+                      style={filterServicos.includes(s.key)
+                        ? { background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}50` }
+                        : { background: '#1c1c1c', color: '#555', border: '1px solid #2a2a2a' }
+                      }
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Limpar tudo */}
+              {totalAtivos > 0 && (
+                <>
+                  <div style={{ height: 1, background: '#1c1c1c' }} />
+                  <div className="px-4 py-3">
+                    <button
+                      onClick={() => { limparAvancado(); setShowAdvanced(false); }}
+                      className="w-full py-2 rounded-xl text-xs text-[#555] hover:text-[#8a8a8a] hover:bg-[#1c1c1c] transition-all"
+                    >
+                      Limpar todos os filtros
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Botão Registro */}
         {can('ver_registro') && (
@@ -142,6 +295,33 @@ export default function FilterBar({
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CARGA_COLOR }} />
               Carga
             </button>
+
+            {/* Chips dos filtros avançados ativos */}
+            {filterCidades.map(cidade => (
+              <span
+                key={cidade}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer"
+                style={{ background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}40` }}
+                onClick={() => toggleCidade(cidade)}
+              >
+                {cidade}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </span>
+            ))}
+            {filterServicos.map(key => {
+              const s = SERVICOS.find(s => s.key === key);
+              return (
+                <span
+                  key={key}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer"
+                  style={{ background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}40` }}
+                  onClick={() => toggleServico(key)}
+                >
+                  {s.label}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </span>
+              );
+            })}
           </>
         )}
       </div>

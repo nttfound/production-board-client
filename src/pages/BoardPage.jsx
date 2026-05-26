@@ -29,6 +29,10 @@ export default function BoardPage() {
   // ── Painel de auditoria ──────────────────────────────────
   const [showAudit,      setShowAudit]      = useState(false);
 
+  // ── Filtros avançados ────────────────────────────────────
+  const [filterCidades,  setFilterCidades]  = useState([]);
+  const [filterServicos, setFilterServicos] = useState([]);
+
   // ── Load all cards on mount ──────────────────────────────
   useEffect(() => {
     api.get('/api/cards')
@@ -88,18 +92,38 @@ export default function BoardPage() {
 
   // ── Filtering ─────────────────────────────────────────────
   const filtered = cards.filter(c => {
+    // Filtro de status principal
     let matchStatus;
     if (filterStatus === 'all') matchStatus = true;
     else if (filterStatus === 'urgente') matchStatus = c.urgente === true;
     else if (filterStatus === 'carga') matchStatus = cargaAtivaAgora(c.carga) && c.carga !== 'Itapira';
     else matchStatus = c.status === filterStatus;
 
+    // Filtro de busca
     const q = search.toLowerCase();
     const matchSearch = !q
       || c.title.toLowerCase().includes(q)
       || c.observation?.toLowerCase().includes(q)
       || c.created_by.toLowerCase().includes(q);
-    return matchStatus && matchSearch;
+
+    // Filtro avançado: cidades (independente do dia/hora)
+    let matchCidade = true;
+    if (filterCidades.length > 0) {
+      const cidadeCard = c.carga === 'Itapira'
+        ? 'Itapira'
+        : c.carga?.startsWith('CARGA - ')
+          ? c.carga.replace('CARGA - ', '')
+          : null;
+      matchCidade = cidadeCard !== null && filterCidades.includes(cidadeCard);
+    }
+
+    // Filtro avançado: serviços (OU — basta ter um)
+    let matchServico = true;
+    if (filterServicos.length > 0) {
+      matchServico = filterServicos.some(s => c[s] === true);
+    }
+
+    return matchStatus && matchSearch && matchCidade && matchServico;
   });
 
   // ── Sorting ───────────────────────────────────────────────
@@ -185,6 +209,10 @@ export default function BoardPage() {
         filteredCount={sorted.length}
         showAudit={showAudit}
         onToggleAudit={() => setShowAudit(prev => !prev)}
+        filterCidades={filterCidades}
+        onFilterCidades={setFilterCidades}
+        filterServicos={filterServicos}
+        onFilterServicos={setFilterServicos}
       />
 
       {/* Card grid */}
