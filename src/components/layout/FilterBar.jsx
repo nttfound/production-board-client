@@ -94,7 +94,7 @@ export default function FilterBar({
 
   const toggleCidade = (cidade) => {
     onFilterCidades(prev =>
-      prev.includes(cidade) ? prev.filter(c => c !== cidade) : [...prev, cidade]
+      prev.includes(cidade) ? [] : [cidade]
     );
   };
 
