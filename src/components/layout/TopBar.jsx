@@ -59,17 +59,6 @@ export default function TopBar({ onNewCard, connected }) {
   return (
     <>
       <header className="h-14 bg-[#0d0d0d] border-b border-[#1c1c1c] flex items-center px-6 gap-4 flex-shrink-0">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 mr-4">
-          <div className="w-7 h-7 rounded-lg bg-[#1c1c1c] border border-[#2a2a2a] flex items-center justify-center">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <path d="M8 21h8M12 17v4"/>
-            </svg>
-          </div>
-          <span className="text-[#f0f0f0] text-sm font-semibold tracking-tight">LASER - ITADOBRAS</span>
-        </div>
-
         {/* Status conexão */}
         <div className="flex items-center gap-1.5">
           <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-[#22c55e]' : 'bg-[#ef4444]'}`} />
