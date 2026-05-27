@@ -9,7 +9,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import socket from '../../services/socket';
 import api    from '../../services/api';
 
-// Cor padrão caso o servidor ainda não tenha o campo color
 const FALLBACK_COLOR = '#8a8a8a';
 
 function formatTime(ts) {
@@ -32,165 +31,16 @@ function renderText(text, myUsername) {
   });
 }
 
-// Labels de status traduzidos
-const STATUS_LABELS = {
-  Pending:          'Pendente',
-  Producing:        'Produzindo',
-  Ready:            'Pronto',
-  'No Material':    'Sem Material',
-  'Waiting Approval': 'Aguard. Aprovação',
-  Scheduled:        'Agendado',
-};
-
-const STATUS_COLORS = {
-  Pending:          '#f59e0b',
-  Producing:        '#3b82f6',
-  Ready:            '#10b981',
-  'No Material':    '#ef4444',
-  'Waiting Approval': '#8b5cf6',
-  Scheduled:        '#06b6d4',
-};
-
-// Mini card linkado inline na mensagem
-function LinkedCard({ card }) {
-  const statusColor = STATUS_COLORS[card.status] || '#555';
-  return (
-    <div
-      className="mt-1.5 rounded-xl px-3 py-2 flex items-start gap-2.5"
-      style={{ background: '#0a0a0a', border: `1px solid ${statusColor}30` }}
-    >
-      <div
-        className="w-1 rounded-full flex-shrink-0 mt-0.5"
-        style={{ background: statusColor, minHeight: 32 }}
-      />
-      <div className="min-w-0">
-        <p className="text-[#f0f0f0] text-xs font-semibold leading-tight truncate">{card.title}</p>
-        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-            style={{ background: statusColor + '20', color: statusColor }}>
-            {STATUS_LABELS[card.status] || card.status}
-          </span>
-          {card.urgente && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-              style={{ background: '#f9731620', color: '#f97316' }}>
-              Urgente
-            </span>
-          )}
-        </div>
-        {card.observation && (
-          <p className="text-[#555] text-[10px] mt-0.5 truncate">{card.observation}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Modal de busca de card para linkar
-function CardSearchModal({ onSelect, onClose }) {
-  const [query,   setQuery]   = useState('');
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 80);
-  }, []);
-
-  useEffect(() => {
-    if (!query.trim()) { setResults([]); return; }
-    const timer = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const res = await api.get(`/api/cards?search=${encodeURIComponent(query.trim())}&limit=8`);
-        setResults(res.data?.cards || res.data || []);
-      } catch {
-        setResults([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 280);
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  return (
-    <>
-      <div className="fixed inset-0 z-[60]" onClick={onClose} />
-      <div
-        className="absolute right-0 z-[61] rounded-2xl overflow-hidden shadow-2xl"
-        style={{
-          bottom:      'calc(100% + 8px)',
-          width:       320,
-          background:  '#111',
-          border:      '1px solid #2a2a2a',
-          boxShadow:   '0 16px 48px rgba(0,0,0,0.85)',
-        }}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#1f1f1f]">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/>
-          </svg>
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Buscar card pelo título..."
-            className="flex-1 bg-transparent text-[#f0f0f0] text-xs placeholder-[#444] outline-none"
-          />
-          {loading && (
-            <div className="w-3 h-3 border border-[#2a2a2a] border-t-[#3b82f6] rounded-full animate-spin flex-shrink-0" />
-          )}
-        </div>
-
-        {/* Results */}
-        <div className="overflow-y-auto" style={{ maxHeight: 280 }}>
-          {!query.trim() ? (
-            <p className="text-[#333] text-[10px] text-center py-6">Digite para buscar</p>
-          ) : results.length === 0 && !loading ? (
-            <p className="text-[#333] text-[10px] text-center py-6">Nenhum card encontrado</p>
-          ) : results.map(card => {
-            const statusColor = STATUS_COLORS[card.status] || '#555';
-            return (
-              <button
-                key={card.id}
-                onClick={() => onSelect(card)}
-                className="w-full text-left px-3 py-2.5 transition-colors hover:bg-[#1c1c1c] flex items-center gap-2.5"
-                style={{ borderBottom: '1px solid #1a1a1a' }}
-              >
-                <div
-                  className="w-1 rounded-full flex-shrink-0 self-stretch"
-                  style={{ background: statusColor, minHeight: 28 }}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[#f0f0f0] text-xs font-medium truncate">{card.title}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-[10px]" style={{ color: statusColor }}>
-                      {STATUS_LABELS[card.status] || card.status}
-                    </span>
-                    {card.urgente && <span className="text-[10px] text-[#f97316]">· Urgente</span>}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </>
-  );
-}
-
 export default function ChatPanel() {
   const { user } = useAuth();
 
-  const [open,          setOpen]          = useState(false);
-  const [expanded,      setExpanded]      = useState(false);
-  const [messages,      setMessages]      = useState([]);
-  const [input,         setInput]         = useState('');
-  const [unread,        setUnread]        = useState(0);
-  const [loading,       setLoading]       = useState(false);
-  const [showEmoji,     setShowEmoji]     = useState(false);
-  const [showCardSearch, setShowCardSearch] = useState(false);
-  const [linkedCard,    setLinkedCard]    = useState(null);   // card selecionado p/ enviar
+  const [open,      setOpen]      = useState(false);
+  const [expanded,  setExpanded]  = useState(false);
+  const [messages,  setMessages]  = useState([]);
+  const [input,     setInput]     = useState('');
+  const [unread,    setUnread]    = useState(0);
+  const [loading,   setLoading]   = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
 
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
@@ -231,7 +81,6 @@ export default function ChatPanel() {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
 
-  // Fecha emoji picker ao clicar fora
   useEffect(() => {
     if (!showEmoji) return;
     const handler = (e) => {
@@ -253,24 +102,19 @@ export default function ChatPanel() {
     setOpen(false);
     setExpanded(false);
     setShowEmoji(false);
-    setShowCardSearch(false);
-    setLinkedCard(null);
   };
 
   const handleSend = () => {
     const text = input.trim();
-    if ((!text && !linkedCard) || !user) return;
+    if (!text || !user) return;
     socket.emit('chat:send', {
       username:     user.username,
       display_name: user.display_name || user.username,
       color:        user.color || FALLBACK_COLOR,
-      text:         text || '',
-      card:         linkedCard || null,
+      text,
     });
     setInput('');
-    setLinkedCard(null);
     setShowEmoji(false);
-    setShowCardSearch(false);
     inputRef.current?.focus();
   };
 
@@ -279,10 +123,7 @@ export default function ChatPanel() {
       e.preventDefault();
       handleSend();
     }
-    if (e.key === 'Escape') {
-      setShowEmoji(false);
-      setShowCardSearch(false);
-    }
+    if (e.key === 'Escape') setShowEmoji(false);
   };
 
   const onEmojiSelect = (emoji) => {
@@ -301,8 +142,6 @@ export default function ChatPanel() {
 
   const W = expanded ? 480 : 320;
   const H = expanded ? 620 : 420;
-
-  const canSend = input.trim() || linkedCard;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
@@ -368,7 +207,6 @@ export default function ChatPanel() {
             ) : (
               messages.map((msg, i) => {
                 const isMe    = msg.username === user?.username;
-                // Usa a cor salva na mensagem (propagada no momento do envio)
                 const color   = msg.color || FALLBACK_COLOR;
                 const prevMsg = messages[i - 1];
                 const grouped = prevMsg && prevMsg.username === msg.username
@@ -383,23 +221,13 @@ export default function ChatPanel() {
                       </div>
                     )}
                     <div
-                      className="max-w-[85%]"
+                      className="max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed break-words"
+                      style={isMe
+                        ? { background: '#1d4ed8', color: '#f0f0f0', borderBottomRightRadius: grouped ? '1rem' : '0.25rem' }
+                        : { background: '#1c1c1c', color: '#e5e5e5', borderBottomLeftRadius:  grouped ? '1rem' : '0.25rem' }
+                      }
                     >
-                      {/* Texto principal */}
-                      {msg.text && (
-                        <div
-                          className="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words"
-                          style={isMe
-                            ? { background: '#1d4ed8', color: '#f0f0f0', borderBottomRightRadius: grouped ? '1rem' : '0.25rem' }
-                            : { background: '#1c1c1c', color: '#e5e5e5', borderBottomLeftRadius:  grouped ? '1rem' : '0.25rem' }
-                          }
-                        >
-                          {renderText(msg.text, user?.username)}
-                        </div>
-                      )}
-
-                      {/* Card linkado */}
-                      {msg.card && <LinkedCard card={msg.card} />}
+                      {renderText(msg.text, user?.username)}
                     </div>
                     {grouped && (
                       <span className="text-[9px] text-[#333] mt-0.5 px-1">{formatTime(msg.created_at)}</span>
@@ -436,43 +264,10 @@ export default function ChatPanel() {
               </div>
             )}
 
-            {/* Card Search Modal */}
-            {showCardSearch && (
-              <CardSearchModal
-                onSelect={card => {
-                  setLinkedCard(card);
-                  setShowCardSearch(false);
-                  inputRef.current?.focus();
-                }}
-                onClose={() => setShowCardSearch(false)}
-              />
-            )}
-
-            {/* Preview do card linkado */}
-            {linkedCard && (
-              <div
-                className="mb-2 rounded-xl px-3 py-2 flex items-center gap-2"
-                style={{ background: '#0a0a0a', border: '1px solid #2a2a2a' }}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/>
-                </svg>
-                <span className="text-[#8a8a8a] text-[10px] flex-1 truncate">{linkedCard.title}</span>
-                <button
-                  onClick={() => setLinkedCard(null)}
-                  className="text-[#555] hover:text-[#ef4444] transition-colors flex-shrink-0"
-                >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-            )}
-
             <div className="flex items-end gap-2">
               {/* Botão emoji */}
               <button
-                onClick={() => { setShowEmoji(e => !e); setShowCardSearch(false); }}
+                onClick={() => setShowEmoji(e => !e)}
                 className="emoji-btn w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all text-lg"
                 style={showEmoji
                   ? { background: '#2563eb20', border: '1px solid #2563eb50' }
@@ -483,27 +278,12 @@ export default function ChatPanel() {
                 😊
               </button>
 
-              {/* Botão linkar card */}
-              <button
-                onClick={() => { setShowCardSearch(c => !c); setShowEmoji(false); }}
-                className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all"
-                style={showCardSearch || linkedCard
-                  ? { background: '#2563eb20', border: '1px solid #2563eb50', color: '#3b82f6' }
-                  : { background: '#1c1c1c',   border: '1px solid #2a2a2a',   color: '#555' }
-                }
-                title="Linkar card"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/>
-                </svg>
-              </button>
-
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={linkedCard ? 'Adicione um comentário...' : 'Mensagem...'}
+                placeholder="Mensagem..."
                 rows={1}
                 className="flex-1 bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl px-3 py-2 text-[#f0f0f0] text-xs placeholder-[#444] outline-none resize-none focus:border-[#2563eb] transition-all"
                 style={{ maxHeight: 100, lineHeight: '1.4' }}
@@ -516,9 +296,9 @@ export default function ChatPanel() {
               {/* Botão enviar */}
               <button
                 onClick={handleSend}
-                disabled={!canSend}
+                disabled={!input.trim()}
                 className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all"
-                style={canSend
+                style={input.trim()
                   ? { background: '#2563eb', color: 'white' }
                   : { background: '#1c1c1c', color: '#333', cursor: 'not-allowed' }
                 }
