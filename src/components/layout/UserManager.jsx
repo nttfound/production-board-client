@@ -20,7 +20,20 @@ const PERMISSIONS = [
 const PERMISSION_KEYS = PERMISSIONS.map(p => p.key);
 const SERVICE_KEYS = ['servico_corte', 'servico_dobra', 'servico_mao_de_obra', 'servico_calandra'];
 const EMPTY_PERMS = Object.fromEntries(PERMISSIONS.map(p => [p.key, false]));
-const EMPTY_FORM = { display_name: '', username: '', password: '', permissions: { ...EMPTY_PERMS } };
+
+const PRESET_COLORS = [
+  '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+  '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16',
+  '#f97316', '#a78bfa', '#34d399', '#fb7185',
+];
+
+const EMPTY_FORM = {
+  display_name: '',
+  username:     '',
+  password:     '',
+  color:        '#3b82f6',
+  permissions:  { ...EMPTY_PERMS },
+};
 
 function normalizePermissions(permissions = {}) {
   const normalized = { ...EMPTY_PERMS };
@@ -53,14 +66,71 @@ function Toggle({ value, onChange }) {
   );
 }
 
+function ColorPicker({ value, onChange }) {
+  return (
+    <div>
+      <label className="text-[#555] text-[10px] uppercase tracking-wider mb-2 block">
+        Cor no Chat
+      </label>
+      <div className="flex flex-wrap gap-2 items-center">
+        {PRESET_COLORS.map(color => (
+          <button
+            key={color}
+            onClick={() => onChange(color)}
+            className="w-7 h-7 rounded-full transition-all flex-shrink-0"
+            style={{
+              background:  color,
+              outline:     value === color ? `2px solid ${color}` : '2px solid transparent',
+              outlineOffset: '2px',
+              transform:   value === color ? 'scale(1.15)' : 'scale(1)',
+            }}
+            title={color}
+          />
+        ))}
+        {/* Input de cor livre */}
+        <label
+          className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-all overflow-hidden"
+          style={{
+            background:  value && !PRESET_COLORS.includes(value) ? value : '#1c1c1c',
+            border:      '1px dashed #444',
+            outline:     value && !PRESET_COLORS.includes(value) ? `2px solid ${value}` : '2px solid transparent',
+            outlineOffset: '2px',
+          }}
+          title="Cor personalizada"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/>
+            <circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/>
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+          </svg>
+          <input
+            type="color"
+            value={value || '#3b82f6'}
+            onChange={e => onChange(e.target.value)}
+            className="absolute opacity-0 w-0 h-0"
+          />
+        </label>
+
+        {/* Preview com nome */}
+        <span
+          className="ml-1 text-xs font-semibold px-2 py-0.5 rounded-full"
+          style={{ background: value + '20', color: value }}
+        >
+          Preview
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function UserManager({ onClose }) {
-  const [users,     setUsers]     = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [selected,  setSelected]  = useState(null);
-  const [form,      setForm]      = useState(EMPTY_FORM);
-  const [isNew,     setIsNew]     = useState(false);
-  const [saving,    setSaving]    = useState(false);
-  const [error,     setError]     = useState('');
+  const [users,    setUsers]    = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [selected, setSelected] = useState(null);
+  const [form,     setForm]     = useState(EMPTY_FORM);
+  const [isNew,    setIsNew]    = useState(false);
+  const [saving,   setSaving]   = useState(false);
+  const [error,    setError]    = useState('');
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -81,6 +151,7 @@ export default function UserManager({ onClose }) {
       display_name: u.display_name,
       username:     u.username,
       password:     '',
+      color:        u.color || '#3b82f6',
       permissions:  normalizePermissions(u.permissions),
     });
   }
@@ -103,13 +174,20 @@ export default function UserManager({ onClose }) {
       if (isNew) {
         if (!form.username || !form.display_name || !form.password)
           return setError('Preencha usuario, nome e senha');
-        const res = await api.post('/api/auth/users', { ...form, permissions: cleanPermissions(form.permissions) });
+        const res = await api.post('/api/auth/users', {
+          ...form,
+          permissions: cleanPermissions(form.permissions),
+        });
         setUsers(u => [...u, res.data]);
         setSelected(res.data);
         setIsNew(false);
         setForm(f => ({ ...f, password: '' }));
       } else {
-        const payload = { display_name: form.display_name, permissions: cleanPermissions(form.permissions) };
+        const payload = {
+          display_name: form.display_name,
+          color:        form.color,
+          permissions:  cleanPermissions(form.permissions),
+        };
         if (form.password) payload.password = form.password;
         const res = await api.put(`/api/auth/users/${selected.id}`, payload);
         setUsers(u => u.map(x => x.id === res.data.id ? res.data : x));
@@ -160,6 +238,7 @@ export default function UserManager({ onClose }) {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
+            {/* Lista lateral */}
             <div className="w-48 border-r border-[#1c1c1c] flex flex-col flex-shrink-0">
               <div className="flex-1 overflow-y-auto py-2">
                 {loading ? (
@@ -173,11 +252,20 @@ export default function UserManager({ onClose }) {
                     className="w-full text-left px-4 py-3 transition-colors"
                     style={{
                       background: selected?.id === u.id ? '#1c1c1c' : 'transparent',
-                      borderLeft: selected?.id === u.id ? '2px solid #2563eb' : '2px solid transparent',
+                      borderLeft: selected?.id === u.id ? `2px solid ${u.color || '#2563eb'}` : '2px solid transparent',
                     }}
                   >
-                    <p className="text-[#f0f0f0] text-xs font-medium truncate">{u.display_name}</p>
-                    <p className="text-[#555] text-[10px] truncate">@{u.username}</p>
+                    <div className="flex items-center gap-2">
+                      {/* Bolinha de cor do usuário */}
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ background: u.color || '#3b82f6' }}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-[#f0f0f0] text-xs font-medium truncate">{u.display_name}</p>
+                        <p className="text-[#555] text-[10px] truncate">@{u.username}</p>
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -195,6 +283,7 @@ export default function UserManager({ onClose }) {
               </div>
             </div>
 
+            {/* Painel de edição */}
             <div className="flex-1 flex flex-col overflow-hidden">
               {!selected && !isNew ? (
                 <div className="flex-1 flex items-center justify-center">
@@ -236,6 +325,12 @@ export default function UserManager({ onClose }) {
                       className="w-full bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl px-3 py-2 text-[#f0f0f0] text-sm outline-none focus:border-[#2563eb] transition-all"
                     />
                   </div>
+
+                  {/* Color Picker */}
+                  <ColorPicker
+                    value={form.color}
+                    onChange={color => setForm(f => ({ ...f, color }))}
+                  />
 
                   <div>
                     <label className="text-[#555] text-[10px] uppercase tracking-wider mb-2 block">Permissoes</label>
