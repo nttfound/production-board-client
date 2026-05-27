@@ -65,26 +65,12 @@ export default function ChatPanel() {
 
   useEffect(() => {
     const onMessage = (msg) => {
-      setMessages(prev => {
-        // Atualiza todas as mensagens anteriores do mesmo usuário com a nova cor e nome
-        const updatedPrev = prev.map(existingMsg => 
-          existingMsg.username === msg.username && (
-            existingMsg.color !== msg.color || 
-            existingMsg.display_name !== msg.display_name
-          )
-            ? { ...existingMsg, color: msg.color, display_name: msg.display_name }
-            : existingMsg
-        );
-        return [...updatedPrev, msg];
-      });
+      setMessages(prev => [...prev, msg]);
       if (!openRef.current) setUnread(n => n + 1);
     };
-    
     const onCleared = () => setMessages([]);
-    
     socket.on('chat:message', onMessage);
     socket.on('chat:cleared',  onCleared);
-    
     return () => {
       socket.off('chat:message', onMessage);
       socket.off('chat:cleared',  onCleared);
@@ -221,7 +207,6 @@ export default function ChatPanel() {
             ) : (
               messages.map((msg, i) => {
                 const isMe    = msg.username === user?.username;
-                // Usa a cor da mensagem (já atualizada pelo useEffect)
                 const color   = msg.color || FALLBACK_COLOR;
                 const prevMsg = messages[i - 1];
                 const grouped = prevMsg && prevMsg.username === msg.username
