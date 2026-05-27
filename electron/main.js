@@ -52,8 +52,6 @@ function createWindow() {
     e.preventDefault();
   });
 
-  mainWindow.setMenu(null);
-
   if (isDev) {
     mainWindow.loadURL('http://localhost:3001');
     mainWindow.webContents.openDevTools();

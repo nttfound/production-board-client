@@ -39,8 +39,9 @@ export default function ChatPanel() {
   const [messages,  setMessages]  = useState([]);
   const [input,     setInput]     = useState('');
   const [unread,    setUnread]    = useState(0);
-  const [loading,   setLoading]   = useState(false);
-  const [showEmoji, setShowEmoji] = useState(false);
+  const [loading,         setLoading]         = useState(false);
+  const [showEmoji,       setShowEmoji]       = useState(false);
+  const [socketConnected, setSocketConnected] = useState(socket.connected);
 
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
@@ -64,16 +65,24 @@ export default function ChatPanel() {
   }, [open, messages.length, loadHistory]);
 
   useEffect(() => {
-    const onMessage = (msg) => {
+    const onMessage    = (msg) => {
       setMessages(prev => [...prev, msg]);
       if (!openRef.current) setUnread(n => n + 1);
     };
-    const onCleared = () => setMessages([]);
+    const onCleared    = () => setMessages([]);
+    const onConnect    = () => setSocketConnected(true);
+    const onDisconnect = () => setSocketConnected(false);
+
+    setSocketConnected(socket.connected);
     socket.on('chat:message', onMessage);
     socket.on('chat:cleared',  onCleared);
+    socket.on('connect',       onConnect);
+    socket.on('disconnect',    onDisconnect);
     return () => {
       socket.off('chat:message', onMessage);
       socket.off('chat:cleared',  onCleared);
+      socket.off('connect',       onConnect);
+      socket.off('disconnect',    onDisconnect);
     };
   }, []);
 
@@ -107,6 +116,10 @@ export default function ChatPanel() {
   const handleSend = () => {
     const text = input.trim();
     if (!text || !user) return;
+    if (!socket.connected) {
+      console.warn('[CHAT] Socket desconectado — mensagem não enviada');
+      return;
+    }
     socket.emit('chat:send', { text, card: null });
     setInput('');
     setShowEmoji(false);
@@ -157,9 +170,11 @@ export default function ChatPanel() {
           <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
             style={{ borderColor: '#1f1f1f', background: '#141414', borderRadius: '1rem 1rem 0 0' }}>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className={`w-2 h-2 rounded-full ${socketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
               <span className="text-[#f0f0f0] text-sm font-semibold">Chat</span>
-              <span className="text-[#555] text-xs">· todos os usuários</span>
+              <span className="text-[#555] text-xs">
+                {socketConnected ? '· todos os usuários' : '· reconectando...'}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <button onClick={() => setExpanded(e => !e)}
@@ -293,9 +308,10 @@ export default function ChatPanel() {
                 {/* Botão enviar */}
                 <button
                   onClick={handleSend}
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || !socketConnected}
+                  title={!socketConnected ? 'Sem conexão' : ''}
                   className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all"
-                  style={input.trim()
+                  style={input.trim() && socketConnected
                     ? { background: '#2563eb', color: 'white' }
                     : { background: '#1c1c1c', color: '#333', cursor: 'not-allowed' }
                   }

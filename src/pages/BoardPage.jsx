@@ -44,32 +44,34 @@ export default function BoardPage() {
 
   // ── Socket.IO real-time events ───────────────────────────
   useEffect(() => {
-    setConnected(socket.connected);
-    socket.on('connect',    () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
-    socket.on('connect_error', (err) => {
-      console.log('[WS] Erro de conexão:', err.message);
-      setConnected(false);
-    });
-
-    socket.on('card:created', (card) => {
-      setCards(prev => [card, ...prev]);
-    });
-    socket.on('card:updated', (updated) => {
+    const onConnect    = () => setConnected(true);
+    const onDisconnect = () => setConnected(false);
+    const onError      = (err) => { console.log('[WS] Erro de conexão:', err.message); setConnected(false); };
+    const onCreated    = (card)     => setCards(prev => [card, ...prev]);
+    const onUpdated    = (updated)  => {
       setCards(prev => prev.map(c => c.id === updated.id ? updated : c));
       if (window.electronAPI?.notify) window.electronAPI.notify();
-    });
-    socket.on('card:deleted', ({ id }) => {
+    };
+    const onDeleted    = ({ id })   => {
       setCards(prev => prev.filter(c => c.id !== id));
       setSelectedIds(prev => { const s = new Set(prev); s.delete(id); return s; });
-    });
+    };
+
+    setConnected(socket.connected);
+    socket.on('connect',       onConnect);
+    socket.on('disconnect',    onDisconnect);
+    socket.on('connect_error', onError);
+    socket.on('card:created',  onCreated);
+    socket.on('card:updated',  onUpdated);
+    socket.on('card:deleted',  onDeleted);
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('card:created');
-      socket.off('card:updated');
-      socket.off('card:deleted');
+      socket.off('connect',       onConnect);
+      socket.off('disconnect',    onDisconnect);
+      socket.off('connect_error', onError);
+      socket.off('card:created',  onCreated);
+      socket.off('card:updated',  onUpdated);
+      socket.off('card:deleted',  onDeleted);
     };
   }, []);
 
