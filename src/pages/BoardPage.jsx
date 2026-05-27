@@ -13,6 +13,7 @@ import NewCardModal   from '../components/cards/NewCardModal';
 import BulkActionBar  from '../components/cards/BulkActionBar';
 import AuditPanel     from '../components/cards/AuditPanel';
 import { cargaAtivaAgora } from '../services/cargaConfig';
+import ChatPanel from '../components/chat/ChatPanel';
 
 export default function BoardPage() {
   const [cards,          setCards]          = useState([]);
@@ -270,6 +271,7 @@ const sorted = [...filtered].sort((a, b) => {
       )}
 
       {showAudit && <AuditPanel onClose={() => setShowAudit(false)} />}
+      <ChatPanel />
     </div>
   );
 }
