@@ -107,12 +107,7 @@ export default function ChatPanel() {
   const handleSend = () => {
     const text = input.trim();
     if (!text || !user) return;
-    socket.emit('chat:send', {
-      username:     user.username,
-      display_name: user.display_name || user.username,
-      color:        user.color || FALLBACK_COLOR,
-      text,
-    });
+    socket.emit('chat:send', { text, card: null });
     setInput('');
     setShowEmoji(false);
     inputRef.current?.focus();
@@ -264,50 +259,65 @@ export default function ChatPanel() {
               </div>
             )}
 
-            <div className="flex items-end gap-2">
-              {/* Botão emoji */}
-              <button
-                onClick={() => setShowEmoji(e => !e)}
-                className="emoji-btn w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all text-lg"
-                style={showEmoji
-                  ? { background: '#2563eb20', border: '1px solid #2563eb50' }
-                  : { background: '#1c1c1c',   border: '1px solid #2a2a2a', color: '#555' }
-                }
-                title="Emojis"
-              >
-                😊
-              </button>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-end gap-2">
+                {/* Botão emoji */}
+                <button
+                  onClick={() => setShowEmoji(e => !e)}
+                  className="emoji-btn w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all text-lg"
+                  style={showEmoji
+                    ? { background: '#2563eb20', border: '1px solid #2563eb50' }
+                    : { background: '#1c1c1c',   border: '1px solid #2a2a2a', color: '#555' }
+                  }
+                  title="Emojis"
+                >
+                  😊
+                </button>
 
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Mensagem..."
-                rows={1}
-                className="flex-1 bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl px-3 py-2 text-[#f0f0f0] text-xs placeholder-[#444] outline-none resize-none focus:border-[#2563eb] transition-all"
-                style={{ maxHeight: 100, lineHeight: '1.4' }}
-                onInput={e => {
-                  e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px';
-                }}
-              />
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Mensagem..."
+                  rows={1}
+                  maxLength={100}
+                  className="flex-1 bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl px-3 py-2 text-[#f0f0f0] text-xs placeholder-[#444] outline-none resize-none focus:border-[#2563eb] transition-all"
+                  style={{ maxHeight: 100, lineHeight: '1.4' }}
+                  onInput={e => {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px';
+                  }}
+                />
 
-              {/* Botão enviar */}
-              <button
-                onClick={handleSend}
-                disabled={!input.trim()}
-                className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all"
-                style={input.trim()
-                  ? { background: '#2563eb', color: 'white' }
-                  : { background: '#1c1c1c', color: '#333', cursor: 'not-allowed' }
-                }
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"/>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
-              </button>
+                {/* Botão enviar */}
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl transition-all"
+                  style={input.trim()
+                    ? { background: '#2563eb', color: 'white' }
+                    : { background: '#1c1c1c', color: '#333', cursor: 'not-allowed' }
+                  }
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Contador de caracteres */}
+              {input.length > 0 && (
+                <div className="text-right pr-1">
+                  <span
+                    className="text-[10px] font-mono"
+                    style={{ color: input.length >= 90 ? '#ef4444' : '#444' }}
+                  >
+                    {input.length}/100
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '../services/api';
+import api    from '../services/api';
+import socket from '../services/socket';
 
 const AuthContext = createContext(null);
 
@@ -32,10 +33,25 @@ export function AuthProvider({ children }) {
     return () => clearInterval(interval);
   }, [fetchMe]);
 
+  // Conecta/desconecta o socket conforme o estado de autenticação
+  useEffect(() => {
+    if (loading) return; // aguarda a verificação inicial antes de decidir
+
+    const token = localStorage.getItem('auth_token');
+    if (user && token) {
+      // Passa o token para o middleware de autenticação do socket
+      socket.auth = { token };
+      if (!socket.connected) socket.connect();
+    } else {
+      if (socket.connected) socket.disconnect();
+    }
+  }, [user, loading]);
+
   const login = async (username, password) => {
     const res = await api.post('/api/auth/login', { username, password });
     localStorage.setItem('auth_token', res.data.token);
     setUser(res.data.user);
+    // socket será conectado pelo useEffect acima na próxima renderização
     return res.data.user;
   };
 
@@ -43,6 +59,7 @@ export function AuthProvider({ children }) {
     await api.post('/api/auth/logout');
     localStorage.removeItem('auth_token');
     setUser(null);
+    // socket será desconectado pelo useEffect acima
   };
 
   // Checa permissão — itadobras sempre tem tudo
