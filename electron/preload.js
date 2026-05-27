@@ -15,6 +15,7 @@ function onChannel(channel, cb) {
 contextBridge.exposeInMainWorld('electronAPI', {
   readClipboardImage:   () => ipcRenderer.invoke('clipboard:readImage'),
   notify:               () => ipcRenderer.invoke('notify'),
+  showNotification:     (title, body) => ipcRenderer.invoke('notify:show', { title, body }),
   checkForUpdates:      () => ipcRenderer.invoke('updater:check'),
   onUpdateChecking:     (cb) => onChannel('update:checking',      cb),
   onUpdateAvailable:    (cb) => onChannel('update:available',     cb),

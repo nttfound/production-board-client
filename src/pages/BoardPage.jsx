@@ -49,7 +49,15 @@ export default function BoardPage() {
     const onError      = (err) => { console.log('[WS] Erro de conexão:', err.message); setConnected(false); };
     const onCreated    = (card)     => setCards(prev => [card, ...prev]);
     const onUpdated    = (updated)  => {
-      setCards(prev => prev.map(c => c.id === updated.id ? updated : c));
+      setCards(prev => {
+        const prev_card = prev.find(c => c.id === updated.id);
+        if (updated.status === 'Ready' && prev_card?.status !== 'Ready') {
+          window.electronAPI?.showNotification?.('✅ Pronto', updated.title);
+        } else if (updated.status === 'Producing' && prev_card?.status !== 'Producing') {
+          window.electronAPI?.showNotification?.('⚡ Produzindo', updated.title);
+        }
+        return prev.map(c => c.id === updated.id ? updated : c);
+      });
       if (window.electronAPI?.notify) window.electronAPI.notify();
     };
     const onDeleted    = ({ id })   => {

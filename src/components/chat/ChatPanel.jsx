@@ -47,6 +47,8 @@ export default function ChatPanel() {
   const inputRef  = useRef(null);
   const openRef   = useRef(open);
   openRef.current = open;
+  const userRef   = useRef(user);
+  userRef.current = user;
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
@@ -67,7 +69,16 @@ export default function ChatPanel() {
   useEffect(() => {
     const onMessage    = (msg) => {
       setMessages(prev => [...prev, msg]);
-      if (!openRef.current) setUnread(n => n + 1);
+      if (!openRef.current) {
+        setUnread(n => n + 1);
+        // Notificação nativa só para mensagens de outros usuários
+        if (msg.username !== userRef.current?.username) {
+          window.electronAPI?.showNotification?.(
+            msg.display_name || msg.username,
+            msg.text || '📎 Arquivo'
+          );
+        }
+      }
     };
     const onCleared    = () => setMessages([]);
     const onConnect    = () => setSocketConnected(true);

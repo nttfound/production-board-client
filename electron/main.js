@@ -52,6 +52,8 @@ function createWindow() {
     e.preventDefault();
   });
 
+  mainWindow.setMenu(null);
+
   if (isDev) {
     mainWindow.loadURL('http://localhost:3001');
     mainWindow.webContents.openDevTools();
@@ -67,6 +69,14 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+
+  // Inicia junto com o Windows automaticamente (só no build, não em dev)
+  if (!isDev) {
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      openAsHidden: false,
+    });
+  }
 
   if (!isDev) {
     checkForUpdates();
@@ -113,6 +123,31 @@ autoUpdater.on('error', (err) => {
 // ── IPC: Updater ────────────────────────────────────────────
 ipcMain.handle('updater:check', () => {
   return checkForUpdates();
+});
+
+// ── IPC: Notificação nativa ───────────────────────────────────
+ipcMain.handle('notify:show', (_event, { title, body }) => {
+  // Só mostra se a janela não estiver em foco
+  if (mainWindow && mainWindow.isFocused()) return;
+
+  const { Notification } = require('electron');
+  if (!Notification.isSupported()) return;
+
+  const n = new Notification({
+    title,
+    body,
+    icon: path.join(__dirname, '../public/icon.png'),
+    silent: false,
+  });
+
+  n.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  n.show();
 });
 
 // ── IPC: Clipboard ──────────────────────────────────────────
