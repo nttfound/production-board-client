@@ -127,8 +127,7 @@ ipcMain.handle('updater:check', () => {
 
 // ── IPC: Notificação nativa ───────────────────────────────────
 ipcMain.handle('notify:show', (_event, { title, body }) => {
-  // Só mostra se a janela não estiver em foco
-  if (mainWindow && mainWindow.isFocused()) return;
+  // if (mainWindow && mainWindow.isFocused()) return; // TESTE — remover depois
 
   const { Notification } = require('electron');
   if (!Notification.isSupported()) return;
