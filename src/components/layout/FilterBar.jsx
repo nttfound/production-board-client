@@ -11,6 +11,17 @@ const SERVICOS = [
 
 const DIAS_CARGA = Object.entries(CARGA_POR_DIA);
 
+// Abreviações para exibir cidades no botão do dia
+const abreviar = (cidade) => {
+  const map = {
+    'Monte Alegre do Sul': 'M. Alegre',
+    'Aguas de Lindoia':    'Á. Lindoia',
+    'Monte Siao':          'M. Sião',
+    'Ouro Fino':           'O. Fino',
+  };
+  return map[cidade] || cidade;
+};
+
 export default function FilterBar({
   search,
   onSearch,
@@ -25,8 +36,8 @@ export default function FilterBar({
   filteredCount,
   showAudit,
   onToggleAudit,
-  filterCidades,
-  onFilterCidades,
+  filterDias,
+  onFilterDias,
   filterServicos,
   onFilterServicos,
 }) {
@@ -34,17 +45,8 @@ export default function FilterBar({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const advancedRef = useRef(null);
 
-  // Dia selecionado: null = nenhum, string = dia ativo
-  const diaAtivo = (() => {
-    if (filterCidades.length === 0) return null;
-    for (const [dia, cidades] of DIAS_CARGA) {
-      if (cidades.every(c => filterCidades.includes(c))) return dia;
-    }
-    return null;
-  })();
-
-  const totalAtivos = (diaAtivo ? 1 : 0) + filterServicos.length +
-    (filterCidades.includes(CIDADE_SEMPRE) ? 1 : 0);
+  const itapiraAtivo  = filterDias.includes('Itapira');
+  const totalAtivos   = filterDias.length + filterServicos.length;
 
   useEffect(() => {
     if (!showAdvanced) return;
@@ -56,27 +58,9 @@ export default function FilterBar({
     return () => document.removeEventListener('mousedown', handler);
   }, [showAdvanced]);
 
-  // Seleciona/deseleciona um dia inteiro
   const toggleDia = (dia) => {
-    const cidadesDoDia = CARGA_POR_DIA[dia] || [];
-    if (diaAtivo === dia) {
-      // Deseleciona o dia, mantém Itapira se estiver ativo
-      onFilterCidades(prev => prev.filter(c => !cidadesDoDia.includes(c)));
-    } else {
-      // Seleciona o dia (substitui qualquer dia anterior, mantém Itapira)
-      onFilterCidades(prev => {
-        const semOutrosDias = prev.filter(c => c === CIDADE_SEMPRE);
-        return [...semOutrosDias, ...cidadesDoDia];
-      });
-    }
-  };
-
-  // Seleciona/deseleciona Itapira (sempre disponível)
-  const toggleItapira = () => {
-    onFilterCidades(prev =>
-      prev.includes(CIDADE_SEMPRE)
-        ? prev.filter(c => c !== CIDADE_SEMPRE)
-        : [...prev, CIDADE_SEMPRE]
+    onFilterDias(prev =>
+      prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]
     );
   };
 
@@ -87,17 +71,15 @@ export default function FilterBar({
   };
 
   const limparAvancado = () => {
-    onFilterCidades([]);
+    onFilterDias([]);
     onFilterServicos([]);
   };
-
-  // Label do chip do dia ativo
-  const chipDiaLabel = diaAtivo;
 
   return (
     <div className="flex flex-col gap-3 px-6 py-4 border-b border-[#1c1c1c] flex-shrink-0">
       <div className="flex items-center gap-3">
-        {/* Campo de busca */}
+
+        {/* Busca */}
         <div className="relative max-w-sm flex-1 z-10">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -111,7 +93,7 @@ export default function FilterBar({
           />
         </div>
 
-        {/* Botão Selecionar */}
+        {/* Selecionar */}
         {can('selecionar') && (
           <button
             onClick={onToggleSelectionMode}
@@ -122,11 +104,10 @@ export default function FilterBar({
             }
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              {selectionMode ? (
-                <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-              ) : (
-                <><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>
-              )}
+              {selectionMode
+                ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
+                : <><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>
+              }
             </svg>
             {selectionMode ? 'Cancelar' : 'Selecionar'}
           </button>
@@ -134,13 +115,13 @@ export default function FilterBar({
 
         <div className="flex-1" />
 
-        {/* Botão Filtro Avançado */}
+        {/* Filtro avançado */}
         <div className="relative flex-shrink-0" ref={advancedRef}>
           <button
             onClick={() => setShowAdvanced(p => !p)}
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all"
             style={showAdvanced || totalAtivos > 0
-              ? { background: '#7c3aed20', color: '#7c3aed', border: '1px solid #7c3aed50' }
+              ? { background: '#7c3aed20', color: '#a78bfa', border: '1px solid #7c3aed50' }
               : { background: 'transparent', color: '#555', border: '1px solid #2a2a2a' }
             }
           >
@@ -161,45 +142,67 @@ export default function FilterBar({
           {/* Dropdown */}
           {showAdvanced && (
             <div
-              className="absolute right-0 top-full mt-2 z-50 rounded-2xl border border-[#2a2a2a] shadow-2xl overflow-hidden"
-              style={{ width: '300px', background: '#111111' }}
+              className="absolute right-0 top-full mt-2 z-50 rounded-2xl border border-[#222] shadow-2xl"
+              style={{ width: '320px', background: '#0f0f0f' }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#1c1c1c]">
-                <p className="text-[#f0f0f0] text-xs font-semibold">Filtros avancados</p>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a]">
+                <span className="text-[#888] text-[11px] font-semibold uppercase tracking-widest">Filtros</span>
                 {totalAtivos > 0 && (
-                  <button onClick={limparAvancado} className="text-[10px] text-[#555] hover:text-[#ef4444] transition-colors">
+                  <button
+                    onClick={limparAvancado}
+                    className="text-[11px] text-[#555] hover:text-[#ef4444] transition-colors flex items-center gap-1"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
                     Limpar tudo
                   </button>
                 )}
               </div>
 
-              {/* Dias de carga — seleção direta */}
-              <div className="px-4 py-3">
-                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-2 font-medium">Dia de carga</p>
-                <div className="flex flex-col gap-1.5">
+              {/* Dias */}
+              <div className="p-3">
+                <p className="text-[#3a3a3a] text-[10px] uppercase tracking-widest mb-2.5 px-1 font-semibold">Dia de carga</p>
+                <div className="grid grid-cols-1 gap-1.5">
                   {DIAS_CARGA.map(([dia, cidades]) => {
-                    const ativo = diaAtivo === dia;
+                    const ativo = filterDias.includes(dia);
                     return (
                       <button
                         key={dia}
                         onClick={() => toggleDia(dia)}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left"
                         style={ativo
-                          ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
-                          : { background: '#1c1c1c', color: '#666', border: '1px solid #222' }
+                          ? { background: `${CARGA_COLOR}18`, border: `1px solid ${CARGA_COLOR}60` }
+                          : { background: '#161616', border: '1px solid #1e1e1e' }
                         }
                       >
-                        <div className="flex items-center gap-2">
+                        {/* Checkbox visual */}
+                        <div
+                          className="w-4 h-4 rounded-[5px] flex items-center justify-center flex-shrink-0 transition-all"
+                          style={ativo
+                            ? { background: CARGA_COLOR, border: `1.5px solid ${CARGA_COLOR}` }
+                            : { background: 'transparent', border: '1.5px solid #333' }
+                          }
+                        >
                           {ativo && (
-                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12"/>
                             </svg>
                           )}
-                          <span className="font-semibold uppercase tracking-wider">{dia}</span>
                         </div>
-                        <span style={{ color: ativo ? CARGA_COLOR : '#444', opacity: 0.8 }}>
-                          {cidades.join(', ')}
+
+                        {/* Nome do dia */}
+                        <span
+                          className="text-[12px] font-semibold w-14 flex-shrink-0"
+                          style={{ color: ativo ? CARGA_COLOR : '#666' }}
+                        >
+                          {dia}
+                        </span>
+
+                        {/* Cidades */}
+                        <span className="text-[10px] truncate" style={{ color: ativo ? '#6aafbf' : '#383838' }}>
+                          {cidades.map(abreviar).join(' · ')}
                         </span>
                       </button>
                     );
@@ -207,59 +210,75 @@ export default function FilterBar({
                 </div>
               </div>
 
-              <div style={{ height: 1, background: '#1c1c1c', margin: '0 16px' }} />
+              <div style={{ height: 1, background: '#1a1a1a', margin: '0 12px' }} />
 
-              {/* Itapira — sempre disponível */}
-              <div className="px-4 py-3">
-                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-2 font-medium">Sempre disponível</p>
+              {/* Itapira */}
+              <div className="p-3">
+                <p className="text-[#3a3a3a] text-[10px] uppercase tracking-widest mb-2.5 px-1 font-semibold">Sempre disponível</p>
                 <button
-                  onClick={toggleItapira}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all w-full"
-                  style={filterCidades.includes(CIDADE_SEMPRE)
-                    ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
-                    : { background: '#1c1c1c', color: '#8a8a8a', border: '1px solid #2a2a2a' }
+                  onClick={() => toggleDia('Itapira')}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left"
+                  style={itapiraAtivo
+                    ? { background: `${CARGA_COLOR}18`, border: `1px solid ${CARGA_COLOR}60` }
+                    : { background: '#161616', border: '1px solid #1e1e1e' }
                   }
                 >
-                  {filterCidades.includes(CIDADE_SEMPRE) && (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  )}
-                  {CIDADE_SEMPRE}
+                  <div
+                    className="w-4 h-4 rounded-[5px] flex items-center justify-center flex-shrink-0 transition-all"
+                    style={itapiraAtivo
+                      ? { background: CARGA_COLOR, border: `1.5px solid ${CARGA_COLOR}` }
+                      : { background: 'transparent', border: '1.5px solid #333' }
+                    }
+                  >
+                    {itapiraAtivo && (
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-[12px] font-semibold" style={{ color: itapiraAtivo ? CARGA_COLOR : '#666' }}>
+                    {CIDADE_SEMPRE}
+                  </span>
+                  <span className="text-[10px]" style={{ color: itapiraAtivo ? '#6aafbf' : '#383838' }}>
+                    disponível todos os dias
+                  </span>
                 </button>
               </div>
 
-              <div style={{ height: 1, background: '#1c1c1c' }} />
+              <div style={{ height: 1, background: '#1a1a1a', margin: '0 12px' }} />
 
               {/* Serviços */}
-              <div className="px-4 py-3">
-                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-2.5 font-medium">Serviços</p>
+              <div className="p-3">
+                <p className="text-[#3a3a3a] text-[10px] uppercase tracking-widest mb-2.5 px-1 font-semibold">Serviços</p>
                 <div className="flex gap-2">
-                  {SERVICOS.map(s => (
-                    <button
-                      key={s.key}
-                      onClick={() => toggleServico(s.key)}
-                      className="flex-1 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5"
-                      style={filterServicos.includes(s.key)
-                        ? { background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}50` }
-                        : { background: '#1c1c1c', color: '#666', border: '1px solid #222' }
-                      }
-                    >
-                      {filterServicos.includes(s.key) && (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      )}
-                      {s.label}
-                    </button>
-                  ))}
+                  {SERVICOS.map(s => {
+                    const ativo = filterServicos.includes(s.key);
+                    return (
+                      <button
+                        key={s.key}
+                        onClick={() => toggleServico(s.key)}
+                        className="flex-1 py-2.5 rounded-xl text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5"
+                        style={ativo
+                          ? { background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}60` }
+                          : { background: '#161616', color: '#555', border: '1px solid #1e1e1e' }
+                        }
+                      >
+                        {ativo && (
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        )}
+                        {s.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Botão Registro */}
+        {/* Registro */}
         {can('ver_registro') && (
           <button
             onClick={onToggleAudit}
@@ -281,6 +300,7 @@ export default function FilterBar({
         )}
       </div>
 
+      {/* Barra de status / chips */}
       <div className="flex items-center gap-2 flex-wrap">
         {selectionMode ? (
           <>
@@ -343,46 +363,33 @@ export default function FilterBar({
               Carga
             </button>
 
-            {/* Chip do dia ativo */}
-            {chipDiaLabel && (
+            {/* Chips dos dias ativos */}
+            {filterDias.map(dia => (
               <span
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-80"
+                key={dia}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-75"
                 style={{ background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}40` }}
-                onClick={() => toggleDia(chipDiaLabel)}
+                onClick={() => toggleDia(dia)}
               >
-                {chipDiaLabel}
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                {dia}
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </span>
-            )}
+            ))}
 
-            {/* Chip Itapira se ativo */}
-            {filterCidades.includes(CIDADE_SEMPRE) && (
-              <span
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-80"
-                style={{ background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}40` }}
-                onClick={toggleItapira}
-              >
-                {CIDADE_SEMPRE}
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </span>
-            )}
-
-            {/* Chips de serviços */}
+            {/* Chips serviços */}
             {filterServicos.map(key => {
               const s = SERVICOS.find(s => s.key === key);
               return (
                 <span
                   key={key}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-80"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-75"
                   style={{ background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}40` }}
                   onClick={() => toggleServico(key)}
                 >
                   {s.label}
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
                 </span>

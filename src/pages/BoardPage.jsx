@@ -17,7 +17,7 @@ import ProductionCard from '../components/cards/ProductionCard';
 import NewCardModal   from '../components/cards/NewCardModal';
 import BulkActionBar  from '../components/cards/BulkActionBar';
 import AuditPanel     from '../components/cards/AuditPanel';
-import { cargaAtivaAgora } from '../services/cargaConfig';
+import { cargaAtivaAgora, CARGA_POR_DIA } from '../services/cargaConfig';
 import ChatPanel from '../components/chat/ChatPanel';
 
 const PAGE_LIMIT = 50;
@@ -44,7 +44,7 @@ export default function BoardPage() {
   const [showAudit,      setShowAudit]      = useState(false);
 
   // ── Filtros avançados ────────────────────────────────────
-  const [filterCidades,  setFilterCidades]  = useState([]);
+  const [filterDias,     setFilterDias]     = useState([]);
   const [filterServicos, setFilterServicos] = useState([]);
 
   // ── Carga inicial (página 1) ─────────────────────────────
@@ -183,13 +183,24 @@ export default function BoardPage() {
         || c.carga?.toLowerCase().includes(q);
 
       let matchCidade = true;
-      if (filterCidades.length > 0) {
+      if (filterDias.length > 0) {
+        // Extrai cidade do card
         const cidadeCard = c.carga === 'Itapira'
           ? 'Itapira'
           : c.carga?.startsWith('CARGA - ')
             ? c.carga.replace('CARGA - ', '')
             : null;
-        matchCidade = cidadeCard !== null && filterCidades.includes(cidadeCard);
+        if (!cidadeCard) {
+          matchCidade = false;
+        } else if (cidadeCard === 'Itapira') {
+          matchCidade = filterDias.includes('Itapira');
+        } else {
+          // Verifica se algum dia selecionado contém essa cidade
+          matchCidade = filterDias.some(dia => {
+            const cidades = CARGA_POR_DIA[dia] || [];
+            return cidades.includes(cidadeCard);
+          });
+        }
       }
 
       let matchServico = true;
@@ -207,7 +218,7 @@ export default function BoardPage() {
       if (a.urgente !== b.urgente) return b.urgente ? 1 : -1;
       return new Date(b.created_at) - new Date(a.created_at);
     });
-  }, [cards, search, filterStatus, filterCidades, filterServicos]);
+  }, [cards, search, filterStatus, filterDias, filterServicos]);
 
   // ── Handlers de seleção ───────────────────────────────────
   const toggleSelectionMode = () => {
@@ -280,8 +291,8 @@ export default function BoardPage() {
         filteredCount={sorted.length}
         showAudit={showAudit}
         onToggleAudit={() => setShowAudit(prev => !prev)}
-        filterCidades={filterCidades}
-        onFilterCidades={setFilterCidades}
+        filterDias={filterDias}
+        onFilterDias={setFilterDias}
         filterServicos={filterServicos}
         onFilterServicos={setFilterServicos}
       />
