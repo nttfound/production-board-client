@@ -1,9 +1,14 @@
 /**
  * client/src/pages/BoardPage.jsx
  * Main production board — card grid with real-time updates + bulk selection + audit panel.
+ *
+ * Estratégia de carregamento:
+ *  - Primeira carga: GET /api/cards?page=1&limit=50
+ *  - Infinite scroll: ao chegar perto do fim da lista, carrega próxima página
+ *  - Socket.IO: novos cards são adicionados no topo sem resetar a paginação
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api            from '../services/api';
 import socket         from '../services/socket';
 import TopBar         from '../components/layout/TopBar';
@@ -15,6 +20,8 @@ import AuditPanel     from '../components/cards/AuditPanel';
 import { cargaAtivaAgora } from '../services/cargaConfig';
 import ChatPanel from '../components/chat/ChatPanel';
 
+const PAGE_LIMIT = 50;
+
 export default function BoardPage() {
   const [cards,          setCards]          = useState([]);
   const [search,         setSearch]         = useState('');
@@ -22,6 +29,12 @@ export default function BoardPage() {
   const [showNewModal,   setShowNewModal]   = useState(false);
   const [connected,      setConnected]      = useState(false);
   const [loading,        setLoading]        = useState(true);
+
+  // ── Paginação ─────────────────────────────────────────────
+  const [page,           setPage]           = useState(1);
+  const [hasMore,        setHasMore]        = useState(false);
+  const [loadingMore,    setLoadingMore]    = useState(false);
+  const loaderRef = useRef(null);   // sentinel element para IntersectionObserver
 
   // ── Seleção múltipla ─────────────────────────────────────
   const [selectionMode,  setSelectionMode]  = useState(false);
@@ -34,21 +47,68 @@ export default function BoardPage() {
   const [filterCidades,  setFilterCidades]  = useState([]);
   const [filterServicos, setFilterServicos] = useState([]);
 
-  // ── Load all cards on mount ──────────────────────────────
+  // ── Carga inicial (página 1) ─────────────────────────────
   useEffect(() => {
-    api.get('/api/cards')
-      .then(res => setCards(res.data))
+    api.get('/api/cards', { params: { page: 1, limit: PAGE_LIMIT } })
+      .then(res => {
+        setCards(res.data.data);
+        setHasMore(res.data.hasMore);
+        setPage(1);
+      })
       .catch(err => console.error('[BOARD] Failed to load cards:', err))
       .finally(() => setLoading(false));
   }, []);
+
+  // ── Carrega próxima página ────────────────────────────────
+  const loadNextPage = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const res = await api.get('/api/cards', { params: { page: nextPage, limit: PAGE_LIMIT } });
+      setCards(prev => {
+        // Evita duplicatas que podem chegar via socket entre páginas
+        const existingIds = new Set(prev.map(c => c.id));
+        const newCards = res.data.data.filter(c => !existingIds.has(c.id));
+        return [...prev, ...newCards];
+      });
+      setHasMore(res.data.hasMore);
+      setPage(nextPage);
+    } catch (err) {
+      console.error('[BOARD] Failed to load next page:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [page, hasMore, loadingMore]);
+
+  // ── IntersectionObserver — dispara loadNextPage ──────────
+  useEffect(() => {
+    const sentinel = loaderRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadNextPage(); },
+      { rootMargin: '200px' },  // começa a carregar 200px antes do fim
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadNextPage]);
 
   // ── Socket.IO real-time events ───────────────────────────
   useEffect(() => {
     const onConnect    = () => setConnected(true);
     const onDisconnect = () => setConnected(false);
     const onError      = (err) => { console.log('[WS] Erro de conexão:', err.message); setConnected(false); };
-    const onCreated    = (card)     => setCards(prev => [card, ...prev]);
-    const onUpdated    = (updated)  => {
+
+    const onCreated = (card) => {
+      // Novo card sempre vai para o topo; não altera paginação
+      setCards(prev => {
+        if (prev.some(c => c.id === card.id)) return prev; // idempotente
+        return [card, ...prev];
+      });
+    };
+
+    const onUpdated = (updated) => {
       setCards(prev => {
         const prev_card = prev.find(c => c.id === updated.id);
         if (updated.status === 'Ready' && prev_card?.status !== 'Ready') {
@@ -58,11 +118,14 @@ export default function BoardPage() {
         } else if (updated.urgente && !prev_card?.urgente) {
           window.electronAPI?.showNotification?.('urgent', updated.title, 'Card marcado como Urgente');
         }
+        // Se o card ainda não foi carregado (está em página futura), ignora
+        if (!prev_card) return prev;
         return prev.map(c => c.id === updated.id ? updated : c);
       });
       if (window.electronAPI?.notify) window.electronAPI.notify();
     };
-    const onDeleted    = ({ id })   => {
+
+    const onDeleted = ({ id }) => {
       setCards(prev => prev.filter(c => c.id !== id));
       setSelectedIds(prev => { const s = new Set(prev); s.delete(id); return s; });
     };
@@ -103,53 +166,48 @@ export default function BoardPage() {
     }
   }, []);
 
-  // ── Filtering ─────────────────────────────────────────────
-  const filtered = cards.filter(c => {
-    // Filtro de status principal
-    let matchStatus;
-    if (filterStatus === 'all') matchStatus = true;
-    else if (filterStatus === 'urgente') matchStatus = c.urgente === true;
-    else if (filterStatus === 'carga') matchStatus = cargaAtivaAgora(c.carga) && c.carga !== 'Itapira';
-    else matchStatus = c.status === filterStatus;
+  // ── Filtering + Sorting com useMemo ──────────────────────
+  const sorted = useMemo(() => {
+    const filtered = cards.filter(c => {
+      let matchStatus;
+      if (filterStatus === 'all') matchStatus = true;
+      else if (filterStatus === 'urgente') matchStatus = c.urgente === true;
+      else if (filterStatus === 'carga') matchStatus = cargaAtivaAgora(c.carga) && c.carga !== 'Itapira';
+      else matchStatus = c.status === filterStatus;
 
-    // Filtro de busca
-    const q = search.toLowerCase();
-    const matchSearch = !q
-      || c.title.toLowerCase().includes(q)
-      || c.observation?.toLowerCase().includes(q)
-      || c.created_by.toLowerCase().includes(q) || c.carga?.toLowerCase().includes(q);
+      const q = search.toLowerCase();
+      const matchSearch = !q
+        || c.title.toLowerCase().includes(q)
+        || c.observation?.toLowerCase().includes(q)
+        || c.created_by.toLowerCase().includes(q)
+        || c.carga?.toLowerCase().includes(q);
 
-    // Filtro avançado: cidades (independente do dia/hora)
-    let matchCidade = true;
-    if (filterCidades.length > 0) {
-      const cidadeCard = c.carga === 'Itapira'
-        ? 'Itapira'
-        : c.carga?.startsWith('CARGA - ')
-          ? c.carga.replace('CARGA - ', '')
-          : null;
-      matchCidade = cidadeCard !== null && filterCidades.includes(cidadeCard);
-    }
+      let matchCidade = true;
+      if (filterCidades.length > 0) {
+        const cidadeCard = c.carga === 'Itapira'
+          ? 'Itapira'
+          : c.carga?.startsWith('CARGA - ')
+            ? c.carga.replace('CARGA - ', '')
+            : null;
+        matchCidade = cidadeCard !== null && filterCidades.includes(cidadeCard);
+      }
 
-    // Filtro avançado: serviços (OU — basta ter um)
-    let matchServico = true;
-    if (filterServicos.length > 0) {
-      matchServico = filterServicos.some(s => c[s] === true);
-    }
+      let matchServico = true;
+      if (filterServicos.length > 0) {
+        matchServico = filterServicos.some(s => c[s] === true);
+      }
 
-    return matchStatus && matchSearch && matchCidade && matchServico;
-  });
+      return matchStatus && matchSearch && matchCidade && matchServico;
+    });
 
-  // ── Sorting ───────────────────────────────────────────────
-const sorted = [...filtered].sort((a, b) => {
-  // Ready sempre vai para o final
-  const aReady = a.status === 'Ready' ? 1 : 0;
-  const bReady = b.status === 'Ready' ? 1 : 0;
-  if (aReady !== bReady) return aReady - bReady;
-  // Urgente sobe para o topo
-  if (a.urgente !== b.urgente) return b.urgente ? 1 : -1;
-  // Padrão: mais novo primeiro
-  return new Date(b.created_at) - new Date(a.created_at);
-});
+    return [...filtered].sort((a, b) => {
+      const aReady = a.status === 'Ready' ? 1 : 0;
+      const bReady = b.status === 'Ready' ? 1 : 0;
+      if (aReady !== bReady) return aReady - bReady;
+      if (a.urgente !== b.urgente) return b.urgente ? 1 : -1;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+  }, [cards, search, filterStatus, filterCidades, filterServicos]);
 
   // ── Handlers de seleção ───────────────────────────────────
   const toggleSelectionMode = () => {
@@ -172,34 +230,36 @@ const sorted = [...filtered].sort((a, b) => {
   // ── Ações em massa ────────────────────────────────────────
   const bulkApplyTag = useCallback(async (tagKey, value) => {
     const ids = [...selectedIds];
-    let endpoint;
-    if (tagKey === 'urgente') {
-      endpoint = (id) => api.patch(`/api/cards/${id}/urgente`, { urgente: value });
-    } else {
-      endpoint = async (id) => {
-        const card = cards.find(c => c.id === id);
-        if (!card) return;
-        const payload = {
-          corte:       card.corte       || false,
-          dobra:       card.dobra       || false,
-          mao_de_obra: card.mao_de_obra || false,
-          calandra:    card.calandra    || false,
-          [tagKey]:    value,
-        };
-        return api.patch(`/api/cards/${id}/servicos`, payload);
-      };
+    if (!ids.length) return;
+    try {
+      if (tagKey === 'urgente') {
+        await api.patch('/api/cards/bulk/urgente', { ids, urgente: value });
+      } else {
+        await api.patch('/api/cards/bulk/servicos', { ids, tagKey, value });
+      }
+    } catch (err) {
+      console.error('[BOARD] Bulk tag failed:', err);
     }
-    await Promise.allSettled(ids.map(id => endpoint(id)));
-  }, [selectedIds, cards]);
+  }, [selectedIds]);
 
   const bulkApplyStatus = useCallback(async (status) => {
     const ids = [...selectedIds];
-    await Promise.allSettled(ids.map(id => api.patch(`/api/cards/${id}/status`, { status })));
+    if (!ids.length) return;
+    try {
+      await api.patch('/api/cards/bulk/status', { ids, status });
+    } catch (err) {
+      console.error('[BOARD] Bulk status failed:', err);
+    }
   }, [selectedIds]);
 
   const bulkApplyCarga = useCallback(async (carga) => {
     const ids = [...selectedIds];
-    await Promise.allSettled(ids.map(id => api.patch(`/api/cards/${id}/carga`, { carga })));
+    if (!ids.length) return;
+    try {
+      await api.patch('/api/cards/bulk/carga', { ids, carga });
+    } catch (err) {
+      console.error('[BOARD] Bulk carga failed:', err);
+    }
   }, [selectedIds]);
 
   return (
@@ -246,25 +306,37 @@ const sorted = [...filtered].sort((a, b) => {
             </div>
           </div>
         ) : (
-          <div
-            className="grid gap-4"
-            style={{
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              paddingBottom: selectionMode ? '5rem' : '0',
-            }}
-          >
-            {sorted.map(card => (
-              <ProductionCard
-                key={card.id}
-                card={card}
-                onStatusChange={handleStatusChange}
-                onDelete={handleDelete}
-                selectionMode={selectionMode}
-                selected={selectedIds.has(card.id)}
-                onToggleSelect={toggleSelect}
-              />
-            ))}
-          </div>
+          <>
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                paddingBottom: selectionMode ? '5rem' : '0',
+              }}
+            >
+              {sorted.map(card => (
+                <ProductionCard
+                  key={card.id}
+                  card={card}
+                  onStatusChange={handleStatusChange}
+                  onDelete={handleDelete}
+                  selectionMode={selectionMode}
+                  selected={selectedIds.has(card.id)}
+                  onToggleSelect={toggleSelect}
+                />
+              ))}
+            </div>
+
+            {/* Sentinel + indicador de carregamento */}
+            <div ref={loaderRef} className="flex justify-center py-6">
+              {loadingMore && (
+                <div className="flex items-center gap-2 text-[#555] text-sm">
+                  <div className="w-4 h-4 border-2 border-[#2a2a2a] border-t-[#3b82f6] rounded-full animate-spin" />
+                  Carregando mais...
+                </div>
+              )}
+            </div>
+          </>
         )}
       </main>
 

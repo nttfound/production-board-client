@@ -12,10 +12,40 @@ autoUpdater.autoInstallOnAppQuit = true;
 autoUpdater.allowPrerelease = false;
 autoUpdater.allowDowngrade = false;
 
-function sendUpdateStatus(channel, payload = {}) {
+// Badge pré-gerado uma única vez — evita recalcular pixels a cada notificação
+let cachedBadge = null;
+function getBadgeIcon() {
+  if (cachedBadge) return cachedBadge;
+  const size   = 32;
+  const buffer = Buffer.alloc(size * size * 4);
+  const cx = size / 2 - 0.5;
+  const cy = size / 2 - 0.5;
+  const r  = size / 2 - 2;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const idx  = (y * size + x) * 4;
+      const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+      if (dist <= r) {
+        buffer[idx] = 220; buffer[idx + 1] = 38; buffer[idx + 2] = 38; buffer[idx + 3] = 255;
+      } else if (dist <= r + 1.5) {
+        const alpha = Math.round((r + 1.5 - dist) * 170);
+        buffer[idx] = 220; buffer[idx + 1] = 38; buffer[idx + 2] = 38; buffer[idx + 3] = alpha;
+      } else {
+        buffer[idx + 3] = 0;
+      }
+    }
+  }
+  cachedBadge = nativeImage.createFromBuffer(buffer, { width: size, height: size });
+  return cachedBadge;
+}
+
+  function sendUpdateStatus(channel, payload = {}) {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.webContents.send(channel, payload);
+  }
+
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.webContents.send(channel, payload);
-}
 
 function checkForUpdates() {
   if (isDev) {
@@ -205,36 +235,7 @@ ipcMain.handle('notify', () => {
   if (!mainWindow || mainWindow.isFocused()) return;
   badgeCount++;
   try {
-    const size = 32;
-    const buffer = Buffer.alloc(size * size * 4);
-    const cx = size / 2 - 0.5;
-    const cy = size / 2 - 0.5;
-    const r  = size / 2 - 2;
-
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const idx  = (y * size + x) * 4;
-        const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
-        if (dist <= r) {
-          buffer[idx]     = 220;
-          buffer[idx + 1] = 38;
-          buffer[idx + 2] = 38;
-          buffer[idx + 3] = 255;
-        } else if (dist <= r + 1.5) {
-          // borda suave anti-aliasing
-          const alpha = Math.round((r + 1.5 - dist) * 170);
-          buffer[idx]     = 220;
-          buffer[idx + 1] = 38;
-          buffer[idx + 2] = 38;
-          buffer[idx + 3] = alpha;
-        } else {
-          buffer[idx + 3] = 0;
-        }
-      }
-    }
-
-    const badge = nativeImage.createFromBuffer(buffer, { width: size, height: size });
-    mainWindow.setOverlayIcon(badge, `${badgeCount} atualizacao`);
+    mainWindow.setOverlayIcon(getBadgeIcon(), `${badgeCount} atualizacao`);
   } catch (e) {
     console.error('[BADGE] Erro:', e.message);
   }

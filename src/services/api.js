@@ -1,14 +1,12 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
-  timeout: 15000,
+  baseURL:         process.env.REACT_APP_API_URL || 'http://localhost:3000',
+  timeout:         15000,
+  withCredentials: true, // envia o cookie httpOnly automaticamente em toda request
 });
 
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('auth_token');
-  if (token) config.headers['x-auth-token'] = token;
-  return config;
-});
+// Interceptor de token removido — não há mais localStorage.
+// O cookie auth_token vai automaticamente pelo browser.
 
 export default api;

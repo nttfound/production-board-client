@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import api    from '../services/api';
 import socket from '../services/socket';
 
@@ -8,58 +8,60 @@ export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Token em memória — nunca em localStorage.
+  // Sobrevive a re-renders mas some se a página fechar (XSS não consegue ler).
+  const socketTokenRef = useRef(null);
+
   const fetchMe = useCallback(async () => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) { setUser(null); setLoading(false); return; }
     try {
+      // Cookie httpOnly vai automaticamente — não precisa passar token manualmente
       const res = await api.get('/api/auth/me');
       setUser(res.data.user);
     } catch {
-      localStorage.removeItem('auth_token');
       setUser(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Carrega na inicialização
+  // Verifica sessão na inicialização (cookie enviado automaticamente)
   useEffect(() => { fetchMe(); }, [fetchMe]);
 
   // Revalida permissões a cada 30 segundos
   useEffect(() => {
     const interval = setInterval(() => {
-      if (localStorage.getItem('auth_token')) fetchMe();
+      if (user) fetchMe();
     }, 30_000);
     return () => clearInterval(interval);
-  }, [fetchMe]);
+  }, [fetchMe, user]);
 
-  // Conecta/desconecta o socket conforme o estado de autenticação
+  // Conecta/desconecta o socket conforme autenticação
   useEffect(() => {
-    if (loading) return; // aguarda a verificação inicial antes de decidir
+    if (loading) return;
 
-    const token = localStorage.getItem('auth_token');
-    if (user && token) {
-      // Passa o token para o middleware de autenticação do socket
-      socket.auth = { token };
+    if (user && socketTokenRef.current) {
+      socket.auth = { token: socketTokenRef.current };
       if (!socket.connected) socket.connect();
-    } else {
+    } else if (!user) {
+      socketTokenRef.current = null;
       if (socket.connected) socket.disconnect();
     }
   }, [user, loading]);
 
   const login = async (username, password) => {
     const res = await api.post('/api/auth/login', { username, password });
-    localStorage.setItem('auth_token', res.data.token);
+    // Servidor setou o cookie httpOnly automaticamente na resposta
+    // Guardamos o token em memória APENAS para o Socket.IO
+    socketTokenRef.current = res.data.token;
     setUser(res.data.user);
-    // socket será conectado pelo useEffect acima na próxima renderização
     return res.data.user;
   };
 
   const logout = async () => {
-    await api.post('/api/auth/logout');
-    localStorage.removeItem('auth_token');
+    try { await api.post('/api/auth/logout'); } catch { /* ignora erro de rede */ }
+    socketTokenRef.current = null;
     setUser(null);
-    // socket será desconectado pelo useEffect acima
+    // api.post('/logout') já limpou o cookie no servidor via res.clearCookie
   };
 
   // Checa permissão — itadobras sempre tem tudo
