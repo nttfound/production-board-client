@@ -39,13 +39,10 @@ function getBadgeIcon() {
   return cachedBadge;
 }
 
-  function sendUpdateStatus(channel, payload = {}) {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    mainWindow.webContents.send(channel, payload);
-  }
-
+function sendUpdateStatus(channel, payload = {}) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.webContents.send(channel, payload);
+}
 
 function checkForUpdates() {
   if (isDev) {
