@@ -125,27 +125,70 @@ ipcMain.handle('updater:check', () => {
   return checkForUpdates();
 });
 
-// ── IPC: Notificação nativa ───────────────────────────────────
-ipcMain.handle('notify:show', (_event, { title, body }) => {
+// ── Toast notifications ────────────────────────────────────────────
+const TOAST_WIDTH  = 336;
+const TOAST_HEIGHT = 90;
+const TOAST_MARGIN = 12;
+const toastWindows = [];
+
+function createToast({ type = 'card', title = '', body = '', duration = 5000 }) {
   if (mainWindow && mainWindow.isFocused()) return;
-  const { Notification } = require('electron');
-  if (!Notification.isSupported()) return;
 
-  const n = new Notification({
-    title,
-    body,
-    icon: path.join(__dirname, '../public/icon.png'),
-    silent: false,
+  const { screen } = require('electron');
+  const display    = screen.getPrimaryDisplay();
+  const { width: sw, height: sh } = display.workAreaSize;
+
+  const stackOffset = toastWindows.length * (TOAST_HEIGHT + TOAST_MARGIN);
+  const x = sw - TOAST_WIDTH  - TOAST_MARGIN;
+  const y = sh - TOAST_HEIGHT - TOAST_MARGIN - stackOffset;
+
+  const win = new BrowserWindow({
+    width:       TOAST_WIDTH,
+    height:      TOAST_HEIGHT,
+    x,
+    y,
+    frame:       false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable:   false,
+    focusable:   false,
+    hasShadow:   false,
+    webPreferences: {
+      preload:          path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration:  false,
+    },
   });
 
-  n.on('click', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-    }
+  const params = new URLSearchParams({ type, title, body, duration });
+  win.loadFile(path.join(__dirname, 'toast.html'), { search: params.toString() });
+
+  toastWindows.push(win);
+
+  win.on('closed', () => {
+    const idx = toastWindows.indexOf(win);
+    if (idx !== -1) toastWindows.splice(idx, 1);
+    toastWindows.forEach((w, i) => {
+      if (!w.isDestroyed()) {
+        const ny = sh - TOAST_HEIGHT - TOAST_MARGIN - i * (TOAST_HEIGHT + TOAST_MARGIN);
+        w.setPosition(x, ny);
+      }
+    });
   });
 
-  n.show();
+  setTimeout(() => { if (!win.isDestroyed()) win.close(); }, duration + 400);
+}
+
+ipcMain.handle('notify:show', (_event, { type, title, body, duration }) => {
+  createToast({ type, title, body, duration });
+});
+
+ipcMain.handle('notify:focus', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
 });
 
 // ── IPC: Clipboard ──────────────────────────────────────────

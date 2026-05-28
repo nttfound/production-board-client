@@ -74,8 +74,9 @@ export default function ChatPanel() {
         // Notificação nativa só para mensagens de outros usuários
         if (msg.username !== userRef.current?.username) {
           window.electronAPI?.showNotification?.(
+            'chat',
             msg.display_name || msg.username,
-            msg.text || '📎 Arquivo'
+            msg.text || 'Arquivo'
           );
         }
       }

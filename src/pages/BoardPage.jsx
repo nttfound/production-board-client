@@ -52,9 +52,11 @@ export default function BoardPage() {
       setCards(prev => {
         const prev_card = prev.find(c => c.id === updated.id);
         if (updated.status === 'Ready' && prev_card?.status !== 'Ready') {
-          window.electronAPI?.showNotification?.('✅ Pronto', updated.title);
+          window.electronAPI?.showNotification?.('card', updated.title, 'Card marcado como Pronto');
         } else if (updated.status === 'Producing' && prev_card?.status !== 'Producing') {
-          window.electronAPI?.showNotification?.('⚡ Produzindo', updated.title);
+          window.electronAPI?.showNotification?.('card', updated.title, 'Entrou em produção');
+        } else if (updated.urgente && !prev_card?.urgente) {
+          window.electronAPI?.showNotification?.('urgent', updated.title, 'Card marcado como Urgente');
         }
         return prev.map(c => c.id === updated.id ? updated : c);
       });
