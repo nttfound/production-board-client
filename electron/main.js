@@ -127,12 +127,12 @@ ipcMain.handle('updater:check', () => {
 
 // ── Toast notifications ────────────────────────────────────────────
 const TOAST_WIDTH  = 336;
-const TOAST_HEIGHT = 90;
+const TOAST_HEIGHT = 106;
 const TOAST_MARGIN = 12;
 const toastWindows = [];
 
 function createToast({ type = 'card', title = '', body = '', duration = 5000 }) {
-  if (mainWindow && mainWindow.isFocused()) return;
+  // if (mainWindow && mainWindow.isFocused()) return; 
 
   const { screen } = require('electron');
   const display    = screen.getPrimaryDisplay();
@@ -143,17 +143,18 @@ function createToast({ type = 'card', title = '', body = '', duration = 5000 }) 
   const y = sh - TOAST_HEIGHT - TOAST_MARGIN - stackOffset;
 
   const win = new BrowserWindow({
-    width:       TOAST_WIDTH,
-    height:      TOAST_HEIGHT,
+    width:           TOAST_WIDTH,
+    height:          TOAST_HEIGHT,
     x,
     y,
-    frame:       false,
-    transparent: true,
-    alwaysOnTop: true,
-    skipTaskbar: true,
-    resizable:   false,
-    focusable:   false,
-    hasShadow:   false,
+    frame:           false,
+    transparent:     true,
+    backgroundColor: '#00000000',
+    alwaysOnTop:     true,
+    skipTaskbar:     true,
+    resizable:       false,
+    focusable:       false,
+    hasShadow:       false,
     webPreferences: {
       preload:          path.join(__dirname, 'preload.js'),
       contextIsolation: true,
