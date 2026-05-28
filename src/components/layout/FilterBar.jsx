@@ -11,34 +11,6 @@ const SERVICOS = [
 
 const DIAS_CARGA = Object.entries(CARGA_POR_DIA);
 
-// Retorna o dia ao qual uma cidade pertence
-function getDiaDaCidade(cidade) {
-  for (const [dia, cidades] of DIAS_CARGA) {
-    if (cidades.includes(cidade)) return dia;
-  }
-  return null;
-}
-
-// Dado o conjunto de cidades selecionadas, retorna quais dias estão bloqueados
-function getDiasBloqueados(filterCidades) {
-  if (filterCidades.length === 0) return new Set();
-  const diasAtivos = new Set(
-    filterCidades
-      .filter(c => c !== CIDADE_SEMPRE)
-      .map(getDiaDaCidade)
-      .filter(Boolean)
-  );
-  if (diasAtivos.size === 0) return new Set();
-
-  const bloqueados = new Set();
-  for (const [dia] of DIAS_CARGA) {
-    if (!diasAtivos.has(dia)) {
-      bloqueados.add(dia);
-    }
-  }
-  return bloqueados;
-}
-
 export default function FilterBar({
   search,
   onSearch,
@@ -60,11 +32,19 @@ export default function FilterBar({
 }) {
   const { can } = useAuth();
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [diasAbertos,  setDiasAbertos]  = useState(new Set());
   const advancedRef = useRef(null);
 
-  const totalAtivos   = filterCidades.length + filterServicos.length;
-  const diasBloqueados = getDiasBloqueados(filterCidades);
+  // Dia selecionado: null = nenhum, string = dia ativo
+  const diaAtivo = (() => {
+    if (filterCidades.length === 0) return null;
+    for (const [dia, cidades] of DIAS_CARGA) {
+      if (cidades.every(c => filterCidades.includes(c))) return dia;
+    }
+    return null;
+  })();
+
+  const totalAtivos = (diaAtivo ? 1 : 0) + filterServicos.length +
+    (filterCidades.includes(CIDADE_SEMPRE) ? 1 : 0);
 
   useEffect(() => {
     if (!showAdvanced) return;
@@ -76,17 +56,27 @@ export default function FilterBar({
     return () => document.removeEventListener('mousedown', handler);
   }, [showAdvanced]);
 
+  // Seleciona/deseleciona um dia inteiro
   const toggleDia = (dia) => {
-    setDiasAbertos(prev => {
-      const next = new Set(prev);
-      next.has(dia) ? next.delete(dia) : next.add(dia);
-      return next;
-    });
+    const cidadesDoDia = CARGA_POR_DIA[dia] || [];
+    if (diaAtivo === dia) {
+      // Deseleciona o dia, mantém Itapira se estiver ativo
+      onFilterCidades(prev => prev.filter(c => !cidadesDoDia.includes(c)));
+    } else {
+      // Seleciona o dia (substitui qualquer dia anterior, mantém Itapira)
+      onFilterCidades(prev => {
+        const semOutrosDias = prev.filter(c => c === CIDADE_SEMPRE);
+        return [...semOutrosDias, ...cidadesDoDia];
+      });
+    }
   };
 
-  const toggleCidade = (cidade) => {
+  // Seleciona/deseleciona Itapira (sempre disponível)
+  const toggleItapira = () => {
     onFilterCidades(prev =>
-      prev.includes(cidade) ? [] : [cidade]
+      prev.includes(CIDADE_SEMPRE)
+        ? prev.filter(c => c !== CIDADE_SEMPRE)
+        : [...prev, CIDADE_SEMPRE]
     );
   };
 
@@ -100,6 +90,9 @@ export default function FilterBar({
     onFilterCidades([]);
     onFilterServicos([]);
   };
+
+  // Label do chip do dia ativo
+  const chipDiaLabel = diaAtivo;
 
   return (
     <div className="flex flex-col gap-3 px-6 py-4 border-b border-[#1c1c1c] flex-shrink-0">
@@ -181,11 +174,46 @@ export default function FilterBar({
                 )}
               </div>
 
-              {/* Itapira — sempre visível */}
-              <div className="px-4 pt-3 pb-2">
+              {/* Dias de carga — seleção direta */}
+              <div className="px-4 py-3">
+                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-2 font-medium">Dia de carga</p>
+                <div className="flex flex-col gap-1.5">
+                  {DIAS_CARGA.map(([dia, cidades]) => {
+                    const ativo = diaAtivo === dia;
+                    return (
+                      <button
+                        key={dia}
+                        onClick={() => toggleDia(dia)}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                        style={ativo
+                          ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
+                          : { background: '#1c1c1c', color: '#666', border: '1px solid #222' }
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          {ativo && (
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                          )}
+                          <span className="font-semibold uppercase tracking-wider">{dia}</span>
+                        </div>
+                        <span style={{ color: ativo ? CARGA_COLOR : '#444', opacity: 0.8 }}>
+                          {cidades.join(', ')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ height: 1, background: '#1c1c1c', margin: '0 16px' }} />
+
+              {/* Itapira — sempre disponível */}
+              <div className="px-4 py-3">
                 <p className="text-[#444] text-[10px] uppercase tracking-widest mb-2 font-medium">Sempre disponível</p>
                 <button
-                  onClick={() => toggleCidade(CIDADE_SEMPRE)}
+                  onClick={toggleItapira}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all w-full"
                   style={filterCidades.includes(CIDADE_SEMPRE)
                     ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
@@ -199,78 +227,6 @@ export default function FilterBar({
                   )}
                   {CIDADE_SEMPRE}
                 </button>
-              </div>
-
-              <div style={{ height: 1, background: '#1c1c1c', margin: '0 16px' }} />
-
-              {/* Cidades por dia — colapsáveis */}
-              <div className="px-4 py-3 max-h-72 overflow-y-auto">
-                <p className="text-[#444] text-[10px] uppercase tracking-widest mb-2 font-medium">Por dia de carga</p>
-                <div className="flex flex-col gap-1">
-                  {DIAS_CARGA.map(([dia, cidades]) => {
-                    const bloqueado  = diasBloqueados.has(dia);
-                    const aberto     = diasAbertos.has(dia);
-                    const temAtivo   = cidades.some(c => filterCidades.includes(c));
-                    const qtdAtiva   = cidades.filter(c => filterCidades.includes(c)).length;
-
-                    return (
-                      <div key={dia}>
-                        {/* Header do dia */}
-                        <button
-                          onClick={() => !bloqueado && toggleDia(dia)}
-                          className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all"
-                          style={bloqueado
-                            ? { opacity: 0.3, cursor: 'not-allowed' }
-                            : aberto || temAtivo
-                              ? { background: `${CARGA_COLOR}10`, color: CARGA_COLOR }
-                              : { color: '#666', hover: '#1c1c1c' }
-                          }
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider">{dia}</span>
-                            {qtdAtiva > 0 && (
-                              <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
-                                style={{ background: CARGA_COLOR, color: '#fff' }}>
-                                {qtdAtiva}
-                              </span>
-                            )}
-                          </div>
-                          <svg
-                            width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                            strokeLinecap="round" strokeLinejoin="round"
-                            style={{ transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
-                          >
-                            <polyline points="6 9 12 15 18 9"/>
-                          </svg>
-                        </button>
-
-                        {/* Cidades do dia */}
-                        {aberto && !bloqueado && (
-                          <div className="flex flex-wrap gap-1.5 px-3 pb-2 pt-1">
-                            {cidades.map(cidade => (
-                              <button
-                                key={cidade}
-                                onClick={() => toggleCidade(cidade)}
-                                className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1.5"
-                                style={filterCidades.includes(cidade)
-                                  ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}50` }
-                                  : { background: '#1c1c1c', color: '#666', border: '1px solid #222' }
-                                }
-                              >
-                                {filterCidades.includes(cidade) && (
-                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12"/>
-                                  </svg>
-                                )}
-                                {cidade}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
 
               <div style={{ height: 1, background: '#1c1c1c' }} />
@@ -387,20 +343,35 @@ export default function FilterBar({
               Carga
             </button>
 
-            {/* Chips ativos */}
-            {filterCidades.map(cidade => (
+            {/* Chip do dia ativo */}
+            {chipDiaLabel && (
               <span
-                key={cidade}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-80"
                 style={{ background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}40` }}
-                onClick={() => toggleCidade(cidade)}
+                onClick={() => toggleDia(chipDiaLabel)}
               >
-                {cidade}
+                {chipDiaLabel}
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </span>
-            ))}
+            )}
+
+            {/* Chip Itapira se ativo */}
+            {filterCidades.includes(CIDADE_SEMPRE) && (
+              <span
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-80"
+                style={{ background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}40` }}
+                onClick={toggleItapira}
+              >
+                {CIDADE_SEMPRE}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </span>
+            )}
+
+            {/* Chips de serviços */}
             {filterServicos.map(key => {
               const s = SERVICOS.find(s => s.key === key);
               return (

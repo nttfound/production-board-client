@@ -159,8 +159,7 @@ const TOAST_MARGIN = 12;
 const toastWindows = [];
 
 function createToast({ type = 'card', title = '', body = '', duration = 5000 }) {
-  // if (mainWindow && mainWindow.isFocused()) return; 
-
+  if (mainWindow && mainWindow.isFocused()) return; 
   const { screen } = require('electron');
   const display    = screen.getPrimaryDisplay();
   const { width: sw, height: sh } = display.workAreaSize;

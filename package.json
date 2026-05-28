@@ -1,8 +1,8 @@
 {
   "name": "producao-laser",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Controle de Producao - Itadobras",
-  "author": "Itadobras ltda.",
+  "author": "deric-nttfound",
   "main": "electron/main.js",
   "homepage": "./",
   "scripts": {
