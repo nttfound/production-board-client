@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import api    from '../services/api';
+import api, { setMemoryToken, clearMemoryToken } from '../services/api';
 import socket from '../services/socket';
 
 const AuthContext = createContext(null);
@@ -51,8 +51,9 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     const res = await api.post('/api/auth/login', { username, password });
     // Servidor setou o cookie httpOnly automaticamente na resposta
-    // Guardamos o token em memória APENAS para o Socket.IO
+    // Guardamos o token em memória para o Socket.IO e para o interceptor do axios (Electron)
     socketTokenRef.current = res.data.token;
+    setMemoryToken(res.data.token);
     setUser(res.data.user);
     return res.data.user;
   };
@@ -60,6 +61,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try { await api.post('/api/auth/logout'); } catch { /* ignora erro de rede */ }
     socketTokenRef.current = null;
+    clearMemoryToken();
     setUser(null);
     // api.post('/logout') já limpou o cookie no servidor via res.clearCookie
   };
