@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import socket from '../../services/socket';
 import api    from '../../services/api';
 
-const FALLBACK_COLOR = '#8a8a8a';
+const FALLBACK_COLOR = '#6b7280';
 
 function formatTime(ts) {
   return new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -33,7 +33,7 @@ function renderText(text, myUsername) {
       const isMe = part.slice(1).toLowerCase() === myUsername?.toLowerCase();
       return (
         <span key={i} className="font-semibold rounded px-0.5"
-          style={{ color: isMe ? '#fbbf24' : '#60a5fa', background: isMe ? '#fbbf2415' : 'transparent' }}>
+          style={{ color: isMe ? '#f59e0b' : '#60a5fa', background: isMe ? '#f59e0b12' : 'transparent' }}>
           {part}
         </span>
       );
@@ -47,14 +47,14 @@ function FileAttachment({ url, name, size }) {
 
   if (img) {
     return (
-      <a href={url} download={name} target="_blank" rel="noreferrer" className="block mt-1">
+      <a href={url} download={name} target="_blank" rel="noreferrer" className="block mt-2">
         <img
           src={url}
           alt={name}
           className="rounded-xl max-w-full"
-          style={{ maxHeight: 200, objectFit: 'cover', border: '1px solid #2a2a2a' }}
+          style={{ maxHeight: 200, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.06)' }}
         />
-        <span className="text-[10px] text-[#555] mt-0.5 block">{name} · {formatSize(size)}</span>
+        <span className="text-[10px] mt-1 block" style={{ color: '#4b5563' }}>{name} · {formatSize(size)}</span>
       </a>
     );
   }
@@ -65,25 +65,34 @@ function FileAttachment({ url, name, size }) {
       download={name}
       target="_blank"
       rel="noreferrer"
-      className="flex items-center gap-2 mt-1 px-3 py-2 rounded-xl transition-all"
-      style={{ background: '#ffffff0d', border: '1px solid #2a2a2a', textDecoration: 'none' }}
+      className="flex items-center gap-2.5 mt-2 px-3 py-2.5 rounded-xl transition-all"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', textDecoration: 'none' }}
     >
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#2563eb20' }}>
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#1d4ed820' }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
         </svg>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-[#e5e5e5] truncate font-medium">{name}</p>
-        <p className="text-[10px] text-[#555]">{formatSize(size)}</p>
+        <p className="text-xs truncate font-medium" style={{ color: '#d1d5db' }}>{name}</p>
+        <p className="text-[10px]" style={{ color: '#4b5563' }}>{formatSize(size)}</p>
       </div>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="7 10 12 15 17 10"/>
         <line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
     </a>
+  );
+}
+
+// Ícone de chat SVG compacto
+function IconChat({ size = 18, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
   );
 }
 
@@ -101,19 +110,18 @@ export default function ChatPanel() {
   const [hoveredId,       setHoveredId]       = useState(null);
   const [uploading,       setUploading]       = useState(false);
 
-  const bottomRef  = useRef(null);
-  const inputRef   = useRef(null);
-  const fileRef    = useRef(null);
-  const openRef    = useRef(open);
-  openRef.current  = open;
-  const userRef    = useRef(user);
-  userRef.current  = user;
+  const bottomRef = useRef(null);
+  const inputRef  = useRef(null);
+  const fileRef   = useRef(null);
+  const openRef   = useRef(open);
+  openRef.current = open;
+  const userRef   = useRef(user);
+  userRef.current = user;
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/api/chat/history');
-      // Filtra soft-deleted
       setMessages(res.data.filter(m => !m.deleted_at));
     } catch (err) {
       console.error('[CHAT] Falha ao carregar histórico:', err.message);
@@ -133,11 +141,7 @@ export default function ChatPanel() {
       if (!openRef.current) {
         setUnread(n => n + 1);
         if (msg.username !== userRef.current?.username) {
-          window.electronAPI?.showNotification?.(
-            'chat',
-            msg.display_name || msg.username,
-            msg.text || 'Arquivo'
-          );
+          window.electronAPI?.showNotification?.('chat', msg.display_name || msg.username, msg.text || 'Arquivo');
         }
       }
     };
@@ -168,9 +172,7 @@ export default function ChatPanel() {
   useEffect(() => {
     if (!showEmoji) return;
     const handler = (e) => {
-      if (!e.target.closest('.emoji-picker-wrap') && !e.target.closest('.emoji-btn')) {
-        setShowEmoji(false);
-      }
+      if (!e.target.closest('.emoji-picker-wrap') && !e.target.closest('.emoji-btn')) setShowEmoji(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -190,8 +192,7 @@ export default function ChatPanel() {
 
   const handleSend = () => {
     const text = input.trim();
-    if (!text || !user) return;
-    if (!socket.connected) return;
+    if (!text || !user || !socket.connected) return;
     socket.emit('chat:send', { text, card: null });
     setInput('');
     setShowEmoji(false);
@@ -199,10 +200,7 @@ export default function ChatPanel() {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
     if (e.key === 'Escape') setShowEmoji(false);
   };
 
@@ -220,20 +218,12 @@ export default function ChatPanel() {
   const handleFileSelect = useCallback(async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Arquivo muito grande. Máximo 5MB.');
-      return;
-    }
-
+    if (file.size > 5 * 1024 * 1024) { alert('Arquivo muito grande. Máximo 5MB.'); return; }
     setUploading(true);
     try {
       const reader = new FileReader();
       reader.onload = () => {
-        socket.emit('chat:file', {
-          file_name: file.name,
-          file_size: file.size,
-          file_data: reader.result,
-        });
+        socket.emit('chat:file', { file_name: file.name, file_size: file.size, file_data: reader.result });
       };
       reader.readAsDataURL(file);
     } finally {
@@ -248,187 +238,217 @@ export default function ChatPanel() {
     if (!el) { setInput(prev => prev + native); return; }
     const start = el.selectionStart;
     const end   = el.selectionEnd;
-    const next  = input.slice(0, start) + native + input.slice(end);
-    setInput(next);
-    setTimeout(() => {
-      el.focus();
-      el.setSelectionRange(start + native.length, start + native.length);
-    }, 0);
+    setInput(input.slice(0, start) + native + input.slice(end));
+    setTimeout(() => { el.focus(); el.setSelectionRange(start + native.length, start + native.length); }, 0);
   };
 
-  const W = expanded ? 480 : 340;
-  const H = expanded ? 640 : 440;
+  const W = expanded ? 460 : 340;
+  const H = expanded ? 620 : 460;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
 
+      {/* Painel principal */}
       {open && (
         <div
-          className="flex flex-col rounded-2xl overflow-visible animate-scale-in"
+          className="flex flex-col rounded-2xl overflow-hidden"
           style={{
             width:      W,
             height:     H,
-            background: '#111214',
-            border:     '1px solid #1e1f22',
-            boxShadow:  '0 24px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.03)',
-            transition: 'width 0.2s ease, height 0.2s ease',
+            background: '#0c0c0e',
+            border:     '1px solid rgba(255,255,255,0.07)',
+            boxShadow:  '0 32px 96px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.03)',
+            transition: 'width 0.22s cubic-bezier(.4,0,.2,1), height 0.22s cubic-bezier(.4,0,.2,1)',
           }}
         >
-          {/* Header */}
+          {/* ── Header ── */}
           <div
             className="flex items-center justify-between px-4 py-3 flex-shrink-0"
             style={{
-              background:   '#16181c',
-              borderBottom: '1px solid #1e1f22',
-              borderRadius: '1rem 1rem 0 0',
+              background:   'linear-gradient(180deg, #141416 0%, #0f0f11 100%)',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
             }}
           >
             <div className="flex items-center gap-2.5">
-              <div className="relative">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4f545c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                <div
-                  className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#16181c]"
-                  style={{ background: socketConnected ? '#23a55a' : '#f23f43' }}
+              {/* Status dot */}
+              <div className="relative flex items-center justify-center">
+                <IconChat size={15} color="#374151" />
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full"
+                  style={{
+                    background: socketConnected ? '#22c55e' : '#ef4444',
+                    boxShadow:  socketConnected ? '0 0 6px #22c55e80' : '0 0 6px #ef444480',
+                    border: '1.5px solid #0f0f11',
+                  }}
                 />
               </div>
-              <span className="text-[#e3e5e8] text-sm font-semibold tracking-wide">Chat</span>
+              <span className="text-[13px] font-semibold tracking-tight" style={{ color: '#e5e7eb' }}>
+                Chat
+              </span>
               {!socketConnected && (
-                <span className="text-[10px] text-[#f23f43] font-medium">reconectando...</span>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ color: '#ef4444', background: '#ef444412', border: '1px solid #ef444420' }}>
+                  offline
+                </span>
               )}
             </div>
-            <div className="flex items-center gap-1">
+
+            <div className="flex items-center gap-0.5">
+              {/* Expandir */}
               <button
                 onClick={() => setExpanded(e => !e)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-[#4f545c] hover:text-[#b5bac1] hover:bg-[#ffffff08] transition-all"
+                className="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
+                style={{ color: '#374151' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#9ca3af'}
+                onMouseLeave={e => e.currentTarget.style.color = '#374151'}
                 title={expanded ? 'Recolher' : 'Expandir'}
               >
                 {expanded ? (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
                     <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
                   </svg>
                 ) : (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
                     <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
                   </svg>
                 )}
               </button>
+
+              {/* Fechar */}
               <button
                 onClick={handleClose}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-[#4f545c] hover:text-[#f23f43] hover:bg-[#f23f4315] transition-all"
+                className="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
+                style={{ color: '#374151' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#ef444412'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'transparent'; }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
             </div>
           </div>
 
-          {/* Mensagens */}
+          {/* ── Mensagens ── */}
           <div
-            className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5"
-            style={{ background: '#111214' }}
+            className="flex-1 overflow-y-auto py-3 px-2"
+            style={{
+              background: '#0c0c0e',
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#1f2937 transparent',
+            }}
           >
             {loading ? (
-              <div className="flex justify-center pt-8">
-                <div className="w-5 h-5 border-2 border-[#2a2a2a] border-t-[#5865f2] rounded-full animate-spin" />
+              <div className="flex justify-center items-center h-full">
+                <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: '#1f2937', borderTopColor: '#3b82f6' }} />
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-[#4f545c]">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#1e1f22' }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
+              <div className="flex flex-col items-center justify-center h-full gap-3">
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                >
+                  <IconChat size={24} color="#374151" />
                 </div>
-                <p className="text-xs text-[#6d6f78]">Nenhuma mensagem ainda</p>
+                <p className="text-xs" style={{ color: '#374151' }}>Nenhuma mensagem ainda</p>
               </div>
             ) : (
-              messages.map((msg, i) => {
-                const isMe    = msg.username === user?.username;
-                const color   = msg.color || FALLBACK_COLOR;
-                const prevMsg = messages[i - 1];
-                const grouped = prevMsg
-                  && prevMsg.username === msg.username
-                  && (new Date(msg.created_at) - new Date(prevMsg.created_at)) < 5 * 60000;
-                const showDelete = hoveredId === msg.id && canDelete(msg);
-                const hasFile = msg.file_url && msg.file_name;
-                const hasText = msg.text && msg.text.trim().length > 0;
+              <div className="flex flex-col">
+                {messages.map((msg, i) => {
+                  const color   = msg.color || FALLBACK_COLOR;
+                  const prevMsg = messages[i - 1];
+                  const grouped = prevMsg
+                    && prevMsg.username === msg.username
+                    && (new Date(msg.created_at) - new Date(prevMsg.created_at)) < 5 * 60000;
+                  const showDelete = hoveredId === msg.id && canDelete(msg);
+                  const hasFile = msg.file_url && msg.file_name;
+                  const hasText = msg.text?.trim().length > 0;
 
-                return (
-                  <div
-                    key={msg.id}
-                    className="group flex items-start gap-2 px-2 py-0.5 rounded-lg relative"
-                    style={{
-                      marginTop: grouped ? 0 : 12,
-                      background: hoveredId === msg.id ? '#ffffff05' : 'transparent',
-                    }}
-                    onMouseEnter={() => setHoveredId(msg.id)}
-                    onMouseLeave={() => setHoveredId(null)}
-                  >
-                    {/* Avatar / espacador */}
-                    <div className="w-8 flex-shrink-0 flex justify-center pt-0.5">
-                      {!grouped ? (
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white select-none"
-                          style={{ background: color + '33', border: `1.5px solid ${color}44` }}
+                  return (
+                    <div
+                      key={msg.id}
+                      className="group flex items-start gap-2.5 px-2 py-[3px] rounded-xl relative transition-colors"
+                      style={{
+                        marginTop:  grouped ? 1 : 14,
+                        background: hoveredId === msg.id ? 'rgba(255,255,255,0.03)' : 'transparent',
+                      }}
+                      onMouseEnter={() => setHoveredId(msg.id)}
+                      onMouseLeave={() => setHoveredId(null)}
+                    >
+                      {/* Avatar / hora */}
+                      <div className="w-8 flex-shrink-0 flex justify-center" style={{ paddingTop: 2 }}>
+                        {!grouped ? (
+                          <div
+                            className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold select-none"
+                            style={{
+                              background: color + '18',
+                              border:     `1px solid ${color}30`,
+                              color,
+                            }}
+                          >
+                            {(msg.display_name || msg.username)[0]?.toUpperCase()}
+                          </div>
+                        ) : (
+                          <span
+                            className="text-[9px] opacity-0 group-hover:opacity-100 transition-opacity tabular-nums"
+                            style={{ color: '#374151', paddingTop: 3 }}
+                          >
+                            {formatTime(msg.created_at)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Conteúdo */}
+                      <div className="flex-1 min-w-0">
+                        {!grouped && (
+                          <div className="flex items-baseline gap-2 mb-0.5">
+                            <span className="text-[13px] font-semibold leading-none" style={{ color }}>
+                              {msg.display_name}
+                            </span>
+                            <span className="text-[10px] tabular-nums" style={{ color: '#374151' }}>
+                              {formatTime(msg.created_at)}
+                            </span>
+                          </div>
+                        )}
+                        {hasText && (
+                          <p className="text-[13px] leading-relaxed break-words" style={{ color: '#d1d5db' }}>
+                            {renderText(msg.text, user?.username)}
+                          </p>
+                        )}
+                        {hasFile && (
+                          <FileAttachment url={msg.file_url} name={msg.file_name} size={msg.file_size} />
+                        )}
+                      </div>
+
+                      {/* Deletar */}
+                      {showDelete && (
+                        <button
+                          onClick={() => handleDelete(msg.id)}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-lg transition-all"
+                          style={{ background: '#ef444415', border: '1px solid #ef444430' }}
+                          title="Excluir"
                         >
-                          <span style={{ color }}>{(msg.display_name || msg.username)[0]?.toUpperCase()}</span>
-                        </div>
-                      ) : (
-                        <span className="text-[9px] text-[#4f545c] opacity-0 group-hover:opacity-100 transition-opacity leading-none mt-1">
-                          {formatTime(msg.created_at)}
-                        </span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                            <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                          </svg>
+                        </button>
                       )}
                     </div>
-
-                    {/* Conteúdo */}
-                    <div className="flex-1 min-w-0">
-                      {!grouped && (
-                        <div className="flex items-baseline gap-2 mb-0.5">
-                          <span className="text-sm font-semibold" style={{ color }}>{msg.display_name}</span>
-                          <span className="text-[10px] text-[#4f545c]">{formatTime(msg.created_at)}</span>
-                        </div>
-                      )}
-                      {hasText && (
-                        <p className="text-sm text-[#dcddde] leading-relaxed break-words">
-                          {renderText(msg.text, user?.username)}
-                        </p>
-                      )}
-                      {hasFile && (
-                        <FileAttachment url={msg.file_url} name={msg.file_name} size={msg.file_size} />
-                      )}
-                    </div>
-
-                    {/* Botão deletar */}
-                    {showDelete && (
-                      <button
-                        onClick={() => handleDelete(msg.id)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-md transition-all"
-                        style={{ background: '#f23f4320', border: '1px solid #f23f4340' }}
-                        title="Excluir mensagem"
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f23f43" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-                          <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                );
-              })
+                  );
+                })}
+                <div ref={bottomRef} />
+              </div>
             )}
-            <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
+          {/* ── Input ── */}
           <div
             className="px-3 pb-3 pt-2 flex-shrink-0 relative"
-            style={{ background: '#111214', borderTop: '1px solid #1e1f22', borderRadius: '0 0 1rem 1rem' }}
+            style={{ background: '#0c0c0e', borderTop: '1px solid rgba(255,255,255,0.05)' }}
           >
-            {/* Emoji Picker */}
+            {/* Emoji picker */}
             {showEmoji && (
               <div className="emoji-picker-wrap absolute right-3 z-50" style={{ bottom: 'calc(100% + 8px)' }}>
                 <Picker
@@ -447,23 +467,28 @@ export default function ChatPanel() {
               </div>
             )}
 
-            {/* Caixa de input estilo Discord */}
+            {/* Caixa */}
             <div
-              className="flex items-end gap-2 rounded-xl px-2 py-2"
-              style={{ background: '#1e1f22', border: '1px solid #2b2d31' }}
+              className="flex items-end gap-1.5 rounded-xl px-2 py-1.5"
+              style={{
+                background: '#141416',
+                border:     '1px solid rgba(255,255,255,0.08)',
+              }}
             >
-              {/* Botão anexo */}
+              {/* Anexo */}
               <button
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading || !socketConnected}
-                className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg transition-all"
-                style={{ color: uploading ? '#555' : '#4f545c' }}
+                className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg transition-all mb-0.5"
+                style={{ color: uploading ? '#1f2937' : '#374151' }}
+                onMouseEnter={e => { if (!uploading) e.currentTarget.style.color = '#6b7280'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = uploading ? '#1f2937' : '#374151'; }}
                 title="Anexar arquivo (máx. 5MB)"
               >
                 {uploading ? (
-                  <div className="w-4 h-4 border-2 border-[#4f545c] border-t-[#5865f2] rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 border-2 rounded-full animate-spin" style={{ borderColor: '#374151', borderTopColor: '#3b82f6' }} />
                 ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
                   </svg>
                 )}
@@ -479,44 +504,53 @@ export default function ChatPanel() {
                 placeholder="Mensagem..."
                 rows={1}
                 maxLength={500}
-                className="flex-1 bg-transparent text-[#dcddde] text-sm placeholder-[#4f545c] outline-none resize-none"
-                style={{ maxHeight: 120, lineHeight: '1.4' }}
+                className="flex-1 bg-transparent text-sm outline-none resize-none"
+                style={{
+                  color:       '#e5e7eb',
+                  maxHeight:   120,
+                  lineHeight:  '1.5',
+                  paddingTop:  6,
+                  paddingBottom: 6,
+                  caretColor:  '#3b82f6',
+                }}
                 onInput={e => {
                   e.target.style.height = 'auto';
                   e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                 }}
               />
 
-              {/* Botão emoji */}
+              {/* Emoji */}
               <button
                 onClick={() => setShowEmoji(e => !e)}
-                className="emoji-btn w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg transition-all text-base"
-                style={{ color: showEmoji ? '#fbbf24' : '#4f545c' }}
+                className="emoji-btn w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg transition-all text-sm mb-0.5"
+                style={{ opacity: showEmoji ? 1 : 0.5 }}
                 title="Emojis"
               >
                 😊
               </button>
 
-              {/* Botão enviar */}
-              {input.trim() && (
-                <button
-                  onClick={handleSend}
-                  disabled={!socketConnected}
-                  className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg transition-all"
-                  style={{ background: '#5865f2', color: 'white' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"/>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                  </svg>
-                </button>
-              )}
+              {/* Enviar */}
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || !socketConnected}
+                className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg transition-all mb-0.5"
+                style={{
+                  background: input.trim() && socketConnected ? '#2563eb' : 'transparent',
+                  color:      input.trim() && socketConnected ? 'white' : '#1f2937',
+                  border:     input.trim() && socketConnected ? 'none' : '1px solid #1f2937',
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
             </div>
 
             {/* Contador */}
             {input.length > 400 && (
               <div className="text-right pr-1 mt-1">
-                <span className="text-[10px] font-mono" style={{ color: input.length >= 480 ? '#f23f43' : '#4f545c' }}>
+                <span className="text-[10px] tabular-nums" style={{ color: input.length >= 480 ? '#ef4444' : '#374151' }}>
                   {input.length}/500
                 </span>
               </div>
@@ -525,28 +559,38 @@ export default function ChatPanel() {
         </div>
       )}
 
-      {/* Botão flutuante */}
+      {/* ── Botão flutuante ── */}
       <button
         onClick={open ? handleClose : handleOpen}
-        className="relative flex items-center justify-center rounded-2xl shadow-2xl transition-all duration-200 active:scale-95 hover:scale-105"
+        className="relative flex items-center justify-center transition-all duration-200 active:scale-95"
         style={{
-          width:      52,
-          height:     52,
-          background: open ? '#5865f2' : '#16181c',
-          border:     `1.5px solid ${open ? '#5865f2' : '#2b2d31'}`,
+          width:      48,
+          height:     48,
+          borderRadius: 14,
+          background: open
+            ? 'linear-gradient(135deg, #2563eb, #1d4ed8)'
+            : 'linear-gradient(180deg, #1a1a1e 0%, #111113 100%)',
+          border:     `1px solid ${open ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.08)'}`,
           boxShadow:  open
-            ? '0 8px 32px rgba(88,101,242,0.4)'
-            : '0 8px 32px rgba(0,0,0,0.6)',
+            ? '0 8px 24px rgba(37,99,235,0.45)'
+            : '0 4px 20px rgba(0,0,0,0.7)',
         }}
+        onMouseEnter={e => { if (!open) e.currentTarget.style.border = '1px solid rgba(255,255,255,0.14)'; }}
+        onMouseLeave={e => { if (!open) e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)'; }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke={open ? 'white' : '#b5bac1'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
+        {open ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        ) : (
+          <IconChat size={17} color="#9ca3af" />
+        )}
+
+        {/* Badge de não lidas */}
         {!open && unread > 0 && (
           <div
-            className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 rounded-full flex items-center justify-center px-1 text-[10px] font-bold text-white animate-scale-in"
-            style={{ background: '#f23f43', border: '2px solid #0d0d0d' }}
+            className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 text-[9px] font-bold text-white"
+            style={{ background: '#ef4444', border: '2px solid #0c0c0e', boxShadow: '0 2px 8px rgba(239,68,68,0.5)' }}
           >
             {unread > 99 ? '99+' : unread}
           </div>

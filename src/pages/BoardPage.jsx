@@ -274,7 +274,7 @@ export default function BoardPage() {
   }, [selectedIds]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#0d0d0d] overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#0d0d0d]" style={{ overflow: "clip" }}>
       <TopBar onNewCard={() => setShowNewModal(true)} connected={connected} />
 
       <FilterBar
