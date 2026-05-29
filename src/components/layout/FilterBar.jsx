@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { STATUSES, URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConfig';
+import { CARGA_COLOR } from '../../services/statusConfig';
 import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -321,47 +321,28 @@ export default function FilterBar({
           </>
         ) : (
           <>
-            <button
-              onClick={() => onFilterStatus('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${filterStatus === 'all' ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#8a8a8a] hover:bg-[#1c1c1c]'}`}
-            >
-              Todos <span className="ml-1 text-[#555]">{total}</span>
-            </button>
-
-            {STATUSES.map(s => (
-              <button
-                key={s.value}
-                onClick={() => onFilterStatus(s.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${filterStatus === s.value ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#8a8a8a] hover:bg-[#1c1c1c]'}`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
-                {s.label}
-              </button>
-            ))}
-
-            <button
-              onClick={() => onFilterStatus('urgente')}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5"
-              style={filterStatus === 'urgente'
-                ? { background: `${URGENTE_COLOR}20`, color: URGENTE_COLOR, border: `1px solid ${URGENTE_COLOR}40` }
-                : { color: '#555' }
-              }
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: URGENTE_COLOR }} />
-              Urgente
-            </button>
-
-            <button
-              onClick={() => onFilterStatus('carga')}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5"
-              style={filterStatus === 'carga'
-                ? { background: `${CARGA_COLOR}20`, color: CARGA_COLOR, border: `1px solid ${CARGA_COLOR}40` }
-                : { color: '#555' }
-              }
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CARGA_COLOR }} />
-              Carga
-            </button>
+            {/* ── 3 filtros principais ── */}
+            {[
+              { key: 'fila',    label: 'Fila',   color: '#9ca3af' },
+              { key: 'prontos', label: 'Prontos', color: '#16a34a' },
+            ].map(({ key, label, color }) => {
+              const ativo = filterStatus === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => onFilterStatus(key)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5"
+                  style={ativo
+                    ? { background: `${color}18`, color, border: `1px solid ${color}40` }
+                    : { color: '#555' }
+                  }
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                  {label}
+                  {key === 'fila' && <span className="ml-0.5" style={{ color: '#444' }}>{total}</span>}
+                </button>
+              );
+            })}
 
             {/* Chips dos dias ativos */}
             {filterDias.map(dia => (

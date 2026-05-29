@@ -25,7 +25,7 @@ const PAGE_LIMIT = 50;
 export default function BoardPage() {
   const [cards,          setCards]          = useState([]);
   const [search,         setSearch]         = useState('');
-  const [filterStatus,   setFilterStatus]   = useState('all');
+  const [filterStatus,   setFilterStatus]   = useState('fila');
   const [showNewModal,   setShowNewModal]   = useState(false);
   const [connected,      setConnected]      = useState(false);
   const [loading,        setLoading]        = useState(true);
@@ -170,9 +170,9 @@ export default function BoardPage() {
   const sorted = useMemo(() => {
     const filtered = cards.filter(c => {
       let matchStatus;
-      if (filterStatus === 'all') matchStatus = true;
-      else if (filterStatus === 'urgente') matchStatus = c.urgente === true;
-      else if (filterStatus === 'carga') matchStatus = cargaAtivaAgora(c.carga) && c.carga !== 'Itapira';
+      if (filterStatus === 'all')    matchStatus = true;
+      else if (filterStatus === 'fila')    matchStatus = c.status !== 'Ready';
+      else if (filterStatus === 'prontos') matchStatus = c.status === 'Ready';
       else matchStatus = c.status === filterStatus;
 
       const q = search.toLowerCase();
@@ -211,12 +211,49 @@ export default function BoardPage() {
       return matchStatus && matchSearch && matchCidade && matchServico;
     });
 
+    // Peso de serviço: Dobra/Calandra têm prioridade sobre Corte dentro de cada grupo
+    const servicoPeso = (c) => {
+      if (c.dobra || c.calandra) return 0;
+      if (c.corte)               return 1;
+      return 2;
+    };
+
+    // Verifica se um agendado é para hoje
+    const agendadoHoje = (c) => {
+      if (c.status !== 'Scheduled' || !c.scheduled_date) return false;
+      const [y, m, d] = c.scheduled_date.slice(0, 10).split('-');
+      const data = new Date(+y, +m - 1, +d);
+      const hoje = new Date();
+      return data.getFullYear() === hoje.getFullYear()
+        && data.getMonth()      === hoje.getMonth()
+        && data.getDate()       === hoje.getDate();
+    };
+
+    // Grupo de prioridade:
+    //  0 = Urgente ou Agendado para hoje (prioridade máxima)
+    //  1 = Carga ativa
+    //  2 = Fila normal (Pending / Producing)
+    //  3 = Outros (Scheduled futuro, No Material, Waiting Approval)
+    //  4 = Ready (sempre por último)
+    const grupoPeso = (c) => {
+      if (c.status === 'Ready')  return 4;
+      if (c.urgente || agendadoHoje(c)) return 0;
+      if (cargaAtivaAgora(c.carga) && c.carga !== 'Itapira') return 1;
+      if (c.status === 'Pending' || c.status === 'Producing') return 2;
+      return 3;
+    };
+
     return [...filtered].sort((a, b) => {
-      const aReady = a.status === 'Ready' ? 1 : 0;
-      const bReady = b.status === 'Ready' ? 1 : 0;
-      if (aReady !== bReady) return aReady - bReady;
-      if (a.urgente !== b.urgente) return b.urgente ? 1 : -1;
-      return new Date(b.created_at) - new Date(a.created_at);
+      const ga = grupoPeso(a);
+      const gb = grupoPeso(b);
+      if (ga !== gb) return ga - gb;
+
+      // Dentro do mesmo grupo: serviço primeiro, depois mais antigo
+      const sa = servicoPeso(a);
+      const sb = servicoPeso(b);
+      if (sa !== sb) return sa - sb;
+
+      return new Date(a.created_at) - new Date(b.created_at); // mais antigo primeiro
     });
   }, [cards, search, filterStatus, filterDias, filterServicos]);
 
@@ -282,7 +319,7 @@ export default function BoardPage() {
         onSearch={setSearch}
         filterStatus={filterStatus}
         onFilterStatus={setFilterStatus}
-        total={cards.length}
+        total={cards.filter(c => c.status !== 'Ready').length}
         selectionMode={selectionMode}
         onToggleSelectionMode={toggleSelectionMode}
         selectedCount={selectedIds.size}
@@ -325,10 +362,11 @@ export default function BoardPage() {
                 paddingBottom: selectionMode ? '5rem' : '0',
               }}
             >
-              {sorted.map(card => (
+              {sorted.map((card, idx) => (
                 <ProductionCard
                   key={card.id}
                   card={card}
+                  ordem={idx + 1}
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
                   selectionMode={selectionMode}

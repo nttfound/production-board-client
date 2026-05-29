@@ -7,13 +7,28 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getStatus, URGENTE_COLOR, CARGA_COLOR, CALANDRA_COLOR } from '../../services/statusConfig';
 import { cargaAtivaAgora } from '../../services/cargaConfig';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const BASE_URL    = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 const CORTE_COLOR = '#06b6d4';
 const DOBRA_COLOR = '#8b5cf6';
 const MAO_COLOR   = '#f59e0b';
 
+function fmtOrdem(n) {
+  return String(n).padStart(2, '0');
+}
+
+function isHoje(dateStr) {
+  if (!dateStr) return false;
+  const [y, m, d] = dateStr.slice(0, 10).split('-');
+  const data = new Date(+y, +m - 1, +d);
+  const hoje = new Date();
+  return data.getFullYear() === hoje.getFullYear()
+    && data.getMonth()      === hoje.getMonth()
+    && data.getDate()       === hoje.getDate();
+}
+
 export default function ProductionCard({
   card,
+  ordem,
   onStatusChange,
   onDelete,
   selectionMode = false,
@@ -32,42 +47,57 @@ export default function ProductionCard({
     ? localCard.image_path.startsWith('http') ? localCard.image_path : `${BASE_URL}${localCard.image_path}`
     : null;
 
-  const s = getStatus(localCard.status);
-  const mostrarCarga = cargaAtivaAgora(localCard.carga);
+  const s              = getStatus(localCard.status);
+  const mostrarCarga   = cargaAtivaAgora(localCard.carga);
+  const isUrgente      = localCard.urgente === true;
+  const isAgendadoHoje = localCard.status === 'Scheduled' && isHoje(localCard.scheduled_date);
 
   const formattedDate = new Date(localCard.created_at).toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: '2-digit',
   });
 
+  // Força parse local (evita UTC-3 virar dia anterior)
   const scheduledStr = localCard.scheduled_date
-    ? new Date(localCard.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    ? (() => {
+        const [y, m, d] = localCard.scheduled_date.slice(0, 10).split('-');
+        return new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      })()
     : null;
 
+  const tags = [
+    localCard.dobra       && { label: 'Dobra',       color: DOBRA_COLOR    },
+    localCard.calandra    && { label: 'Calandra',    color: CALANDRA_COLOR },
+    localCard.corte       && { label: 'Corte',       color: CORTE_COLOR    },
+    localCard.mao_de_obra && { label: 'Mão de Obra', color: MAO_COLOR      },
+  ].filter(Boolean);
+
+  // Cor de acento do card
+  const accentColor = isUrgente
+    ? URGENTE_COLOR
+    : isAgendadoHoje
+      ? '#7c3aed'
+      : mostrarCarga
+        ? CARGA_COLOR
+        : s.color;
+
+  // Borda
   const borderColor = selected
     ? '#2563eb'
-    : localCard.urgente
-      ? `${URGENTE_COLOR}70`
-      : mostrarCarga ? `${CARGA_COLOR}70` : `${s.color}50`;
+    : isUrgente
+      ? `${URGENTE_COLOR}80`
+      : isAgendadoHoje
+        ? '#7c3aed60'
+        : mostrarCarga
+          ? `${CARGA_COLOR}60`
+          : `${s.color}30`;
 
-  // Pode alterar status se tem permissão mudar_status
-  const canEdit   = can('mudar_status') || can('alterar_observacao');
-  const canStatus = can('mudar_status');
-  const canCardActions = canStatus
-    || can('marcar_urgente')
-    || can('marcar_carga')
-    || can('servico_corte')
-    || can('servico_dobra')
-    || can('servico_mao_de_obra')
-    || can('servico_calandra');
+  // Urgente e agendado-hoje não exibem número de ordem
+  const mostrarOrdem = !isUrgente && !isAgendadoHoje && ordem != null;
+
+  const canCardActions = can('mudar_status') || can('marcar_urgente') || can('marcar_carga')
+    || can('servico_corte') || can('servico_dobra') || can('servico_mao_de_obra') || can('servico_calandra');
   const canObs    = can('alterar_observacao');
   const canDelete = can('deletar_card');
-
-  const tags = [
-    localCard.corte       && { label: 'Corte',      color: CORTE_COLOR    },
-    localCard.dobra       && { label: 'Dobra',       color: DOBRA_COLOR    },
-    localCard.mao_de_obra && { label: 'Mao de Obra', color: MAO_COLOR      },
-    localCard.calandra    && { label: 'Calandra',    color: CALANDRA_COLOR },
-  ].filter(Boolean);
 
   const handleCardClick = (e) => {
     if (!selectionMode) return;
@@ -78,32 +108,47 @@ export default function ProductionCard({
   return (
     <>
       <div
-        className="group bg-[#141414] rounded-card shadow-card hover:shadow-card-hover transition-all duration-200 flex flex-col overflow-hidden animate-fade-in"
+        className="group flex flex-col overflow-hidden animate-fade-in transition-all duration-200"
         style={{
-          border: `1.5px solid ${borderColor}`,
-          cursor: selectionMode ? 'pointer' : 'default',
-          background: selected ? '#1a1f2e' : '#141414',
-          transition: 'border-color 0.15s, background 0.15s',
+          background:   selected ? '#141c2e' : '#111113',
+          border:       '1px solid #1e1e22',
+          borderRadius: 14,
+          boxShadow:    isUrgente || isAgendadoHoje
+            ? `0 4px 32px rgba(0,0,0,0.7), 0 0 40px ${accentColor}12`
+            : '0 2px 16px rgba(0,0,0,0.5)',
+          cursor:   selectionMode ? 'pointer' : 'default',
+          position: 'relative',
         }}
         onClick={handleCardClick}
       >
+
+
         {/* Imagem */}
         {imageUrl ? (
           <div
-            className="relative h-44 bg-[#1c1c1c] overflow-hidden"
-            style={{ cursor: selectionMode ? 'pointer' : 'zoom-in' }}
+            className="relative overflow-hidden"
+            style={{ height: 160, cursor: selectionMode ? 'pointer' : 'zoom-in', background: '#0a0a0c' }}
             onClick={selectionMode ? handleCardClick : () => setShowImageModal(true)}
           >
-            <img src={imageUrl} alt={localCard.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
-            {selectionMode && <div className="absolute top-2 left-2"><Checkbox checked={selected} /></div>}
-            {selected && <div className="absolute inset-0" style={{ background: '#2563eb10' }} />}
+            <img
+              src={imageUrl}
+              alt={localCard.title}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            />
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, height: 48,
+              background: 'linear-gradient(transparent, rgba(17,17,19,0.85))',
+            }} />
+            {selectionMode && (
+              <div className="absolute top-2.5 left-2.5"><Checkbox checked={selected} /></div>
+            )}
           </div>
         ) : (
-          <div className="h-28 bg-[#1c1c1c] flex items-center justify-center relative">
+          <div className="flex items-center justify-center relative" style={{ height: 72, background: '#0a0a0c' }}>
             {selectionMode ? (
-              <div className="absolute top-2 left-2"><Checkbox checked={selected} /></div>
+              <div className="absolute top-2.5 left-2.5"><Checkbox checked={selected} /></div>
             ) : (
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2a2a2e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                 <circle cx="8.5" cy="8.5" r="1.5"/>
                 <polyline points="21 15 16 10 5 21"/>
@@ -112,45 +157,82 @@ export default function ProductionCard({
           </div>
         )}
 
-        <div className="flex flex-col gap-3 p-4 flex-1">
-          <div className="flex items-start justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex flex-col gap-2.5 p-3.5 flex-1">
+
+          {/* Linha topo: número + badges + ações */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+
+              {/* Número de ordem — branco, neutro */}
+              {mostrarOrdem && (
+                <span
+                  className="flex-shrink-0 text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded-md"
+                  style={{
+                    color:      '#ffffff',
+                    background: 'rgba(255,255,255,0.08)',
+                    border:     '1px solid rgba(255,255,255,0.12)',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  #{fmtOrdem(ordem)}
+                </span>
+              )}
+
               <StatusBadge status={localCard.status} />
-              {localCard.urgente && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                  style={{ color: URGENTE_COLOR, background: `${URGENTE_COLOR}15`, border: `1px solid ${URGENTE_COLOR}35` }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: URGENTE_COLOR }} />
+
+              {isUrgente && (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                  style={{ color: URGENTE_COLOR, background: `${URGENTE_COLOR}15`, border: `1px solid ${URGENTE_COLOR}40` }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: URGENTE_COLOR }} />
                   Urgente
                 </span>
               )}
-              {mostrarCarga && localCard.carga && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                  style={{ color: CARGA_COLOR, background: `${CARGA_COLOR}15`, border: `1px solid ${CARGA_COLOR}35` }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CARGA_COLOR }} />
-                  {localCard.carga}
+
+              {isAgendadoHoje && (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                  style={{ color: '#a78bfa', background: '#7c3aed18', border: '1px solid #7c3aed40' }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#a78bfa' }} />
+                  Hoje
                 </span>
               )}
-              {tags.map(tag => (
-                <span key={tag.label} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                  style={{ color: tag.color, background: `${tag.color}15`, border: `1px solid ${tag.color}35` }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
-                  {tag.label}
+
+              {mostrarCarga && localCard.carga && (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                  style={{ color: CARGA_COLOR, background: `${CARGA_COLOR}15`, border: `1px solid ${CARGA_COLOR}35` }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CARGA_COLOR }} />
+                  {localCard.carga.replace('CARGA - ', '')}
                 </span>
-              ))}
+              )}
             </div>
 
             {!selectionMode && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 {canCardActions && (
-                  <button onClick={() => setShowStatusModal(true)}
-                    className="text-[#555] hover:text-[#8a8a8a] transition-colors text-xs underline underline-offset-2">
-                    alterar
+                  <button
+                    onClick={() => setShowStatusModal(true)}
+                    className="w-6 h-6 flex items-center justify-center rounded-md transition-all opacity-40 group-hover:opacity-100"
+                    style={{ color: '#9ca3af' }}
+                    title="Alterar"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+                    </svg>
                   </button>
                 )}
                 {canDelete && (
-                  <button onClick={() => onDelete(localCard.id)}
-                    className="text-[#555] hover:text-[#ef4444] transition-colors opacity-0 group-hover:opacity-100">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <button
+                    onClick={() => onDelete(localCard.id)}
+                    className="w-6 h-6 flex items-center justify-center rounded-md transition-all opacity-0 group-hover:opacity-100 hover:text-[#ef4444]"
+                    style={{ color: '#6b7280' }}
+                    title="Deletar"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="3 6 5 6 21 6"/>
                       <path d="M19 6l-1 14H6L5 6"/>
                       <path d="M10 11v6M14 11v6"/>
@@ -163,23 +245,45 @@ export default function ProductionCard({
             {selectionMode && !imageUrl && <Checkbox checked={selected} />}
           </div>
 
-          <h3 className="text-[#f0f0f0] font-medium text-sm leading-snug line-clamp-2">{localCard.title}</h3>
+          {/* Tags de serviço */}
+          {tags.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {tags.map(tag => (
+                <span
+                  key={tag.label}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold"
+                  style={{ color: tag.color, background: `${tag.color}12`, border: `1px solid ${tag.color}30` }}
+                >
+                  {tag.label}
+                </span>
+              ))}
+            </div>
+          )}
 
-          <div className="relative group/obs">
+          {/* Título */}
+          <h3 className="text-[#e5e7eb] font-medium text-sm leading-snug line-clamp-2">
+            {localCard.title}
+          </h3>
+
+          {/* Observação */}
+          <div className="relative group/obs flex-1">
             {localCard.observation ? (
               <div>
-                <p className="text-[#c0c0c0] text-xs leading-relaxed line-clamp-3">{localCard.observation}</p>
+                <p className="text-[#8b9199] text-xs leading-relaxed line-clamp-3">{localCard.observation}</p>
                 {localCard.observation_by && (
-                  <p className="text-[#666666] text-[10px] mt-1 font-mono">editado por - {localCard.observation_by}</p>
+                  <p className="text-[#555b63] text-[10px] mt-1 font-mono">editado por {localCard.observation_by}</p>
                 )}
               </div>
             ) : (
-              <p className="text-[#666666] text-xs italic">Sem observacao</p>
+              <p className="text-[#3a3a40] text-xs italic">Sem observação</p>
             )}
             {canObs && !selectionMode && (
-              <button onClick={() => setShowObsModal(true)}
-                className="absolute top-0 right-0 opacity-0 group-hover/obs:opacity-100 transition-opacity text-[#555] hover:text-[#8a8a8a]">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <button
+                onClick={() => setShowObsModal(true)}
+                className="absolute top-0 right-0 opacity-0 group-hover/obs:opacity-100 transition-opacity"
+                style={{ color: '#6b7280' }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
@@ -187,13 +291,29 @@ export default function ProductionCard({
             )}
           </div>
 
+          {/* Agendado (data) */}
           {localCard.status === 'Scheduled' && scheduledStr && (
-            <div className="text-xs" style={{ color: '#7c3aed' }}>Agendado: {scheduledStr}</div>
+            <div className="flex items-center gap-1.5 text-[11px]" style={{ color: '#a78bfa' }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              {scheduledStr}
+            </div>
           )}
 
-          <div className="flex items-center justify-between mt-auto pt-3 border-t border-[#1c1c1c]">
-            <span className="text-[#555] text-xs font-mono">{localCard.created_by}</span>
-            <span className="text-[#555] text-xs">{formattedDate}</span>
+          {/* Rodapé */}
+          <div
+            className="flex items-center justify-between pt-2.5 mt-auto"
+            style={{
+              borderTop:  `1px solid ${accentColor}50`,
+              boxShadow:  `0 -4px 12px ${accentColor}10`,
+            }}
+          >
+            <span className="text-[#555b63] text-[10px] font-mono">{localCard.created_by}</span>
+            <span className="text-[#555b63] text-[10px]">{formattedDate}</span>
           </div>
         </div>
       </div>
@@ -227,14 +347,16 @@ export default function ProductionCard({
 
 function Checkbox({ checked }) {
   return (
-    <div className="w-5 h-5 rounded-md flex items-center justify-center transition-all"
+    <div
+      className="w-5 h-5 rounded-md flex items-center justify-center transition-all flex-shrink-0"
       style={{
-        background: checked ? '#2563eb' : 'rgba(0,0,0,0.6)',
-        border: checked ? '1.5px solid #2563eb' : '1.5px solid #555',
+        background:     checked ? '#2563eb' : 'rgba(0,0,0,0.5)',
+        border:         checked ? '1.5px solid #2563eb' : '1.5px solid #3a3a40',
         backdropFilter: 'blur(4px)',
-      }}>
+      }}
+    >
       {checked && (
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
       )}
