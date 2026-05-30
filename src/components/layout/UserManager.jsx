@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useConfirm } from '../../hooks/useConfirm';
 
 const PERMISSIONS = [
   { key: 'criar_card',          label: 'Criar Card' },
@@ -124,6 +125,7 @@ function ColorPicker({ value, onChange }) {
 }
 
 export default function UserManager({ onClose }) {
+  const { confirm, ConfirmUI } = useConfirm();
   const [users,    setUsers]    = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [selected, setSelected] = useState(null);
@@ -138,7 +140,7 @@ export default function UserManager({ onClose }) {
     setLoading(true);
     try {
       const res = await api.get('/api/auth/users');
-      setUsers(res.data.filter(u => u.username !== 'itadobras'));
+      setUsers(res.data.filter(u => u.role !== 'creator'));
     } catch { setError('Erro ao carregar usuarios'); }
     finally { setLoading(false); }
   }
@@ -202,7 +204,13 @@ export default function UserManager({ onClose }) {
 
   async function deleteUser() {
     if (!selected) return;
-    if (!window.confirm(`Deletar ${selected.display_name}?`)) return;
+    const ok = await confirm({
+      message:      `Deletar ${selected.display_name}?`,
+      detail:       'O usuário será removido permanentemente.',
+      confirmLabel: 'Deletar',
+      danger:       true,
+    });
+    if (!ok) return;
     try {
       await api.delete(`/api/auth/users/${selected.id}`);
       setUsers(u => u.filter(x => x.id !== selected.id));
@@ -228,7 +236,7 @@ export default function UserManager({ onClose }) {
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1c1c1c] flex-shrink-0">
             <div>
               <p className="text-[#f0f0f0] text-sm font-semibold">Gerenciar Usuarios</p>
-              <p className="text-[#555] text-[10px]">Somente itadobras</p>
+              <p className="text-[#555] text-[10px]">Somente administradores</p>
             </div>
             <button onClick={onClose} className="text-[#555] hover:text-[#8a8a8a] transition-colors">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -387,6 +395,9 @@ export default function UserManager({ onClose }) {
           </div>
         </div>
       </div>
+
+      {/* Dialog de confirmação — substitui window.confirm */}
+      {ConfirmUI}
     </>
   );
 }

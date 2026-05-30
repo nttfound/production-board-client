@@ -6,7 +6,7 @@ import UserManager from '../layout/UserManager';
 const ROLE_LABELS = { creator: 'Criador', operator: 'Operador', viewer: 'Visualizacao' };
 
 export default function TopBar({ onNewCard, connected }) {
-  const { user, logout, can } = useAuth();
+  const { user, logout, can, isCreator } = useAuth();
   const isElectron = !!window.electronAPI;
 
   const [updateStatus, setUpdateStatus] = useState('idle');
@@ -85,8 +85,8 @@ export default function TopBar({ onNewCard, connected }) {
           </button>
         )}
 
-        {/* Gerenciar Usuários — só itadobras */}
-        {user?.username === 'itadobras' && (
+        {/* Gerenciar Usuários — só creator */}
+        {isCreator() && (
           <button
             onClick={() => setShowUsers(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all"

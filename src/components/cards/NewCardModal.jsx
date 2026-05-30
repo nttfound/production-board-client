@@ -6,18 +6,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { STATUSES } from '../../services/statusConfig';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
+import { SERVICOS } from '../../config/tagColors';
 
-const CORTE_COLOR    = '#06b6d4';
-const DOBRA_COLOR    = '#8b5cf6';
-const CALANDRA_COLOR = '#ec4899';
-const MAO_COLOR      = '#f59e0b';
-
-const TAGS = [
-  { key: 'dobra',       label: 'Dobra',       color: DOBRA_COLOR    },
-  { key: 'calandra',    label: 'Calandra',    color: CALANDRA_COLOR },
-  { key: 'corte',       label: 'Corte',       color: CORTE_COLOR    },
-  { key: 'mao_de_obra', label: 'Mão de Obra', color: MAO_COLOR      },
-];
+const TAGS = SERVICOS;
 
 function Label({ children }) {
   return (

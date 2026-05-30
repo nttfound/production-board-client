@@ -8,17 +8,14 @@ import { URGENTE_COLOR, CARGA_COLOR, CALANDRA_COLOR } from '../../services/statu
 import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { STATUSES } from '../../services/statusConfig';
 import { useAuth } from '../../contexts/AuthContext';
-
-const CORTE_COLOR = '#06b6d4';
-const DOBRA_COLOR = '#8b5cf6';
-const MAO_COLOR   = '#f59e0b';
+import { TAG_COLORS } from '../../config/tagColors';
 
 const TAGS = [
-  { key: 'urgente',     perm: 'marcar_urgente',      label: 'Urgente',     color: URGENTE_COLOR },
-  { key: 'corte',       perm: 'servico_corte',       label: 'Corte',       color: CORTE_COLOR   },
-  { key: 'dobra',       perm: 'servico_dobra',       label: 'Dobra',       color: DOBRA_COLOR   },
-  { key: 'mao_de_obra', perm: 'servico_mao_de_obra', label: 'Mao de Obra', color: MAO_COLOR     },
-  { key: 'calandra',    perm: 'servico_calandra',    label: 'Calandra',    color: CALANDRA_COLOR },
+  { key: 'urgente',     perm: 'marcar_urgente',      label: 'Urgente',     color: URGENTE_COLOR          },
+  { key: 'corte',       perm: 'servico_corte',       label: 'Corte',       color: TAG_COLORS.corte       },
+  { key: 'dobra',       perm: 'servico_dobra',       label: 'Dobra',       color: TAG_COLORS.dobra       },
+  { key: 'mao_de_obra', perm: 'servico_mao_de_obra', label: 'Mao de Obra', color: TAG_COLORS.mao_de_obra },
+  { key: 'calandra',    perm: 'servico_calandra',    label: 'Calandra',    color: TAG_COLORS.calandra    },
 ];
 
 export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onApplyCarga, onCancel }) {

@@ -27,11 +27,13 @@ export function AuthProvider({ children }) {
   // Verifica sessão na inicialização (cookie enviado automaticamente)
   useEffect(() => { fetchMe(); }, [fetchMe]);
 
-  // Revalida permissões a cada 30 segundos
+  // Revalida permissões a cada 5 minutos — só se a aba estiver visível.
+  // Antes era 30s, gerando 40 requests/min + 40 UPDATEs de sessão no banco
+  // com 20 usuários conectados. O socket já notifica mudanças críticas em tempo real.
   useEffect(() => {
     const interval = setInterval(() => {
-      if (user) fetchMe();
-    }, 30_000);
+      if (user && document.visibilityState === 'visible') fetchMe();
+    }, 5 * 60_000);
     return () => clearInterval(interval);
   }, [fetchMe, user]);
 
@@ -66,16 +68,20 @@ export function AuthProvider({ children }) {
     // api.post('/logout') já limpou o cookie no servidor via res.clearCookie
   };
 
-  // Checa permissão — itadobras sempre tem tudo
+  // Retorna true se o usuário tem role 'creator' (super-admin).
+  // Centraliza a lógica no client — espelho do isSuperAdmin() do servidor.
+  const isCreator = (u = user) => u?.role === 'creator';
+
+  // Checa permissão granular — creator sempre tem tudo
   const can = (perm) => {
     if (!user) return false;
-    if (user.username === 'itadobras') return true;
+    if (isCreator()) return true;
     if (perm.startsWith('servico_') && user.permissions?.alterar_servicos) return true;
     return !!user.permissions?.[perm];
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, can }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, can, isCreator }}>
       {children}
     </AuthContext.Provider>
   );

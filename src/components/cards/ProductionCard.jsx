@@ -6,11 +6,9 @@ import ObservacaoEdit from './ObservacaoEdit';
 import { useAuth } from '../../contexts/AuthContext';
 import { getStatus, URGENTE_COLOR, CARGA_COLOR, CALANDRA_COLOR } from '../../services/statusConfig';
 import { cargaAtivaAgora } from '../../services/cargaConfig';
+import { TAG_COLORS } from '../../config/tagColors';
 
-const BASE_URL    = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-const CORTE_COLOR = '#06b6d4';
-const DOBRA_COLOR = '#8b5cf6';
-const MAO_COLOR   = '#f59e0b';
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 function fmtOrdem(n) {
   return String(n).padStart(2, '0');
@@ -65,10 +63,10 @@ export default function ProductionCard({
     : null;
 
   const tags = [
-    localCard.dobra       && { label: 'Dobra',       color: DOBRA_COLOR    },
-    localCard.calandra    && { label: 'Calandra',    color: CALANDRA_COLOR },
-    localCard.corte       && { label: 'Corte',       color: CORTE_COLOR    },
-    localCard.mao_de_obra && { label: 'Mão de Obra', color: MAO_COLOR      },
+    localCard.dobra       && { label: 'Dobra',       color: TAG_COLORS.dobra       },
+    localCard.calandra    && { label: 'Calandra',    color: TAG_COLORS.calandra    },
+    localCard.corte       && { label: 'Corte',       color: TAG_COLORS.corte       },
+    localCard.mao_de_obra && { label: 'Mão de Obra', color: TAG_COLORS.mao_de_obra },
   ].filter(Boolean);
 
   // Cor de acento do card

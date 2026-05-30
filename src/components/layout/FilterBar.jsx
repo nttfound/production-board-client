@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CARGA_COLOR } from '../../services/statusConfig';
+import { CARGA_COLOR, STATUSES } from '../../services/statusConfig';
 import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { useAuth } from '../../contexts/AuthContext';
-
-const SERVICOS = [
-  { key: 'corte',    label: 'Corte',    color: '#06b6d4' },
-  { key: 'dobra',    label: 'Dobra',    color: '#8b5cf6' },
-  { key: 'calandra', label: 'Calandra', color: '#ec4899' },
-];
+import { SERVICOS } from '../../config/tagColors';
 
 const DIAS_CARGA = Object.entries(CARGA_POR_DIA);
+
+// Status individuais disponíveis no filtro avançado
+// (Fila e Prontos já ficam nos chips rápidos da barra principal)
+const STATUS_FILTERS = STATUSES.filter(s =>
+  !['Ready'].includes(s.value)
+);
 
 // Abreviações para exibir cidades no botão do dia
 const abreviar = (cidade) => {
@@ -46,7 +47,8 @@ export default function FilterBar({
   const advancedRef = useRef(null);
 
   const itapiraAtivo  = filterDias.includes('Itapira');
-  const totalAtivos   = filterDias.length + filterServicos.length;
+  const statusAtivo   = !['fila', 'prontos'].includes(filterStatus) ? 1 : 0;
+  const totalAtivos   = filterDias.length + filterServicos.length + statusAtivo;
 
   useEffect(() => {
     if (!showAdvanced) return;
@@ -73,6 +75,7 @@ export default function FilterBar({
   const limparAvancado = () => {
     onFilterDias([]);
     onFilterServicos([]);
+    onFilterStatus('fila');
   };
 
   return (
@@ -247,6 +250,49 @@ export default function FilterBar({
 
               <div style={{ height: 1, background: '#1a1a1a', margin: '0 12px' }} />
 
+              {/* Status */}
+              <div className="p-3">
+                <p className="text-[#3a3a3a] text-[10px] uppercase tracking-widest mb-2.5 px-1 font-semibold">Status</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {STATUS_FILTERS.map(s => {
+                    const ativo = filterStatus === s.value;
+                    return (
+                      <button
+                        key={s.value}
+                        onClick={() => {
+                          onFilterStatus(ativo ? 'fila' : s.value);
+                          setShowAdvanced(false);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-left"
+                        style={ativo
+                          ? { background: `${s.color}18`, border: `1px solid ${s.color}60` }
+                          : { background: '#161616', border: '1px solid #1e1e1e' }
+                        }
+                      >
+                        <div
+                          className="w-4 h-4 rounded-[5px] flex items-center justify-center flex-shrink-0 transition-all"
+                          style={ativo
+                            ? { background: s.color, border: `1.5px solid ${s.color}` }
+                            : { background: 'transparent', border: '1.5px solid #333' }
+                          }
+                        >
+                          {ativo && (
+                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                          )}
+                        </div>
+                        <span className="text-[12px] font-semibold truncate" style={{ color: ativo ? s.color : '#666' }}>
+                          {s.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ height: 1, background: '#1a1a1a', margin: '0 12px' }} />
+
               {/* Serviços */}
               <div className="p-3">
                 <p className="text-[#3a3a3a] text-[10px] uppercase tracking-widest mb-2.5 px-1 font-semibold">Serviços</p>
@@ -343,6 +389,24 @@ export default function FilterBar({
                 </button>
               );
             })}
+
+            {/* Chip do status individual ativo */}
+            {statusAtivo > 0 && (() => {
+              const s = STATUSES.find(st => st.value === filterStatus);
+              return s ? (
+                <span
+                  key={s.value}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all hover:opacity-75"
+                  style={{ background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}40` }}
+                  onClick={() => onFilterStatus('fila')}
+                >
+                  {s.label}
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </span>
+              ) : null;
+            })()}
 
             {/* Chips dos dias ativos */}
             {filterDias.map(dia => (

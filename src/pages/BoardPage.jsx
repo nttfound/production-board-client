@@ -18,11 +18,16 @@ import NewCardModal   from '../components/cards/NewCardModal';
 import BulkActionBar  from '../components/cards/BulkActionBar';
 import AuditPanel     from '../components/cards/AuditPanel';
 import { cargaAtivaAgora, CARGA_POR_DIA } from '../services/cargaConfig';
-import ChatPanel from '../components/chat/ChatPanel';
+import ChatPanel      from '../components/chat/ChatPanel';
+import { useToast }   from '../hooks/useToast';
+import { useConfirm } from '../hooks/useConfirm';
 
 const PAGE_LIMIT = 50;
 
 export default function BoardPage() {
+  const { showToast, ToastContainer } = useToast();
+  const { confirm, ConfirmUI }        = useConfirm();
+
   const [cards,          setCards]          = useState([]);
   const [search,         setSearch]         = useState('');
   const [filterStatus,   setFilterStatus]   = useState('fila');
@@ -55,7 +60,10 @@ export default function BoardPage() {
         setHasMore(res.data.hasMore);
         setPage(1);
       })
-      .catch(err => console.error('[BOARD] Failed to load cards:', err))
+      .catch(err => {
+        console.error('[BOARD] Failed to load cards:', err);
+        showToast('error', 'Falha ao carregar os cards. Verifique sua conexão.');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -76,6 +84,7 @@ export default function BoardPage() {
       setPage(nextPage);
     } catch (err) {
       console.error('[BOARD] Failed to load next page:', err);
+      showToast('warn', 'Falha ao carregar mais cards. Tente rolar novamente.');
     } finally {
       setLoadingMore(false);
     }
@@ -154,15 +163,23 @@ export default function BoardPage() {
       await api.patch(`/api/cards/${id}/status`, { status, scheduled_date });
     } catch (err) {
       console.error('[BOARD] Status update failed:', err);
+      showToast('error', 'Falha ao atualizar o status. Tente novamente.');
     }
   }, []);
 
   const handleDelete = useCallback(async (id) => {
-    if (!window.confirm('Excluir este card?')) return;
+    const ok = await confirm({
+      message:      'Excluir este card?',
+      detail:       'Esta ação não pode ser desfeita.',
+      confirmLabel: 'Excluir',
+      danger:       true,
+    });
+    if (!ok) return;
     try {
       await api.delete(`/api/cards/${id}`);
     } catch (err) {
       console.error('[BOARD] Delete failed:', err);
+      showToast('error', 'Falha ao excluir o card. Tente novamente.');
     }
   }, []);
 
@@ -287,8 +304,9 @@ export default function BoardPage() {
       }
     } catch (err) {
       console.error('[BOARD] Bulk tag failed:', err);
+      showToast('error', 'Falha na ação em massa. Tente novamente.');
     }
-  }, [selectedIds]);
+  }, [selectedIds, showToast]);
 
   const bulkApplyStatus = useCallback(async (status) => {
     const ids = [...selectedIds];
@@ -297,8 +315,9 @@ export default function BoardPage() {
       await api.patch('/api/cards/bulk/status', { ids, status });
     } catch (err) {
       console.error('[BOARD] Bulk status failed:', err);
+      showToast('error', 'Falha ao alterar status em massa. Tente novamente.');
     }
-  }, [selectedIds]);
+  }, [selectedIds, showToast]);
 
   const bulkApplyCarga = useCallback(async (carga) => {
     const ids = [...selectedIds];
@@ -307,8 +326,9 @@ export default function BoardPage() {
       await api.patch('/api/cards/bulk/carga', { ids, carga });
     } catch (err) {
       console.error('[BOARD] Bulk carga failed:', err);
+      showToast('error', 'Falha ao alterar carga em massa. Tente novamente.');
     }
-  }, [selectedIds]);
+  }, [selectedIds, showToast]);
 
   return (
     <div className="flex flex-col h-screen bg-[#0d0d0d]" style={{ overflow: "clip" }}>
@@ -405,6 +425,12 @@ export default function BoardPage() {
 
       {showAudit && <AuditPanel onClose={() => setShowAudit(false)} />}
       <ChatPanel />
+
+      {/* Toasts de feedback — sempre por cima de tudo */}
+      <ToastContainer />
+
+      {/* Dialog de confirmação — substitui window.confirm */}
+      {ConfirmUI}
     </div>
   );
 }

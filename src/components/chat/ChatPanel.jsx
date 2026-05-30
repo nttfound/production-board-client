@@ -97,7 +97,7 @@ function IconChat({ size = 18, color = 'currentColor' }) {
 }
 
 export default function ChatPanel() {
-  const { user } = useAuth();
+  const { user, isCreator } = useAuth();
 
   const [open,            setOpen]            = useState(false);
   const [expanded,        setExpanded]        = useState(false);
@@ -210,10 +210,10 @@ export default function ChatPanel() {
 
   const canDelete = useCallback((msg) => {
     if (!user) return false;
-    if (user.username === 'itadobras') return true;
+    if (isCreator()) return true;
     if (msg.username !== user.username) return false;
     return (Date.now() - new Date(msg.created_at).getTime()) < 60 * 1000;
-  }, [user]);
+  }, [user, isCreator]);
 
   const handleFileSelect = useCallback(async (e) => {
     const file = e.target.files?.[0];
