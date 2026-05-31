@@ -25,26 +25,47 @@ function getCardCity(card) {
   return card.carga.startsWith('CARGA - ') ? card.carga.replace('CARGA - ', '') : card.carga;
 }
 
-function getServicePriority(card) {
-  if (card.dobra) return 0;
+// Prioridade de serviço dentro do grupo carga:
+// carga+dobra(0) > carga+calandra(1) > carga sem serviço(2) > carga+corte(3)
+function getCargaServicePriority(card) {
+  if (card.dobra)    return 0;
   if (card.calandra) return 1;
-  if (card.corte) return 2;
+  if (!card.dobra && !card.calandra && !card.corte) return 2;
+  if (card.corte)    return 3;
+  return 4;
+}
+
+// Prioridade de serviço fora do grupo carga (mais antigos primeiro com serviço):
+// dobra(0) > calandra(1) > corte(2) > sem serviço(3)
+function getServicePriority(card) {
+  if (card.dobra)    return 0;
+  if (card.calandra) return 1;
+  if (card.corte)    return 2;
   return 3;
 }
 
 function sortCards(cards) {
   return [...cards].sort((a, b) => {
+    // 1. Urgente sempre primeiro
     if (Boolean(a.urgente) !== Boolean(b.urgente)) return Boolean(b.urgente) - Boolean(a.urgente);
 
     const cargaA = Boolean(a.carga);
     const cargaB = Boolean(b.carga);
+
+    // 2. Com carga antes dos sem carga
     if (cargaA !== cargaB) return Number(cargaB) - Number(cargaA);
 
     if (cargaA && cargaB) {
-      const serviceDiff = getServicePriority(a) - getServicePriority(b);
-      if (serviceDiff !== 0) return serviceDiff;
+      // 3. Dentro do grupo carga: dobra > calandra > sem serviço > corte
+      const diff = getCargaServicePriority(a) - getCargaServicePriority(b);
+      if (diff !== 0) return diff;
+      // Mesmo subgrupo: mais antigos primeiro
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     }
 
+    // 4. Sem carga: dobra > calandra > corte > sem serviço, mais antigos primeiro dentro de cada grupo
+    const svcDiff = getServicePriority(a) - getServicePriority(b);
+    if (svcDiff !== 0) return svcDiff;
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
 }

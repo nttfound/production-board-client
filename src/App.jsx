@@ -6,6 +6,7 @@ import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import BoardPage from './pages/BoardPage';
+import UpdateBanner from './components/ui/UpdateBanner';
 
 function AppInner() {
   const { user, loading } = useAuth();
@@ -25,6 +26,8 @@ export default function App() {
   return (
     <AuthProvider>
       <AppInner />
+      {/* Floating update notification — only active in packaged Electron builds */}
+      <UpdateBanner />
     </AuthProvider>
   );
 }
