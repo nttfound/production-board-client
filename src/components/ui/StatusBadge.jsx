@@ -3,14 +3,29 @@ import { getStatus } from '../../services/statusConfig';
 
 export default function StatusBadge({ status, size = 'sm' }) {
   const s = getStatus(status);
-  const padding = size === 'lg' ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs';
+  const isLg = size === 'lg';
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full font-medium ${padding}`}
-      style={{ color: s.color, backgroundColor: s.bg, border: `1px solid ${s.color}30` }}
+      className={`inline-flex items-center gap-1.5 font-mono font-medium tracking-wide uppercase rounded-tag tag-pill ${
+        isLg ? 'px-3 py-1.5 text-[11px]' : 'px-2 py-[5px] text-[10px]'
+      }`}
+      style={{
+        color: s.color,
+        backgroundColor: `${s.color}12`,
+        border: `1px solid ${s.color}25`,
+        letterSpacing: '0.06em',
+      }}
     >
-      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+      <span
+        className="rounded-full flex-shrink-0 animate-pulse-soft"
+        style={{
+          width: isLg ? 6 : 5,
+          height: isLg ? 6 : 5,
+          backgroundColor: s.color,
+          boxShadow: `0 0 6px ${s.color}80`,
+        }}
+      />
       {s.label}
     </span>
   );
