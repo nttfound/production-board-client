@@ -1,5 +1,4 @@
 const { app, BrowserWindow, ipcMain, clipboard, nativeImage } = require('electron');
-const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const isDev = !app.isPackaged;
 
@@ -13,7 +12,7 @@ function createWindow() {
     minWidth:        1024,
     minHeight:       680,
     backgroundColor: '#0d0d0d',
-    icon: path.join(__dirname, '../public/icon.png'),
+    icon:            path.join(__dirname, '../public/icon.png'),
     webPreferences: {
       preload:          path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -30,20 +29,14 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../build/index.html'));
   }
 
+  // Reseta badge quando janela recebe foco
   mainWindow.on('focus', () => {
     badgeCount = 0;
     mainWindow.setOverlayIcon(null, '');
   });
 }
 
-app.whenReady().then(() => {
-  createWindow();
-
-  if (!isDev) {
-    autoUpdater.checkForUpdatesAndNotify();
-    setInterval(() => autoUpdater.checkForUpdatesAndNotify(), 30 * 60 * 1000);
-  }
-});
+app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
@@ -53,30 +46,6 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-// ── Auto-updater events ─────────────────────────────────────
-autoUpdater.on('update-available', () => {
-  if (mainWindow) mainWindow.webContents.send('update:available');
-});
-
-autoUpdater.on('update-not-available', () => {
-  if (mainWindow) mainWindow.webContents.send('update:not-available');
-});
-
-autoUpdater.on('update-downloaded', () => {
-  if (mainWindow) mainWindow.webContents.send('update:ready');
-  setTimeout(() => autoUpdater.quitAndInstall(), 5000);
-});
-
-autoUpdater.on('error', (err) => {
-  console.error('[UPDATER] Erro:', err.message);
-});
-
-// ── IPC: Updater ────────────────────────────────────────────
-ipcMain.handle('updater:check', () => {
-  if (!isDev) autoUpdater.checkForUpdatesAndNotify();
-});
-
-// ── IPC: Clipboard ──────────────────────────────────────────
 ipcMain.handle('clipboard:readImage', () => {
   const img = clipboard.readImage();
   if (img.isEmpty()) return null;
@@ -84,12 +53,13 @@ ipcMain.handle('clipboard:readImage', () => {
   return `data:image/png;base64,${base64}`;
 });
 
-// ── IPC: Badge ──────────────────────────────────────────────
 ipcMain.handle('notify', () => {
   if (!mainWindow || mainWindow.isFocused()) return;
   badgeCount++;
   try {
     const badge = nativeImage.createFromPath(path.join(__dirname, '../public/icon.png'));
     mainWindow.setOverlayIcon(badge, `${badgeCount} atualizacao`);
-  } catch (e) {}
+  } catch (e) {
+    console.error('Badge error:', e.message);
+  }
 });

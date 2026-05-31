@@ -4,24 +4,27 @@ import socket from '../../services/socket';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function AnexoGlobal() {
-  const { can } = useAuth();
+  const { user } = useAuth();
   const [anexo,   setAnexo]   = useState(null);
   const [loading, setLoading] = useState(false);
   const [tempo,   setTempo]   = useState('');
   const inputRef = useRef();
 
-  const canUpload   = can('upload_anexo');
-  const canDownload = can('ver_registro') || can('upload_anexo') || can('mudar_status');  // qualquer usuário ativo
+  const isCreator  = user?.role === 'creator';
+  const canDownload = user?.role === 'creator' || user?.role === 'operator';
 
+  // Carrega anexo ativo ao montar
   useEffect(() => {
     api.get('/api/anexo').then(res => setAnexo(res.data)).catch(() => {});
   }, []);
 
+  // Escuta atualizações em tempo real
   useEffect(() => {
     socket.on('anexo:atualizado', (data) => setAnexo(data));
     return () => socket.off('anexo:atualizado');
   }, []);
 
+  // Contador regressivo
   useEffect(() => {
     if (!anexo?.expira_em) { setTempo(''); return; }
     const interval = setInterval(() => {
@@ -38,11 +41,14 @@ export default function AnexoGlobal() {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { alert('Maximo 5MB'); return; }
+
     setLoading(true);
     const formData = new FormData();
     formData.append('arquivo', file);
     try {
-      const res = await api.post('/api/anexo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await api.post('/api/anexo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setAnexo(res.data);
     } catch (err) {
       alert(err.response?.data?.error || 'Erro no upload');
@@ -58,13 +64,22 @@ export default function AnexoGlobal() {
     try {
       await api.delete(`/api/anexo/${anexo.id}`);
       setAnexo(null);
-    } catch { alert('Erro ao remover'); }
-    finally { setLoading(false); }
+    } catch (err) {
+      alert('Erro ao remover');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1c1c1c] border border-[#2a2a2a] min-w-[200px] max-w-[280px]">
-      <input ref={inputRef} type="file" className="hidden" accept=".dxf,.dwg,.png,.jpg,.jpeg" onChange={handleUpload} />
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        accept=".dxf,.dwg,.png,.jpg,.jpeg"
+        onChange={handleUpload}
+      />
 
       {anexo ? (
         <>
@@ -73,7 +88,8 @@ export default function AnexoGlobal() {
           </svg>
           <span className="text-[#f0f0f0] text-xs truncate flex-1">{anexo.nome}</span>
           <span className="text-[#555] text-[10px] font-mono flex-shrink-0">{tempo}</span>
-
+       
+        {canDownload && (
           <button
             onClick={async () => {
               try {
@@ -81,9 +97,13 @@ export default function AnexoGlobal() {
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url; a.download = anexo.nome; a.click();
+                a.href = url;
+                a.download = anexo.nome;
+                a.click();
                 URL.revokeObjectURL(url);
-              } catch { window.open(anexo.url, '_blank'); }
+              } catch {
+                window.open(anexo.url, '_blank');
+              }
             }}
             className="text-[#2563eb] hover:text-[#1d4ed8] transition-colors flex-shrink-0" title="Baixar">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -92,8 +112,9 @@ export default function AnexoGlobal() {
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
           </button>
+        )}
 
-          {canUpload && (
+          {isCreator && (
             <button onClick={handleRemove} disabled={loading}
               className="text-[#555] hover:text-[#ef4444] transition-colors flex-shrink-0" title="Remover">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -103,9 +124,12 @@ export default function AnexoGlobal() {
           )}
         </>
       ) : (
-        canUpload ? (
-          <button onClick={() => inputRef.current?.click()} disabled={loading}
-            className="flex items-center gap-1.5 text-[#555] hover:text-[#8a8a8a] text-xs transition-colors w-full disabled:opacity-50">
+        isCreator ? (
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={loading}
+            className="flex items-center gap-1.5 text-[#555] hover:text-[#8a8a8a] text-xs transition-colors w-full disabled:opacity-50"
+          >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
             </svg>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { STATUSES, URGENTE_COLOR, CARGA_COLOR, CALANDRA_COLOR } from '../../services/statusConfig';
+import { STATUSES, URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConfig';
 import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
@@ -7,10 +7,9 @@ import api from '../../services/api';
 const CORTE_COLOR = '#06b6d4';
 const DOBRA_COLOR = '#8b5cf6';
 const MAO_COLOR   = '#f59e0b';
-const CALA_COLOR  = CALANDRA_COLOR;
 
 export default function StatusModal({ card, onClose, onSave }) {
-  const { can } = useAuth();
+  const { user } = useAuth();
   const [selected,  setSelected]  = useState(card.status);
   const [schedDate, setSchedDate] = useState(card.scheduled_date?.slice(0, 10) || '');
   const [urgente,   setUrgente]   = useState(card.urgente || false);
@@ -18,35 +17,36 @@ export default function StatusModal({ card, onClose, onSave }) {
   const [corte,     setCorte]     = useState(card.corte || false);
   const [dobra,     setDobra]     = useState(card.dobra || false);
   const [maoDeObra, setMaoDeObra] = useState(card.mao_de_obra || false);
-  const [calandra,  setCalandra]  = useState(card.calandra || false);
   const [tab,       setTab]       = useState('status');
   const [diaAberto, setDiaAberto] = useState(null);
 
+  const isCreator = user?.role === 'creator';
+
   const tabs = [{ key: 'status', label: 'Status' }];
-  if (can('marcar_urgente'))   tabs.push({ key: 'urgente',  label: 'Urgente'   });
-  if (can('marcar_carga'))     tabs.push({ key: 'carga',    label: 'Carga'     });
-  if (can('alterar_servicos')) tabs.push({ key: 'servicos', label: 'Servicos'  });
+  if (isCreator) {
+    tabs.push({ key: 'urgente',  label: 'Urgente'  });
+    tabs.push({ key: 'carga',    label: 'Carga'    });
+    tabs.push({ key: 'servicos', label: 'Servicos' });
+  }
 
   const handleSave = async () => {
     if (selected === 'Scheduled' && !schedDate) return;
     const updates = {};
-    if (can('marcar_urgente') && urgente !== (card.urgente || false)) {
-      await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
-      updates.urgente = urgente;
-    }
-    if (can('marcar_carga') && carga !== (card.carga || null)) {
-      await api.patch(`/api/cards/${card.id}/carga`, { carga });
-      updates.carga = carga;
-    }
-    if (can('alterar_servicos') && (
-      corte !== (card.corte || false) ||
-      dobra !== (card.dobra || false) ||
-      maoDeObra !== (card.mao_de_obra || false) ||
-      calandra !== (card.calandra || false)
-    )) {
-      await api.patch(`/api/cards/${card.id}/servicos`, { corte, dobra, mao_de_obra: maoDeObra, calandra });
-      updates.corte = corte; updates.dobra = dobra;
-      updates.mao_de_obra = maoDeObra; updates.calandra = calandra;
+    if (isCreator) {
+      if (urgente !== (card.urgente || false)) {
+        await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
+        updates.urgente = urgente;
+      }
+      if (carga !== (card.carga || null)) {
+        await api.patch(`/api/cards/${card.id}/carga`, { carga });
+        updates.carga = carga;
+      }
+      if (corte !== (card.corte || false) || dobra !== (card.dobra || false) || maoDeObra !== (card.mao_de_obra || false)) {
+        await api.patch(`/api/cards/${card.id}/servicos`, { corte, dobra, mao_de_obra: maoDeObra });
+        updates.corte = corte;
+        updates.dobra = dobra;
+        updates.mao_de_obra = maoDeObra;
+      }
     }
     onSave(selected, schedDate || null, updates);
   };
@@ -111,7 +111,7 @@ export default function StatusModal({ card, onClose, onSave }) {
         )}
 
         {/* URGENTE */}
-        {tab === 'urgente' && can('marcar_urgente') && (
+        {tab === 'urgente' && isCreator && (
           <div className="flex flex-col items-center gap-5 py-4">
             <div
               className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl cursor-pointer transition-all duration-200 border-2"
@@ -134,8 +134,9 @@ export default function StatusModal({ card, onClose, onSave }) {
         )}
 
         {/* CARGA */}
-        {tab === 'carga' && can('marcar_carga') && (
+        {tab === 'carga' && isCreator && (
           <div className="space-y-3">
+            {/* Itapira - sempre visivel */}
             <div>
               <p className="text-[#8a8a8a] text-xs uppercase tracking-wider mb-2">Sempre disponivel</p>
               <ToggleBtn
@@ -145,6 +146,8 @@ export default function StatusModal({ card, onClose, onSave }) {
                 color={CARGA_COLOR}
               />
             </div>
+
+            {/* Cidades por dia */}
             {Object.entries(CARGA_POR_DIA).map(([dia, cidades]) => (
               <div key={dia}>
                 <button
@@ -157,6 +160,7 @@ export default function StatusModal({ card, onClose, onSave }) {
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
+
                 {diaAberto === dia && (
                   <div className="space-y-1.5 mt-1.5 pl-2">
                     {cidades.map(cidade => (
@@ -172,6 +176,7 @@ export default function StatusModal({ card, onClose, onSave }) {
                 )}
               </div>
             ))}
+
             {carga && (
               <button onClick={() => setCarga(null)} className="w-full py-2 text-[#555] text-xs hover:text-[#8a8a8a] transition-colors">
                 Remover carga
@@ -181,13 +186,12 @@ export default function StatusModal({ card, onClose, onSave }) {
         )}
 
         {/* SERVICOS */}
-        {tab === 'servicos' && can('alterar_servicos') && (
+        {tab === 'servicos' && isCreator && (
           <div className="space-y-2">
             <p className="text-[#8a8a8a] text-xs uppercase tracking-wider mb-3">Servicos</p>
             <ToggleBtn label="Corte"       value={corte}     onChange={setCorte}     color={CORTE_COLOR} />
             <ToggleBtn label="Dobra"       value={dobra}     onChange={setDobra}     color={DOBRA_COLOR} />
             <ToggleBtn label="Mao de Obra" value={maoDeObra} onChange={setMaoDeObra} color={MAO_COLOR}   />
-            <ToggleBtn label="Calandra"    value={calandra}  onChange={setCalandra}  color={CALA_COLOR}  />
           </div>
         )}
 

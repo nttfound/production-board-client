@@ -3,13 +3,13 @@ import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function AnexoSection({ card, onUpdate }) {
-  const { can } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [erro,    setErro]    = useState('');
   const inputRef = useRef();
 
-  const canUpload   = can('upload_anexo');
-  const canDownload = true; // todos os usuários logados podem baixar
+  const isCreator  = user?.role === 'creator';
+  const canDownload = user?.role === 'creator' || user?.role === 'operator';
 
   const temAnexo = !!card.anexo_path;
 
@@ -25,12 +25,21 @@ export default function AnexoSection({ card, onUpdate }) {
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setErro('Arquivo muito grande. Maximo 5MB.'); return; }
-    setLoading(true); setErro('');
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErro('Arquivo muito grande. Maximo 5MB.');
+      return;
+    }
+
+    setLoading(true);
+    setErro('');
     const formData = new FormData();
     formData.append('anexo', file);
+
     try {
-      const res = await api.post(`/api/cards/${card.id}/anexo`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await api.post(`/api/cards/${card.id}/anexo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       onUpdate(res.data);
     } catch (err) {
       setErro(err.response?.data?.error || 'Erro no upload');
@@ -45,8 +54,11 @@ export default function AnexoSection({ card, onUpdate }) {
     try {
       const res = await api.delete(`/api/cards/${card.id}/anexo`);
       onUpdate(res.data);
-    } catch { setErro('Erro ao remover anexo'); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setErro('Erro ao remover anexo');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,7 +72,8 @@ export default function AnexoSection({ card, onUpdate }) {
           <span className="text-[#555] text-[10px] font-mono">{expiresIn()}</span>
           {canDownload && (
             <a href={card.anexo_path} target="_blank" rel="noreferrer"
-              className="text-[#2563eb] hover:text-[#1d4ed8] transition-colors" title="Baixar">
+              className="text-[#2563eb] hover:text-[#1d4ed8] transition-colors"
+              title="Baixar">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -68,7 +81,7 @@ export default function AnexoSection({ card, onUpdate }) {
               </svg>
             </a>
           )}
-          {canUpload && (
+          {isCreator && (
             <button onClick={handleRemove} disabled={loading}
               className="text-[#555] hover:text-[#ef4444] transition-colors" title="Remover">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -78,11 +91,16 @@ export default function AnexoSection({ card, onUpdate }) {
           )}
         </div>
       ) : (
-        canUpload && (
+        isCreator && (
           <div>
-            <input ref={inputRef} type="file" className="hidden" accept=".dxf,.dwg,.png,.jpg,.jpeg" onChange={handleUpload} />
-            <button onClick={() => inputRef.current?.click()} disabled={loading}
-              className="flex items-center gap-1.5 text-[#555] hover:text-[#8a8a8a] text-xs transition-colors disabled:opacity-50">
+            <input ref={inputRef} type="file" className="hidden"
+              accept=".dxf,.dwg,.png,.jpg,.jpeg"
+              onChange={handleUpload} />
+            <button
+              onClick={() => inputRef.current?.click()}
+              disabled={loading}
+              className="flex items-center gap-1.5 text-[#555] hover:text-[#8a8a8a] text-xs transition-colors disabled:opacity-50"
+            >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
               </svg>
