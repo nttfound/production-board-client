@@ -1,6 +1,6 @@
 {
   "name": "producao-laser",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Production Board - Electron + React frontend",
   "main": "electron/main.js",
   "homepage": "./",
