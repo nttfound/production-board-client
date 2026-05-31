@@ -10,9 +10,7 @@ export default function ObservacaoEdit({ card, onSave, onClose }) {
     setLoading(true);
     setErro('');
     try {
-      console.log('[OBS] Salvando card id:', card.id, 'texto:', text);
       const res = await api.patch(`/api/cards/${card.id}/observacao`, { observation: text });
-      console.log('[OBS] Resposta:', res.data);
       onSave(text);
       onClose();
     } catch (err) {

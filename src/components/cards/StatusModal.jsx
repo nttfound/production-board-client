@@ -7,6 +7,7 @@ import api from '../../services/api';
 const CORTE_COLOR = '#06b6d4';
 const DOBRA_COLOR = '#8b5cf6';
 const MAO_COLOR   = '#f59e0b';
+const CALANDRA_COLOR = '#22c55e';
 
 export default function StatusModal({ card, onClose, onSave }) {
   const { user } = useAuth();
@@ -17,35 +18,57 @@ export default function StatusModal({ card, onClose, onSave }) {
   const [corte,     setCorte]     = useState(card.corte || false);
   const [dobra,     setDobra]     = useState(card.dobra || false);
   const [maoDeObra, setMaoDeObra] = useState(card.mao_de_obra || false);
+  const [calandra,  setCalandra]  = useState(card.calandra || false);
   const [tab,       setTab]       = useState('status');
   const [diaAberto, setDiaAberto] = useState(null);
 
   const isCreator = user?.role === 'creator';
+  const canUrgente = isCreator || Boolean(user?.permissions?.marcar_urgente);
+  const canCarga = isCreator || Boolean(user?.permissions?.marcar_carga);
+  const canServicoCorte = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_corte);
+  const canServicoDobra = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_dobra);
+  const canServicoMaoDeObra = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_mao_de_obra);
+  const canServicoCalandra = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_calandra);
+  const canServicos = canServicoCorte || canServicoDobra || canServicoMaoDeObra || canServicoCalandra;
 
   const tabs = [{ key: 'status', label: 'Status' }];
-  if (isCreator) {
+  if (canUrgente) {
     tabs.push({ key: 'urgente',  label: 'Urgente'  });
+  }
+  if (canCarga) {
     tabs.push({ key: 'carga',    label: 'Carga'    });
+  }
+  if (canServicos) {
     tabs.push({ key: 'servicos', label: 'Servicos' });
   }
 
   const handleSave = async () => {
     if (selected === 'Scheduled' && !schedDate) return;
     const updates = {};
-    if (isCreator) {
+    if (canUrgente) {
       if (urgente !== (card.urgente || false)) {
         await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
         updates.urgente = urgente;
       }
+    }
+    if (canCarga) {
       if (carga !== (card.carga || null)) {
         await api.patch(`/api/cards/${card.id}/carga`, { carga });
         updates.carga = carga;
       }
-      if (corte !== (card.corte || false) || dobra !== (card.dobra || false) || maoDeObra !== (card.mao_de_obra || false)) {
-        await api.patch(`/api/cards/${card.id}/servicos`, { corte, dobra, mao_de_obra: maoDeObra });
+    }
+    if (canServicos) {
+      if (corte !== (card.corte || false) || dobra !== (card.dobra || false) || maoDeObra !== (card.mao_de_obra || false) || calandra !== (card.calandra || false)) {
+        const payload = {};
+        if (canServicoCorte) payload.corte = corte;
+        if (canServicoDobra) payload.dobra = dobra;
+        if (canServicoMaoDeObra) payload.mao_de_obra = maoDeObra;
+        if (canServicoCalandra) payload.calandra = calandra;
+        await api.patch(`/api/cards/${card.id}/servicos`, payload);
         updates.corte = corte;
         updates.dobra = dobra;
         updates.mao_de_obra = maoDeObra;
+        updates.calandra = calandra;
       }
     }
     onSave(selected, schedDate || null, updates);
@@ -111,7 +134,7 @@ export default function StatusModal({ card, onClose, onSave }) {
         )}
 
         {/* URGENTE */}
-        {tab === 'urgente' && isCreator && (
+        {tab === 'urgente' && canUrgente && (
           <div className="flex flex-col items-center gap-5 py-4">
             <div
               className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl cursor-pointer transition-all duration-200 border-2"
@@ -134,7 +157,7 @@ export default function StatusModal({ card, onClose, onSave }) {
         )}
 
         {/* CARGA */}
-        {tab === 'carga' && isCreator && (
+        {tab === 'carga' && canCarga && (
           <div className="space-y-3">
             {/* Itapira - sempre visivel */}
             <div>
@@ -186,12 +209,13 @@ export default function StatusModal({ card, onClose, onSave }) {
         )}
 
         {/* SERVICOS */}
-        {tab === 'servicos' && isCreator && (
+        {tab === 'servicos' && canServicos && (
           <div className="space-y-2">
             <p className="text-[#8a8a8a] text-xs uppercase tracking-wider mb-3">Servicos</p>
-            <ToggleBtn label="Corte"       value={corte}     onChange={setCorte}     color={CORTE_COLOR} />
-            <ToggleBtn label="Dobra"       value={dobra}     onChange={setDobra}     color={DOBRA_COLOR} />
-            <ToggleBtn label="Mao de Obra" value={maoDeObra} onChange={setMaoDeObra} color={MAO_COLOR}   />
+            {canServicoCorte && <ToggleBtn label="Corte"       value={corte}     onChange={setCorte}     color={CORTE_COLOR} />}
+            {canServicoDobra && <ToggleBtn label="Dobra"       value={dobra}     onChange={setDobra}     color={DOBRA_COLOR} />}
+            {canServicoMaoDeObra && <ToggleBtn label="Mao de Obra" value={maoDeObra} onChange={setMaoDeObra} color={MAO_COLOR}   />}
+            {canServicoCalandra && <ToggleBtn label="Calandra" value={calandra} onChange={setCalandra} color={CALANDRA_COLOR} />}
           </div>
         )}
 

@@ -8,15 +8,14 @@ const SERVICE_FILTERS = [
   { key: 'calandra', label: 'Calandra', color: '#f59e0b' },
 ];
 
-// Tags = urgente + carga (para filtro avançado)
 const TAG_FILTERS = [
-  { key: 'urgent',   label: 'Urgente', color: URGENTE_COLOR },
-  { key: 'withCarga', label: 'Carga',  color: CARGA_COLOR   },
+  { key: 'urgent',    label: 'Urgente', color: URGENTE_COLOR },
+  { key: 'withCarga', label: 'Carga',   color: CARGA_COLOR   },
 ];
 
 const ADVANCED_STATUSES = STATUSES.filter(s => s.value !== 'Ready');
 
-function Chip({ active, color, dot, onClick, children }) {
+function Chip({ active, color, onClick, children }) {
   const [hover, setHover] = React.useState(false);
   return (
     <button
@@ -28,21 +27,15 @@ function Chip({ active, color, dot, onClick, children }) {
         padding: '5px 12px', borderRadius: 7, cursor: 'pointer',
         fontSize: 11, fontWeight: 600, fontFamily: 'Syne, sans-serif',
         letterSpacing: '0.02em', transition: 'all 0.13s',
-        background: active ? (color ? `${color}12` : '#151515') : (hover ? '#0f0f0f' : 'transparent'),
+        background: active
+          ? (color ? `${color}18` : '#1e1e1e')
+          : (hover ? '#141414' : 'transparent'),
         border: active
-          ? `1px solid ${color ? `${color}28` : '#222'}`
-          : `1px solid ${hover ? '#1a1a1a' : 'transparent'}`,
-        color: active ? (color || '#ccc') : (hover ? '#777' : '#3a3a3a'),
+          ? `1px solid ${color ? `${color}40` : '#333'}`
+          : `1px solid ${hover ? '#222' : 'transparent'}`,
+        color: active ? (color || '#ccc') : (hover ? '#999' : '#555'),
       }}
     >
-      {dot && (
-        <span style={{
-          width: 5, height: 5, borderRadius: '50%', display: 'inline-block', flexShrink: 0,
-          backgroundColor: active ? (color || '#888') : (hover ? '#444' : '#2a2a2a'),
-          boxShadow: active && color ? `0 0 6px ${color}80` : 'none',
-          transition: 'all 0.13s',
-        }} />
-      )}
       {children}
     </button>
   );
@@ -72,13 +65,13 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
 
   return (
     <div style={{
-      padding: '10px 20px 12px', borderBottom: '1px solid #111',
-      flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8,
-      background: '#080808',
+      padding: '8px 16px 10px', borderBottom: '1px solid #1a1a1a',
+      flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6,
+      background: '#0e0e0e',
     }}>
       {/* Search */}
       <div style={{ position: 'relative', maxWidth: 260 }}>
-        <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#2a2a2a', pointerEvents: 'none' }}
+        <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#444', pointerEvents: 'none' }}
           width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
@@ -86,33 +79,32 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
           type="text" value={search} onChange={e => onSearch(e.target.value)}
           placeholder="buscar..."
           style={{
-            width: '100%', background: '#0c0c0c', border: '1px solid #181818',
+            width: '100%', background: '#141414', border: '1px solid #222',
             borderRadius: 7, padding: '6px 12px 6px 30px',
-            color: '#aaa', fontSize: 12, fontFamily: 'DM Mono, monospace', outline: 'none',
+            color: '#ccc', fontSize: 12, fontFamily: 'DM Mono, monospace', outline: 'none',
             transition: 'border-color 0.13s',
           }}
-          onFocus={e => e.target.style.borderColor = '#2a2a2a'}
-          onBlur={e => e.target.style.borderColor = '#181818'}
+          onFocus={e => e.target.style.borderColor = '#3a3a3a'}
+          onBlur={e => e.target.style.borderColor = '#222'}
         />
       </div>
 
-      {/* Quick filters: apenas Fila e Pronto */}
+      {/* Chips */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
         <Chip active={filterStatus === 'fila'} onClick={() => onFilterStatus('fila')}>
           Fila
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: filterStatus === 'fila' ? '#444' : '#222' }}>
+          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: filterStatus === 'fila' ? '#666' : '#333' }}>
             {total}
           </span>
         </Chip>
 
-        <Chip active={filterStatus === 'Ready'} color="#16a34a" dot onClick={() => onFilterStatus('Ready')}>
+        <Chip active={filterStatus === 'Ready'} color="#22c55e" onClick={() => onFilterStatus('Ready')}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: filterStatus === 'Ready' ? '#22c55e' : '#333', display: 'inline-block' }} />
           Pronto
         </Chip>
 
-        {/* Separador */}
-        <div style={{ width: 1, height: 14, background: '#161616', margin: '0 2px' }} />
+        <div style={{ width: 1, height: 14, background: '#1e1e1e', margin: '0 2px' }} />
 
-        {/* Filtros avançados */}
         <div style={{ position: 'relative' }}>
           <Chip active={open || advancedCount > 0} onClick={() => setOpen(v => !v)}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -123,8 +115,7 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
               <span style={{
                 background: '#2563eb', color: '#fff',
                 fontSize: 9, fontFamily: 'DM Mono, monospace',
-                borderRadius: 4, padding: '1px 5px', fontWeight: 700,
-                marginLeft: 2,
+                borderRadius: 4, padding: '1px 5px', fontWeight: 700, marginLeft: 2,
               }}>
                 {advancedCount}
               </span>
@@ -135,18 +126,17 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
             <div style={{
               position: 'absolute', left: 0, top: 'calc(100% + 8px)', zIndex: 40,
               width: 290, borderRadius: 10,
-              border: '1px solid #181818', background: '#0b0b0b',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.02)',
+              border: '1px solid #222', background: '#111',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
               padding: 16, display: 'grid', gap: 14,
             }}>
-
               {/* Status */}
               <div style={{ display: 'grid', gap: 6 }}>
-                <p style={{ fontSize: 9, color: '#333', fontFamily: 'DM Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Status</p>
+                <p style={{ fontSize: 9, color: '#555', fontFamily: 'DM Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Status</p>
                 <select
                   value={advancedFilters.status}
                   onChange={e => updateAdvanced({ status: e.target.value })}
-                  style={{ background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 7, padding: '8px 12px', color: '#aaa', fontSize: 11, fontFamily: 'Syne, sans-serif', outline: 'none' }}
+                  style={{ background: '#161616', border: '1px solid #222', borderRadius: 7, padding: '8px 12px', color: '#bbb', fontSize: 11, fontFamily: 'Syne, sans-serif', outline: 'none' }}
                 >
                   <option value="all">Todos da fila</option>
                   {ADVANCED_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -155,11 +145,11 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
 
               {/* Cidade */}
               <div style={{ display: 'grid', gap: 6 }}>
-                <p style={{ fontSize: 9, color: '#333', fontFamily: 'DM Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Cidade</p>
+                <p style={{ fontSize: 9, color: '#555', fontFamily: 'DM Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Cidade</p>
                 <select
                   value={advancedFilters.city}
                   onChange={e => updateAdvanced({ city: e.target.value })}
-                  style={{ background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 7, padding: '8px 12px', color: '#aaa', fontSize: 11, fontFamily: 'Syne, sans-serif', outline: 'none' }}
+                  style={{ background: '#161616', border: '1px solid #222', borderRadius: 7, padding: '8px 12px', color: '#bbb', fontSize: 11, fontFamily: 'Syne, sans-serif', outline: 'none' }}
                 >
                   <option value="all">Todas</option>
                   {cities.map(city => <option key={city} value={city}>{city}</option>)}
@@ -168,7 +158,7 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
 
               {/* Serviços */}
               <div>
-                <p style={{ fontSize: 9, color: '#333', fontFamily: 'DM Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, marginTop: 0 }}>Serviços</p>
+                <p style={{ fontSize: 9, color: '#555', fontFamily: 'DM Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, marginTop: 0 }}>Serviços</p>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {SERVICE_FILTERS.map(svc => {
                     const active = advancedFilters.services?.[svc.key];
@@ -177,9 +167,9 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
                         padding: '5px 10px', borderRadius: 6, cursor: 'pointer',
                         fontSize: 10, fontWeight: 600, fontFamily: 'Syne, sans-serif',
                         letterSpacing: '0.04em', transition: 'all 0.13s',
-                        color: active ? svc.color : '#444',
-                        background: active ? `${svc.color}12` : 'transparent',
-                        border: active ? `1px solid ${svc.color}30` : '1px solid #1a1a1a',
+                        color: active ? svc.color : '#666',
+                        background: active ? `${svc.color}18` : 'transparent',
+                        border: active ? `1px solid ${svc.color}40` : '1px solid #222',
                       }}>
                         {svc.label}
                       </button>
@@ -190,7 +180,7 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
 
               {/* Tags */}
               <div>
-                <p style={{ fontSize: 9, color: '#333', fontFamily: 'DM Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, marginTop: 0 }}>Tags</p>
+                <p style={{ fontSize: 9, color: '#555', fontFamily: 'DM Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, marginTop: 0 }}>Tags</p>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {TAG_FILTERS.map(tag => {
                     const active = advancedFilters[tag.key];
@@ -199,12 +189,12 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
                         padding: '5px 10px', borderRadius: 6, cursor: 'pointer',
                         fontSize: 10, fontWeight: 600, fontFamily: 'Syne, sans-serif',
                         letterSpacing: '0.04em', transition: 'all 0.13s',
-                        color: active ? tag.color : '#444',
-                        background: active ? `${tag.color}12` : 'transparent',
-                        border: active ? `1px solid ${tag.color}30` : '1px solid #1a1a1a',
+                        color: active ? tag.color : '#666',
+                        background: active ? `${tag.color}18` : 'transparent',
+                        border: active ? `1px solid ${tag.color}40` : '1px solid #222',
                         display: 'flex', alignItems: 'center', gap: 5,
                       }}>
-                        <span style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: active ? tag.color : '#333', display: 'inline-block', boxShadow: active ? `0 0 5px ${tag.color}` : 'none' }} />
+                        <span style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: active ? tag.color : '#444', display: 'inline-block', boxShadow: active ? `0 0 5px ${tag.color}` : 'none' }} />
                         {tag.label}
                       </button>
                     );
@@ -212,16 +202,15 @@ export default function FilterBar({ search, onSearch, filterStatus, onFilterStat
                 </div>
               </div>
 
-              {/* Limpar */}
               <button
                 onClick={() => { onAdvancedFilters({ status: 'all', city: 'all', services: {}, urgent: false, withCarga: false }); setOpen(false); }}
                 style={{
-                  padding: '8px', borderRadius: 7, border: '1px solid #1a1a1a',
-                  background: 'transparent', color: '#444', fontSize: 11,
+                  padding: '8px', borderRadius: 7, border: '1px solid #222',
+                  background: 'transparent', color: '#666', fontSize: 11,
                   fontFamily: 'Syne, sans-serif', cursor: 'pointer', transition: 'all 0.13s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#111'; e.currentTarget.style.color = '#888'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#444'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.color = '#aaa'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666'; }}
               >
                 Limpar filtros
               </button>

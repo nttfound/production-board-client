@@ -12,18 +12,18 @@ export default function StatusBadge({ status, size = 'sm' }) {
       }`}
       style={{
         color: s.color,
-        backgroundColor: `${s.color}12`,
-        border: `1px solid ${s.color}25`,
+        backgroundColor: `${s.color}1e`,
+        border: `1px solid ${s.color}44`,
         letterSpacing: '0.06em',
       }}
     >
       <span
-        className="rounded-full flex-shrink-0 animate-pulse-soft"
+        className="rounded-full flex-shrink-0"
         style={{
           width: isLg ? 6 : 5,
           height: isLg ? 6 : 5,
           backgroundColor: s.color,
-          boxShadow: `0 0 6px ${s.color}80`,
+          boxShadow: `0 0 6px ${s.color}`,
         }}
       />
       {s.label}

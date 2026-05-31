@@ -1,13 +1,23 @@
 import axios from 'axios';
 
+let authToken = null;
+
+export function setAuthToken(token) {
+  authToken = token || null;
+}
+
+export function getAuthToken() {
+  return authToken;
+}
+
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
   timeout: 15000,
+  withCredentials: true,
 });
 
 api.interceptors.request.use(config => {
-  const token = localStorage.getItem('auth_token');
-  if (token) config.headers['x-auth-token'] = token;
+  if (authToken) config.headers['x-auth-token'] = authToken;
   return config;
 });
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+import api, { setAuthToken } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -8,25 +8,36 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) { setLoading(false); return; }
+    const legacyToken = localStorage.getItem('auth_token');
+    if (legacyToken) {
+      setAuthToken(legacyToken);
+      localStorage.removeItem('auth_token');
+    }
     api.get('/api/auth/me')
       .then(res => setUser(res.data.user))
-      .catch(() => { localStorage.removeItem('auth_token'); setUser(null); })
-      .finally(() => setLoading(false));
+      .catch(() => {
+        setAuthToken(null);
+        setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   const login = async (username, password) => {
     const res = await api.post('/api/auth/login', { username, password });
-    localStorage.setItem('auth_token', res.data.token);
+    setAuthToken(res.data.token);
     setUser(res.data.user);
     return res.data.user;
   };
 
   const logout = async () => {
-    await api.post('/api/auth/logout');
-    localStorage.removeItem('auth_token');
-    setUser(null);
+    try {
+      await api.post('/api/auth/logout');
+    } finally {
+      setAuthToken(null);
+      setUser(null);
+    }
   };
 
   return (

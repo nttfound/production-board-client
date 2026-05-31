@@ -10,7 +10,7 @@ export default function AnexoGlobal() {
   const [tempo,   setTempo]   = useState('');
   const inputRef = useRef();
 
-  const isCreator  = user?.role === 'creator';
+  const isCreator  = user?.role === 'creator' || Boolean(user?.permissions?.upload_anexo);
   const canDownload = user?.role === 'creator' || user?.role === 'operator';
 
   // Carrega anexo ativo ao montar

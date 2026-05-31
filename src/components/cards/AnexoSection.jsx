@@ -8,7 +8,7 @@ export default function AnexoSection({ card, onUpdate }) {
   const [erro,    setErro]    = useState('');
   const inputRef = useRef();
 
-  const isCreator  = user?.role === 'creator';
+  const isCreator  = user?.role === 'creator' || Boolean(user?.permissions?.upload_anexo);
   const canDownload = user?.role === 'creator' || user?.role === 'operator';
 
   const temAnexo = !!card.anexo_path;

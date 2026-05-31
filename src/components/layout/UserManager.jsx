@@ -3,12 +3,17 @@ import api from '../../services/api';
 
 const PERMISSIONS = [
   { key: 'criar_card',         label: 'Criar Card' },
+  { key: 'deletar_card',       label: 'Deletar Card' },
   { key: 'mudar_status',       label: 'Mudar Status' },
   { key: 'alterar_observacao', label: 'Alterar Observação' },
   { key: 'selecionar',         label: 'Selecionar (bulk)' },
   { key: 'marcar_urgente',     label: 'Marcar Urgente' },
   { key: 'marcar_carga',       label: 'Marcar Carga' },
   { key: 'alterar_servicos',   label: 'Alterar Serviços' },
+  { key: 'servico_corte',      label: 'Servico Corte' },
+  { key: 'servico_dobra',      label: 'Servico Dobra' },
+  { key: 'servico_mao_de_obra', label: 'Servico Mao de Obra' },
+  { key: 'servico_calandra',   label: 'Servico Calandra' },
   { key: 'ver_registro',       label: 'Ver Registro' },
   { key: 'upload_anexo',       label: 'Upload de Anexo' },
 ];

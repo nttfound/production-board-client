@@ -7,7 +7,7 @@ const socket = io(BASE_URL, {
   reconnection:      true,
   reconnectionDelay: 2000,
   transports:        ['polling', 'websocket'],
-  withCredentials:   false,
+  withCredentials:   true,
 });
 
 export default socket;
