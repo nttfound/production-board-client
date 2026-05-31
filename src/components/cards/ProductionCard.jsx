@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import StatusBadge from '../ui/StatusBadge';
 import StatusModal from './StatusModal';
 import ImageModal from './ImageModal';
@@ -37,36 +37,33 @@ export default function ProductionCard({
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showImageModal,  setShowImageModal]  = useState(false);
   const [showObsModal,    setShowObsModal]    = useState(false);
-  const [localCard,       setLocalCard]       = useState(card);
 
-  React.useEffect(() => { setLocalCard(card); }, [card]);
-
-  const imageUrl = localCard.image_path
-    ? localCard.image_path.startsWith('http') ? localCard.image_path : `${BASE_URL}${localCard.image_path}`
+  const imageUrl = card.image_path
+    ? card.image_path.startsWith('http') ? card.image_path : `${BASE_URL}${card.image_path}`
     : null;
 
-  const s              = getStatus(localCard.status);
-  const mostrarCarga   = cargaAtivaAgora(localCard.carga);
-  const isUrgente      = localCard.urgente === true;
-  const isAgendadoHoje = localCard.status === 'Scheduled' && isHoje(localCard.scheduled_date);
+  const s              = getStatus(card.status);
+  const mostrarCarga   = cargaAtivaAgora(card.carga);
+  const isUrgente      = card.urgente === true;
+  const isAgendadoHoje = card.status === 'Scheduled' && isHoje(card.scheduled_date);
 
-  const formattedDate = new Date(localCard.created_at).toLocaleDateString('pt-BR', {
+  const formattedDate = new Date(card.created_at).toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: '2-digit',
   });
 
   // Força parse local (evita UTC-3 virar dia anterior)
-  const scheduledStr = localCard.scheduled_date
+  const scheduledStr = card.scheduled_date
     ? (() => {
-        const [y, m, d] = localCard.scheduled_date.slice(0, 10).split('-');
+        const [y, m, d] = card.scheduled_date.slice(0, 10).split('-');
         return new Date(+y, +m - 1, +d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
       })()
     : null;
 
   const tags = [
-    localCard.dobra       && { label: 'Dobra',       color: TAG_COLORS.dobra       },
-    localCard.calandra    && { label: 'Calandra',    color: TAG_COLORS.calandra    },
-    localCard.corte       && { label: 'Corte',       color: TAG_COLORS.corte       },
-    localCard.mao_de_obra && { label: 'Mão de Obra', color: TAG_COLORS.mao_de_obra },
+    card.dobra       && { label: 'Dobra',       color: TAG_COLORS.dobra       },
+    card.calandra    && { label: 'Calandra',    color: TAG_COLORS.calandra    },
+    card.corte       && { label: 'Corte',       color: TAG_COLORS.corte       },
+    card.mao_de_obra && { label: 'Mão de Obra', color: TAG_COLORS.mao_de_obra },
   ].filter(Boolean);
 
   // Cor de acento do card
@@ -100,7 +97,7 @@ export default function ProductionCard({
   const handleCardClick = (e) => {
     if (!selectionMode) return;
     e.stopPropagation();
-    onToggleSelect?.(localCard.id);
+    onToggleSelect?.(card.id);
   };
 
   return (
@@ -130,7 +127,7 @@ export default function ProductionCard({
           >
             <img
               src={imageUrl}
-              alt={localCard.title}
+              alt={card.title}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             />
             <div style={{
@@ -176,7 +173,7 @@ export default function ProductionCard({
                 </span>
               )}
 
-              <StatusBadge status={localCard.status} />
+              <StatusBadge status={card.status} />
 
               {isUrgente && (
                 <span
@@ -198,13 +195,13 @@ export default function ProductionCard({
                 </span>
               )}
 
-              {mostrarCarga && localCard.carga && (
+              {mostrarCarga && card.carga && (
                 <span
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
                   style={{ color: CARGA_COLOR, background: `${CARGA_COLOR}15`, border: `1px solid ${CARGA_COLOR}35` }}
                 >
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CARGA_COLOR }} />
-                  {localCard.carga.replace('CARGA - ', '')}
+                  {card.carga.replace('CARGA - ', '')}
                 </span>
               )}
             </div>
@@ -216,21 +213,21 @@ export default function ProductionCard({
                     onClick={() => setShowStatusModal(true)}
                     className="w-6 h-6 flex items-center justify-center rounded-md transition-all opacity-40 group-hover:opacity-100"
                     style={{ color: '#9ca3af' }}
-                    title="Alterar"
+                    aria-label="Alterar status e configurações do card"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
                     </svg>
                   </button>
                 )}
                 {canDelete && (
                   <button
-                    onClick={() => onDelete(localCard.id)}
+                    onClick={() => onDelete(card.id)}
                     className="w-6 h-6 flex items-center justify-center rounded-md transition-all opacity-0 group-hover:opacity-100 hover:text-[#ef4444]"
                     style={{ color: '#6b7280' }}
-                    title="Deletar"
+                    aria-label={`Deletar card ${card.title}`}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <polyline points="3 6 5 6 21 6"/>
                       <path d="M19 6l-1 14H6L5 6"/>
                       <path d="M10 11v6M14 11v6"/>
@@ -260,16 +257,16 @@ export default function ProductionCard({
 
           {/* Título */}
           <h3 className="text-[#e5e7eb] font-medium text-sm leading-snug line-clamp-2">
-            {localCard.title}
+            {card.title}
           </h3>
 
           {/* Observação */}
           <div className="relative group/obs flex-1">
-            {localCard.observation ? (
+            {card.observation ? (
               <div>
-                <p className="text-[#8b9199] text-xs leading-relaxed line-clamp-3">{localCard.observation}</p>
-                {localCard.observation_by && (
-                  <p className="text-[#555b63] text-[10px] mt-1 font-mono">editado por {localCard.observation_by}</p>
+                <p className="text-[#8b9199] text-xs leading-relaxed line-clamp-3">{card.observation}</p>
+                {card.observation_by && (
+                  <p className="text-[#555b63] text-[10px] mt-1 font-mono">editado por {card.observation_by}</p>
                 )}
               </div>
             ) : (
@@ -280,8 +277,9 @@ export default function ProductionCard({
                 onClick={() => setShowObsModal(true)}
                 className="absolute top-0 right-0 opacity-0 group-hover/obs:opacity-100 transition-opacity"
                 style={{ color: '#6b7280' }}
+                aria-label="Editar observação"
               >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
@@ -290,7 +288,7 @@ export default function ProductionCard({
           </div>
 
           {/* Agendado (data) */}
-          {localCard.status === 'Scheduled' && scheduledStr && (
+          {card.status === 'Scheduled' && scheduledStr && (
             <div className="flex items-center gap-1.5 text-[11px]" style={{ color: '#a78bfa' }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -310,7 +308,7 @@ export default function ProductionCard({
               boxShadow:  `0 -4px 12px ${accentColor}10`,
             }}
           >
-            <span className="text-[#555b63] text-[10px] font-mono">{localCard.created_by}</span>
+            <span className="text-[#555b63] text-[10px] font-mono">{card.created_by}</span>
             <span className="text-[#555b63] text-[10px]">{formattedDate}</span>
           </div>
         </div>
@@ -318,11 +316,10 @@ export default function ProductionCard({
 
       {showStatusModal && (
         <StatusModal
-          card={localCard}
+          card={card}
           onClose={() => setShowStatusModal(false)}
           onSave={(status, date, updates, options = {}) => {
-            setLocalCard(prev => ({ ...prev, status, scheduled_date: date, ...updates }));
-            if (options.updateStatus) onStatusChange(localCard.id, status, date);
+            if (options.updateStatus !== false) onStatusChange(card.id, status, date);
             setShowStatusModal(false);
           }}
         />
@@ -330,14 +327,14 @@ export default function ProductionCard({
 
       {showObsModal && (
         <ObservacaoEdit
-          card={localCard}
-          onSave={text => setLocalCard(prev => ({ ...prev, observation: text }))}
+          card={card}
+          onSave={() => setShowObsModal(false)}
           onClose={() => setShowObsModal(false)}
         />
       )}
 
       {showImageModal && imageUrl && (
-        <ImageModal src={imageUrl} alt={localCard.title} onClose={() => setShowImageModal(false)} />
+        <ImageModal src={imageUrl} alt={card.title} onClose={() => setShowImageModal(false)} />
       )}
     </>
   );

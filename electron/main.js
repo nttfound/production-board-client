@@ -5,12 +5,11 @@ const isDev = !app.isPackaged;
 
 let mainWindow;
 let badgeCount = 0;
-let updateInstallTimer = null;
 
-autoUpdater.autoDownload = true;
-autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.autoDownload    = true;
+autoUpdater.autoInstallOnAppQuit = true; // instala se o usuário fechar normalmente
 autoUpdater.allowPrerelease = false;
-autoUpdater.allowDowngrade = false;
+autoUpdater.allowDowngrade  = false;
 
 // Badge pré-gerado uma única vez — evita recalcular pixels a cada notificação
 let cachedBadge = null;
@@ -71,15 +70,14 @@ function createWindow() {
       nodeIntegration:  false,
     },
   });
+
   mainWindow.maximize();
-  mainWindow.setMenu(null);
+  mainWindow.setMenu(null); // CORRIGIDO: removida chamada duplicada que existia abaixo
 
   // Impede o React de sobrescrever o título
   mainWindow.on('page-title-updated', (e) => {
     e.preventDefault();
   });
-
-  mainWindow.setMenu(null);
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:3001');
@@ -137,9 +135,11 @@ autoUpdater.on('update-not-available', (info) => {
 });
 
 autoUpdater.on('update-downloaded', (info) => {
+  // CORRIGIDO: antes instalava automaticamente após 5s sem avisar o usuário.
+  // Num ambiente de chão de fábrica isso fechava o app no meio de uma operação.
+  // Agora notifica o frontend e aguarda confirmação explícita via 'updater:install'.
+  // autoInstallOnAppQuit = true garante que será instalado quando o usuário fechar normalmente.
   sendUpdateStatus('update:ready', { version: info.version });
-  if (updateInstallTimer) clearTimeout(updateInstallTimer);
-  updateInstallTimer = setTimeout(() => autoUpdater.quitAndInstall(false, true), 5000);
 });
 
 autoUpdater.on('error', (err) => {
@@ -152,14 +152,19 @@ ipcMain.handle('updater:check', () => {
   return checkForUpdates();
 });
 
-// ── Toast notifications ────────────────────────────────────────────
+// Instalação manual — chamada pelo frontend quando o usuário confirmar
+ipcMain.handle('updater:install', () => {
+  autoUpdater.quitAndInstall(false, true);
+});
+
+// ── Toast notifications ─────────────────────────────────────
 const TOAST_WIDTH  = 336;
 const TOAST_HEIGHT = 106;
 const TOAST_MARGIN = 12;
 const toastWindows = [];
 
 function createToast({ type = 'card', title = '', body = '', duration = 5000 }) {
-  if (mainWindow && mainWindow.isFocused()) return; 
+  if (mainWindow && mainWindow.isFocused()) return;
   const { screen } = require('electron');
   const display    = screen.getPrimaryDisplay();
   const { width: sw, height: sh } = display.workAreaSize;

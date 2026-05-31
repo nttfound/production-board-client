@@ -5,11 +5,14 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
-// Helper: registra um listener garantindo que só existe um por canal.
-// Sem isso, cada re-mount do React acumula callbacks no mesmo canal.
+// CORRIGIDO: antes usava ipcRenderer.removeAllListeners(channel), que removia
+// todos os listeners do canal — inclusive de outros componentes.
+// Agora cada listener é registrado/removido individualmente com on/off,
+// e retornamos uma função de cleanup para uso nos useEffect do React.
 function onChannel(channel, cb) {
-  ipcRenderer.removeAllListeners(channel);
+  ipcRenderer.off(channel, cb); // remove esta referência específica se já existir
   ipcRenderer.on(channel, cb);
+  return () => ipcRenderer.off(channel, cb); // cleanup para useEffect
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -18,6 +21,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showNotification:     (type, title, body, duration) => ipcRenderer.invoke('notify:show', { type, title, body, duration }),
   focusMain:            () => ipcRenderer.invoke('notify:focus'),
   checkForUpdates:      () => ipcRenderer.invoke('updater:check'),
+  installUpdate:        () => ipcRenderer.invoke('updater:install'), // novo: chamado após confirmação do usuário
   onUpdateChecking:     (cb) => onChannel('update:checking',      cb),
   onUpdateAvailable:    (cb) => onChannel('update:available',     cb),
   onUpdateProgress:     (cb) => onChannel('update:progress',      cb),

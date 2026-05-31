@@ -21,6 +21,7 @@ import { cargaAtivaAgora, CARGA_POR_DIA } from '../services/cargaConfig';
 import ChatPanel      from '../components/chat/ChatPanel';
 import { useToast }   from '../hooks/useToast';
 import { useConfirm } from '../hooks/useConfirm';
+import ErrorBoundary  from '../components/ErrorBoundary';
 
 const PAGE_LIMIT = 50;
 
@@ -383,16 +384,21 @@ export default function BoardPage() {
               }}
             >
               {sorted.map((card, idx) => (
-                <ProductionCard
-                  key={card.id}
-                  card={card}
-                  ordem={idx + 1}
-                  onStatusChange={handleStatusChange}
-                  onDelete={handleDelete}
-                  selectionMode={selectionMode}
-                  selected={selectedIds.has(card.id)}
-                  onToggleSelect={toggleSelect}
-                />
+                <ErrorBoundary key={card.id} fallback={
+                  <div style={{ background: '#111113', border: '1px solid #3a1a1a', borderRadius: 14, padding: '1rem', color: '#ef4444', fontSize: 12 }}>
+                    Erro ao renderizar card #{card.id}
+                  </div>
+                }>
+                  <ProductionCard
+                    card={card}
+                    ordem={idx + 1}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDelete}
+                    selectionMode={selectionMode}
+                    selected={selectedIds.has(card.id)}
+                    onToggleSelect={toggleSelect}
+                  />
+                </ErrorBoundary>
               ))}
             </div>
 
@@ -424,10 +430,10 @@ export default function BoardPage() {
       )}
 
       {showAudit && <AuditPanel onClose={() => setShowAudit(false)} />}
-      <ChatPanel />
+      <ErrorBoundary><ChatPanel /></ErrorBoundary>
 
       {/* Toasts de feedback — sempre por cima de tudo */}
-      <ToastContainer />
+      {ToastContainer}
 
       {/* Dialog de confirmação — substitui window.confirm */}
       {ConfirmUI}
