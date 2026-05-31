@@ -28,6 +28,8 @@ export default function StatusModal({ card, onClose, onSave }) {
   const [calandra,  setCalandra]  = useState(card.calandra || false);
   const [tab,       setTab]       = useState('status');
   const [diaAberto, setDiaAberto] = useState(null);
+  const [saving,    setSaving]    = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const canStatus = can('mudar_status');
   const allowedServices = SERVICE_OPTIONS.filter(service => can(service.perm));
@@ -41,30 +43,39 @@ export default function StatusModal({ card, onClose, onSave }) {
 
   const handleSave = async () => {
     if (canStatus && selected === 'Scheduled' && !schedDate) return;
-    const updates = {};
-    if (can('marcar_urgente') && urgente !== (card.urgente || false)) {
-      await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
-      updates.urgente = urgente;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const updates = {};
+      if (can('marcar_urgente') && urgente !== (card.urgente || false)) {
+        await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
+        updates.urgente = urgente;
+      }
+      if (can('marcar_carga') && carga !== (card.carga || null)) {
+        await api.patch(`/api/cards/${card.id}/carga`, { carga });
+        updates.carga = carga;
+      }
+      if (canServices && (
+        corte !== (card.corte || false) ||
+        dobra !== (card.dobra || false) ||
+        maoDeObra !== (card.mao_de_obra || false) ||
+        calandra !== (card.calandra || false)
+      )) {
+        const servicePayload = {};
+        if (can('servico_corte')) servicePayload.corte = corte;
+        if (can('servico_dobra')) servicePayload.dobra = dobra;
+        if (can('servico_mao_de_obra')) servicePayload.mao_de_obra = maoDeObra;
+        if (can('servico_calandra')) servicePayload.calandra = calandra;
+        await api.patch(`/api/cards/${card.id}/servicos`, servicePayload);
+        Object.assign(updates, servicePayload);
+      }
+      onSave(canStatus ? selected : card.status, canStatus ? (schedDate || null) : card.scheduled_date, updates, { updateStatus: canStatus });
+    } catch (err) {
+      const msg = err?.response?.data?.error || 'Falha ao salvar. Tente novamente.';
+      setSaveError(msg);
+    } finally {
+      setSaving(false);
     }
-    if (can('marcar_carga') && carga !== (card.carga || null)) {
-      await api.patch(`/api/cards/${card.id}/carga`, { carga });
-      updates.carga = carga;
-    }
-    if (canServices && (
-      corte !== (card.corte || false) ||
-      dobra !== (card.dobra || false) ||
-      maoDeObra !== (card.mao_de_obra || false) ||
-      calandra !== (card.calandra || false)
-    )) {
-      const servicePayload = {};
-      if (can('servico_corte')) servicePayload.corte = corte;
-      if (can('servico_dobra')) servicePayload.dobra = dobra;
-      if (can('servico_mao_de_obra')) servicePayload.mao_de_obra = maoDeObra;
-      if (can('servico_calandra')) servicePayload.calandra = calandra;
-      await api.patch(`/api/cards/${card.id}/servicos`, servicePayload);
-      Object.assign(updates, servicePayload);
-    }
-    onSave(canStatus ? selected : card.status, canStatus ? (schedDate || null) : card.scheduled_date, updates, { updateStatus: canStatus });
   };
 
   const ToggleBtn = ({ label, value, onChange, color }) => (
@@ -212,12 +223,18 @@ export default function StatusModal({ card, onClose, onSave }) {
           </div>
         )}
 
+        {saveError && (
+          <p className="mt-4 text-xs text-[#ef4444] bg-[#ef444410] border border-[#ef444430] rounded-xl px-3 py-2">
+            {saveError}
+          </p>
+        )}
         <div className="flex gap-2 mt-5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#2a2a2a] text-[#8a8a8a] text-sm hover:bg-[#1c1c1c] transition-colors">
+          <button onClick={onClose} disabled={saving} className="flex-1 py-2.5 rounded-xl border border-[#2a2a2a] text-[#8a8a8a] text-sm hover:bg-[#1c1c1c] transition-colors disabled:opacity-40">
             Cancelar
           </button>
-          <button onClick={handleSave} className="flex-1 py-2.5 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm transition-colors">
-            Salvar
+          <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            {saving && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            {saving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
       </div>

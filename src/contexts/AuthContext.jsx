@@ -17,6 +17,14 @@ export function AuthProvider({ children }) {
       // Cookie httpOnly vai automaticamente — não precisa passar token manualmente
       const res = await api.get('/api/auth/me');
       setUser(res.data.user);
+      // Restaura o token em memória caso a página tenha sido recarregada.
+      // O /me retorna o token junto para que o Axios interceptor e o Socket.IO
+      // possam usá-lo sem depender exclusivamente do cookie (que pode ser
+      // bloqueado em requisições cross-origin PATCH/DELETE em alguns browsers).
+      if (res.data.token) {
+        setMemoryToken(res.data.token);
+        socketTokenRef.current = res.data.token;
+      }
     } catch {
       setUser(null);
     } finally {
