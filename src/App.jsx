@@ -4,9 +4,8 @@
 
 import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import LoginPage     from './pages/LoginPage';
-import BoardPage     from './pages/BoardPage';
-import ErrorBoundary from './components/ErrorBoundary';
+import LoginPage from './pages/LoginPage';
+import BoardPage from './pages/BoardPage';
 
 function AppInner() {
   const { user, loading } = useAuth();
@@ -19,23 +18,13 @@ function AppInner() {
     );
   }
 
-  return user ? (
-    // ErrorBoundary isola o BoardPage — um crash de render não derruba o login
-    <ErrorBoundary>
-      <BoardPage />
-    </ErrorBoundary>
-  ) : (
-    <LoginPage />
-  );
+  return user ? <BoardPage /> : <LoginPage />;
 }
 
 export default function App() {
   return (
-    // ErrorBoundary externo: captura erros no AuthProvider ou AppInner
-    <ErrorBoundary>
-      <AuthProvider>
-        <AppInner />
-      </AuthProvider>
-    </ErrorBoundary>
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
   );
 }

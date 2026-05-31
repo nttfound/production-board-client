@@ -11,6 +11,5 @@ export function getStatus(value) {
   return STATUSES.find(s => s.value === value) || STATUSES[0];
 }
 
-export const URGENTE_COLOR   = '#F75003';
-export const CARGA_COLOR     = '#0891b2';
-export const CALANDRA_COLOR  = '#ec4899';
+export const URGENTE_COLOR = '#F75003';
+export const CARGA_COLOR   = '#0891b2';
