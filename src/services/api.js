@@ -1,9 +1,15 @@
 import axios from 'axios';
 
-let authToken = null;
+// Restaura token da sessão anterior (mesma aba/reload)
+let authToken = sessionStorage.getItem('auth_token') || null;
 
 export function setAuthToken(token) {
   authToken = token || null;
+  if (token) {
+    sessionStorage.setItem('auth_token', token);
+  } else {
+    sessionStorage.removeItem('auth_token');
+  }
 }
 
 export function getAuthToken() {

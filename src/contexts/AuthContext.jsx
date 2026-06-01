@@ -8,11 +8,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const legacyToken = localStorage.getItem('auth_token');
-    if (legacyToken) {
-      setAuthToken(legacyToken);
-      localStorage.removeItem('auth_token');
-    }
+    // api.js já restaura o token do sessionStorage automaticamente
     api.get('/api/auth/me')
       .then(res => setUser(res.data.user))
       .catch(() => {
