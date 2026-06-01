@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api, { getAuthToken } from '../services/api';
 import socket         from '../services/socket';
-import { cargaAtivaAgora } from '../services/cargaConfig';
 import { useAuth }   from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import TopBar         from '../components/layout/TopBar';
@@ -24,18 +23,14 @@ function getCardCity(card) {
   return card.carga.startsWith('CARGA - ') ? card.carga.replace('CARGA - ', '') : card.carga;
 }
 
-// Prioridade de cidade:
-//   0 = carga do dia (ex: Pedreira, Itatiba...)
-//   1 = Itapira (sempre ativa, mas menos prioritária que carga do dia)
-//   2 = sem carga
-function getCidadePriority(card) {
-  if (!card.carga) return 2;
-  if (card.carga === 'Itapira') return 1;
-  if (cargaAtivaAgora(card.carga)) return 0;
-  return 2; // carga inativa hoje = sem prioridade
+function getCargaServicePriority(card) {
+  if (card.dobra)    return 0;
+  if (card.calandra) return 1;
+  if (!card.dobra && !card.calandra && !card.corte) return 2;
+  if (card.corte)    return 3;
+  return 4;
 }
 
-// Prioridade de serviço: dobra > calandra > corte > outros
 function getServicePriority(card) {
   if (card.dobra)    return 0;
   if (card.calandra) return 1;
@@ -43,31 +38,18 @@ function getServicePriority(card) {
   return 3;
 }
 
-/**
- * Ordem:
- *  1. Urgente
- *  2. Cidade (carga do dia > Itapira > sem carga)
- *  3. Serviço (dobra > calandra > corte > outros)
- *  4. Mais antigo primeiro
- */
 function sortCards(cards) {
   return [...cards].sort((a, b) => {
-    // 1. Urgente
-    const urgA = Boolean(a.urgente);
-    const urgB = Boolean(b.urgente);
-    if (urgA !== urgB) return urgB - urgA;
-
-    // 2. Cidade
-    const cidadeA = getCidadePriority(a);
-    const cidadeB = getCidadePriority(b);
-    if (cidadeA !== cidadeB) return cidadeA - cidadeB;
-
-    // 3. Serviço
-    const svcA = getServicePriority(a);
-    const svcB = getServicePriority(b);
-    if (svcA !== svcB) return svcA - svcB;
-
-    // 4. Mais antigo primeiro
+    if (Boolean(a.urgente) !== Boolean(b.urgente)) return Boolean(b.urgente) - Boolean(a.urgente);
+    const cargaA = Boolean(a.carga), cargaB = Boolean(b.carga);
+    if (cargaA !== cargaB) return Number(cargaB) - Number(cargaA);
+    if (cargaA && cargaB) {
+      const diff = getCargaServicePriority(a) - getCargaServicePriority(b);
+      if (diff !== 0) return diff;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    }
+    const svcDiff = getServicePriority(a) - getServicePriority(b);
+    if (svcDiff !== 0) return svcDiff;
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
 }
