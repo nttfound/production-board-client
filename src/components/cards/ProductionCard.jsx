@@ -156,11 +156,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
           e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.5)';
         }}
       >
-        {/* Faixa lateral colorida */}
-        <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, zIndex: 2,
-          background: `linear-gradient(180deg, ${accentColor} 0%, ${accentColor}55 100%)`,
-        }} />
+
 
         {/* Image */}
         {imageUrl ? (
@@ -208,7 +204,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
         )}
 
         {/* Body */}
-        <div style={{ padding: '11px 13px 12px', paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
+        <div style={{ padding: '11px 13px 12px', display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
 
           {/* Status + carga + actions */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
@@ -264,7 +260,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
             {localCard.observation ? (
               <div>
                 <p style={{
-                  color: '#777', fontSize: 11, lineHeight: 1.7,
+                  color: '#999', fontSize: 11, lineHeight: 1.7,
                   fontFamily: 'DM Mono, monospace', margin: 0,
                   display: '-webkit-box', WebkitLineClamp: 3,
                   WebkitBoxOrient: 'vertical', overflow: 'hidden',
@@ -272,13 +268,13 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
                   {localCard.observation}
                 </p>
                 {localCard.observation_by && (
-                  <p style={{ color: '#3a3a3a', fontSize: 9, marginTop: 4, fontFamily: 'DM Mono, monospace' }}>
+                  <p style={{ color: '#555', fontSize: 9, marginTop: 4, fontFamily: 'DM Mono, monospace' }}>
                     — {localCard.observation_by}
                   </p>
                 )}
               </div>
             ) : (
-              <p style={{ color: '#333', fontSize: 11, fontFamily: 'DM Mono, monospace', margin: 0, fontStyle: 'italic' }}>
+              <p style={{ color: '#444', fontSize: 11, fontFamily: 'DM Mono, monospace', margin: 0, fontStyle: 'italic' }}>
                 sem observação
               </p>
             )}
@@ -304,6 +300,12 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
             )}
           </div>
 
+          {/* Accent divider — entre observação e footer */}
+          <div style={{
+            height: 1, flexShrink: 0,
+            background: `linear-gradient(90deg, ${accentColor} 0%, ${accentColor}66 40%, transparent 100%)`,
+          }} />
+
           {/* Scheduled */}
           {localCard.status === 'Scheduled' && scheduledStr && (
             <div style={{
@@ -319,15 +321,9 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
             </div>
           )}
 
-          {/* Accent divider */}
-          <div style={{
-            height: 1, flexShrink: 0, marginTop: 'auto',
-            background: `linear-gradient(90deg, ${accentColor}aa 0%, ${accentColor}33 55%, transparent 100%)`,
-          }} />
-
           {/* Footer */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
-            <span style={{ color: '#555', fontSize: 10, fontFamily: 'DM Mono, monospace', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: '#666', fontSize: 10, fontFamily: 'DM Mono, monospace', display: 'flex', alignItems: 'center', gap: 5 }}>
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>

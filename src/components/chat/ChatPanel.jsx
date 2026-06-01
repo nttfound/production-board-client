@@ -14,6 +14,30 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)}mb`;
 }
 
+function DeleteBtn({ onDelete, mine }) {
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <button
+      onClick={onDelete}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'absolute', top: -8, right: mine ? 'auto' : -8, left: mine ? -8 : 'auto',
+        width: 20, height: 20, borderRadius: 5,
+        background: '#0c0c0c', border: '1px solid #1a1a1a',
+        color: hovered ? '#ef4444' : '#333', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        opacity: hovered ? 1 : 0,
+        transition: 'color 0.13s, opacity 0.13s',
+      }}
+    >
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>
+      </svg>
+    </button>
+  );
+}
+
 function Avatar({ name, color }) {
   const initials = (name || '?').slice(0, 2).toUpperCase();
   return (
@@ -95,11 +119,8 @@ export default function ChatPanel({ onClose }) {
     reader.readAsDataURL(file);
   };
 
-  const deleteMessage = async (id) => {
-    try {
-      await api.delete(`/api/chat/${id}`);
-      socket.emit('chat:delete', { id });
-    } catch { setError('Nao foi possivel excluir.'); }
+  const deleteMessage = (id) => {
+    socket.emit('chat:delete', { id });
   };
 
   // Group messages by sender for visual grouping
@@ -259,24 +280,7 @@ export default function ChatPanel({ onClose }) {
                   )}
 
                   {canDelete && (
-                    <button
-                      onClick={() => deleteMessage(msg.id)}
-                      className="opacity-0 group-hover:opacity-100"
-                      style={{
-                        position: 'absolute', top: -8, right: mine ? 'auto' : -8, left: mine ? -8 : 'auto',
-                        width: 20, height: 20, borderRadius: 5,
-                        background: '#0c0c0c', border: '1px solid #1a1a1a',
-                        color: '#444', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'color 0.13s',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                      onMouseLeave={e => e.currentTarget.style.color = '#444'}
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>
-                      </svg>
-                    </button>
+                    <DeleteBtn onDelete={() => deleteMessage(msg.id)} mine={mine} />
                   )}
                 </div>
               </div>

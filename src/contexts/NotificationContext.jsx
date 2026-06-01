@@ -33,13 +33,6 @@ export function NotificationProvider({ children }) {
       timers.current[id] = setTimeout(() => dismiss(id), duration);
     }
 
-    // Web Notifications API (só se permitido)
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      try {
-        new Notification(title, { body, silent: false });
-      } catch (_) {}
-    }
-
     return id;
   }, [dismiss]);
 
@@ -56,18 +49,10 @@ export function NotificationProvider({ children }) {
   const notifyReady      = useCallback((cardTitle) =>
     push('ready',     '✅ Pronto',                cardTitle), [push]);
 
-  // Pede permissão de notificação nativa na primeira vez
-  const requestPermission = useCallback(() => {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
   return (
     <NotificationContext.Provider value={{
       notifications, push, dismiss,
       notifyChat, notifyProducing, notifyUrgent, notifyReady,
-      requestPermission,
     }}>
       {children}
     </NotificationContext.Provider>

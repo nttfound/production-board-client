@@ -6,12 +6,14 @@ import { NotificationBell } from '../ui/NotificationCenter';
 
 const ROLE_LABELS = { creator: 'criador', operator: 'operador', viewer: 'visualizacao' };
 
-const hasUpdater = typeof window !== 'undefined'
+const getHasUpdater = () =>
+  typeof window !== 'undefined'
   && !!window.electronAPI
   && typeof window.electronAPI.onUpdateStatus   === 'function'
   && typeof window.electronAPI.onUpdateProgress === 'function';
 
-const hasVersion = typeof window !== 'undefined'
+const getHasVersion = () =>
+  typeof window !== 'undefined'
   && !!window.electronAPI
   && typeof window.electronAPI.getVersion === 'function';
 
@@ -21,8 +23,8 @@ function useUpdater() {
   const [appVersion, setAppVersion] = useState(null);
 
   useEffect(() => {
-    if (hasVersion) window.electronAPI.getVersion().then(setAppVersion).catch(() => {});
-    if (!hasUpdater) return;
+    if (getHasVersion()) window.electronAPI.getVersion().then(setAppVersion).catch(() => {});
+    if (!getHasUpdater()) return;
     const unsubStatus   = window.electronAPI.onUpdateStatus(setUpdateInfo);
     const unsubProgress = window.electronAPI.onUpdateProgress(setProgress);
     return () => { unsubStatus(); unsubProgress(); };
@@ -43,7 +45,7 @@ function useUpdater() {
 }
 
 function UpdateIndicator({ updateInfo, progress, appVersion, onCheck, onDownload, onInstall }) {
-  if (!hasVersion && !hasUpdater) return null;
+  if (!getHasVersion() && !getHasUpdater()) return null;
   const status = updateInfo?.status;
 
   if (status === 'downloading') {

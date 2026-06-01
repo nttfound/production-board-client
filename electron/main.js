@@ -81,6 +81,16 @@ function setupIPC() {
   ipcMain.handle('app:version', () => app.getVersion());
 }
 
+// ─── Startup com Windows ───────────────────────────────────────────────────
+function setupLoginItem() {
+  if (isDev) return; // não registrar em dev
+  app.setLoginItemSettings({
+    openAtLogin: true,
+    // aparece no Gerenciador de Tarefas > Inicializar
+    // o usuário pode desabilitar de lá normalmente
+  });
+}
+
 // ─── Window ────────────────────────────────────────────────────────────────
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -90,6 +100,7 @@ function createWindow() {
     minHeight: 680,
     backgroundColor: '#0d0d0d',
     icon: path.join(__dirname, '../public/icon.png'),
+    show: false, // evita flash branco antes de maximizar
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -98,6 +109,12 @@ function createWindow() {
   });
 
   mainWindow.setMenu(null);
+  mainWindow.maximize();
+
+  // mostra a janela só depois de maximizada (sem flash)
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:3001');
@@ -105,14 +122,13 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../build/index.html'));
   }
-
-
 }
 
 app.whenReady().then(() => {
   setupIPC();
   createWindow();
   setupAutoUpdater();
+  setupLoginItem();
 });
 
 app.on('window-all-closed', () => {
