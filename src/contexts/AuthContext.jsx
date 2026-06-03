@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api, { setAuthToken } from '../services/api';
+import socket from '../services/socket';
 
 const AuthContext = createContext(null);
 
@@ -8,22 +9,30 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // api.js já restaura o token do sessionStorage automaticamente
     api.get('/api/auth/me')
-      .then(res => setUser(res.data.user))
+      .then(res => {
+        setUser(res.data.user);
+        // Conecta o socket assim que confirma autenticação
+        if (res.data.user) socket.connect();
+      })
       .catch(() => {
         setAuthToken(null);
         setUser(null);
+        socket.disconnect();
       })
       .finally(() => {
         setLoading(false);
       });
+
+    // NÃO desconectar no cleanup — o StrictMode do React em dev
+    // desmonta/remonta o componente e mataria a conexão.
   }, []);
 
   const login = async (username, password) => {
     const res = await api.post('/api/auth/login', { username, password });
     setAuthToken(res.data.token);
     setUser(res.data.user);
+    socket.connect();
     return res.data.user;
   };
 
@@ -33,6 +42,7 @@ export function AuthProvider({ children }) {
     } finally {
       setAuthToken(null);
       setUser(null);
+      socket.disconnect();
     }
   };
 

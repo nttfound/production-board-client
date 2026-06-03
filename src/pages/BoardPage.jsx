@@ -100,7 +100,7 @@ export default function BoardPage() {
   // Socket com autenticação e reconexão
   useEffect(() => {
     const token = getAuthToken();
-    
+
     if (token) {
       socket.auth = { token };
       if (!socket.connected) {
@@ -110,22 +110,20 @@ export default function BoardPage() {
 
     setConnected(socket.connected);
 
-    const handleConnect = () => setConnected(true);
+    const handleConnect    = () => setConnected(true);
     const handleDisconnect = () => setConnected(false);
     const handleConnectError = (err) => {
       console.log('[WS] Erro de conexão:', err.message);
       setConnected(false);
     };
-
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.on('connect_error', handleConnectError);
-
-    socket.on('card:created', (card) => {
+    const handleReconnect = () => {
+      const t = getAuthToken();
+      if (t) socket.auth = { token: t };
+    };
+    const handleCardCreated = (card) => {
       setCards(prev => sortCards([card, ...prev]));
-    });
-
-    socket.on('card:updated', (updated) => {
+    };
+    const handleCardUpdated = (updated) => {
       const prev = cardsRef.current.find(c => c.id === updated.id);
       if (prev) {
         if (prev.status !== updated.status && updated.status === 'Producing') notifyProducing(updated.title);
@@ -133,29 +131,37 @@ export default function BoardPage() {
         if (!prev.urgente && updated.urgente) notifyUrgent(updated.title);
       }
       setCards(prev => sortCards(prev.map(c => c.id === updated.id ? updated : c)));
-    });
-
-    socket.on('card:deleted', ({ id }) => {
+    };
+    const handleCardDeleted = ({ id }) => {
       setCards(prev => prev.filter(c => c.id !== id));
-    });
-
-    socket.on('chat:message', (msg) => {
+    };
+    const handleChatMessage = (msg) => {
       if (!showChatRef.current) {
         setChatUnread(prev => prev + 1);
         const sender = msg?.username || msg?.display_name || 'Alguém';
         const preview = msg?.text || '';
         if (preview) notifyChat(sender, preview.slice(0, 80));
       }
-    });
+    };
+
+    socket.on('connect',       handleConnect);
+    socket.on('disconnect',    handleDisconnect);
+    socket.on('connect_error', handleConnectError);
+    socket.on('reconnect',     handleReconnect);
+    socket.on('card:created',  handleCardCreated);
+    socket.on('card:updated',  handleCardUpdated);
+    socket.on('card:deleted',  handleCardDeleted);
+    socket.on('chat:message',  handleChatMessage);
 
     return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
+      socket.off('connect',       handleConnect);
+      socket.off('disconnect',    handleDisconnect);
       socket.off('connect_error', handleConnectError);
-      socket.off('card:created');
-      socket.off('card:updated');
-      socket.off('card:deleted');
-      socket.off('chat:message');
+      socket.off('reconnect',     handleReconnect);
+      socket.off('card:created',  handleCardCreated);
+      socket.off('card:updated',  handleCardUpdated);
+      socket.off('card:deleted',  handleCardDeleted);
+      socket.off('chat:message',  handleChatMessage);
     };
   }, [user, notifyChat, notifyProducing, notifyUrgent, notifyReady]);
 
