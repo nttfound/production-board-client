@@ -11,7 +11,7 @@ const socket = io(BASE_URL, {
   autoConnect: false,
   reconnection: true,
   reconnectionDelay: 500,
-  transports: ['websocket', 'polling'],
+  transports: ['polling', 'websocket'],
   withCredentials: true,
   auth: (cb) => {
     const token = getToken();
