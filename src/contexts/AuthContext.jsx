@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api, { setAuthToken } from '../services/api';
-import socket from '../services/socket';
+import socket from '../services/socket'; // ← IMPORTAR O SOCKET
 
 const AuthContext = createContext(null);
 
@@ -9,9 +9,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // api.js já restaura o token do sessionStorage automaticamente
     api.get('/api/auth/me')
       .then(res => {
         setUser(res.data.user);
+        // ← CONECTAR SOCKET APÓS AUTENTICAÇÃO
         if (res.data.user) {
           socket.connect();
         }
@@ -19,22 +21,27 @@ export function AuthProvider({ children }) {
       .catch(() => {
         setAuthToken(null);
         setUser(null);
+        // ← DESCONECTAR SOCKET SE NÃO AUTENTICADO
         socket.disconnect();
       })
       .finally(() => {
         setLoading(false);
       });
 
-    // NÃO desconectar o socket aqui — o StrictMode do React em dev
-    // desmonta e remonta o componente, o que matava a conexão.
-    // O socket só é desconectado explicitamente no logout.
+    // ← LIMPEZA AO DESMONTAR
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const login = async (username, password) => {
     const res = await api.post('/api/auth/login', { username, password });
     setAuthToken(res.data.token);
     setUser(res.data.user);
+    
+    // ← CONECTAR SOCKET APÓS LOGIN
     socket.connect();
+    
     return res.data.user;
   };
 
@@ -44,6 +51,8 @@ export function AuthProvider({ children }) {
     } finally {
       setAuthToken(null);
       setUser(null);
+      
+      // ← DESCONECTAR SOCKET NO LOGOUT
       socket.disconnect();
     }
   };
