@@ -4,10 +4,10 @@ import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 
-const CORTE_COLOR = '#06b6d4';
-const DOBRA_COLOR = '#8b5cf6';
-const MAO_COLOR   = '#f59e0b';
-const CALANDRA_COLOR = '#22c55e';
+const CORTE_COLOR    = 'var(--corte)';
+const DOBRA_COLOR    = 'var(--dobra)';
+const MAO_COLOR      = 'var(--mao-obra)';
+const CALANDRA_COLOR = 'var(--calandra)';
 
 export default function StatusModal({ card, onClose, onSave }) {
   const { user } = useAuth();
@@ -24,51 +24,38 @@ export default function StatusModal({ card, onClose, onSave }) {
 
   const isCreator = user?.role === 'creator';
   const canUrgente = isCreator || Boolean(user?.permissions?.marcar_urgente);
-  const canCarga = isCreator || Boolean(user?.permissions?.marcar_carga);
-  const canServicoCorte = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_corte);
-  const canServicoDobra = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_dobra);
+  const canCarga   = isCreator || Boolean(user?.permissions?.marcar_carga);
+  const canServicoCorte     = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_corte);
+  const canServicoDobra     = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_dobra);
   const canServicoMaoDeObra = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_mao_de_obra);
-  const canServicoCalandra = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_calandra);
+  const canServicoCalandra  = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_calandra);
   const canServicos = canServicoCorte || canServicoDobra || canServicoMaoDeObra || canServicoCalandra;
 
   const tabs = [{ key: 'status', label: 'Status' }];
-  if (canUrgente) {
-    tabs.push({ key: 'urgente',  label: 'Urgente'  });
-  }
-  if (canCarga) {
-    tabs.push({ key: 'carga',    label: 'Carga'    });
-  }
-  if (canServicos) {
-    tabs.push({ key: 'servicos', label: 'Servicos' });
-  }
+  if (canUrgente) tabs.push({ key: 'urgente',  label: 'Urgente'  });
+  if (canCarga)   tabs.push({ key: 'carga',    label: 'Carga'    });
+  if (canServicos)tabs.push({ key: 'servicos', label: 'Servicos' });
 
   const handleSave = async () => {
     if (selected === 'Scheduled' && !schedDate) return;
     const updates = {};
-    if (canUrgente) {
-      if (urgente !== (card.urgente || false)) {
-        await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
-        updates.urgente = urgente;
-      }
+    if (canUrgente && urgente !== (card.urgente || false)) {
+      await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
+      updates.urgente = urgente;
     }
-    if (canCarga) {
-      if (carga !== (card.carga || null)) {
-        await api.patch(`/api/cards/${card.id}/carga`, { carga });
-        updates.carga = carga;
-      }
+    if (canCarga && carga !== (card.carga || null)) {
+      await api.patch(`/api/cards/${card.id}/carga`, { carga });
+      updates.carga = carga;
     }
     if (canServicos) {
-      if (corte !== (card.corte || false) || dobra !== (card.dobra || false) || maoDeObra !== (card.mao_de_obra || false) || calandra !== (card.calandra || false)) {
+      if (corte !== (card.corte||false) || dobra !== (card.dobra||false) || maoDeObra !== (card.mao_de_obra||false) || calandra !== (card.calandra||false)) {
         const payload = {};
-        if (canServicoCorte) payload.corte = corte;
-        if (canServicoDobra) payload.dobra = dobra;
+        if (canServicoCorte)     payload.corte       = corte;
+        if (canServicoDobra)     payload.dobra       = dobra;
         if (canServicoMaoDeObra) payload.mao_de_obra = maoDeObra;
-        if (canServicoCalandra) payload.calandra = calandra;
+        if (canServicoCalandra)  payload.calandra    = calandra;
         await api.patch(`/api/cards/${card.id}/servicos`, payload);
-        updates.corte = corte;
-        updates.dobra = dobra;
-        updates.mao_de_obra = maoDeObra;
-        updates.calandra = calandra;
+        updates.corte = corte; updates.dobra = dobra; updates.mao_de_obra = maoDeObra; updates.calandra = calandra;
       }
     }
     onSave(selected, schedDate || null, updates);
@@ -77,16 +64,19 @@ export default function StatusModal({ card, onClose, onSave }) {
   const ToggleBtn = ({ label, value, onChange, color }) => (
     <button
       onClick={() => onChange(!value)}
-      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-sm transition-all"
-      style={value
-        ? { borderColor: `${color}60`, background: `${color}12`, color }
-        : { borderColor: '#2a2a2a', color: '#f0f0f0' }
-      }
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+        padding: '10px 14px', borderRadius: 10, border: '1px solid',
+        fontSize: 13, transition: 'all 0.13s', cursor: 'pointer',
+        borderColor: value ? `${color}60` : 'var(--border-default)',
+        background: value ? `${color}12` : 'transparent',
+        color: value ? color : 'var(--text-primary)',
+      }}
     >
-      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: value ? color : '#333' }} />
+      <span style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: value ? color : 'var(--text-faint)' }} />
       {label}
       {value && (
-        <svg className="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg style={{ marginLeft: 'auto' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
       )}
@@ -94,15 +84,26 @@ export default function StatusModal({ card, onClose, onSave }) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in" onClick={onClose}>
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl p-6 w-96 max-h-[90vh] overflow-y-auto shadow-modal animate-scale-in" onClick={e => e.stopPropagation()}>
-        <h2 className="text-[#f0f0f0] font-semibold mb-1">Alterar Card</h2>
-        <p className="text-[#555] text-xs mb-4 font-mono">{card.title}</p>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-overlay)' }} onClick={onClose}>
+      <div style={{
+        background: 'var(--bg-surface1)', border: '1px solid var(--border-default)',
+        borderRadius: 16, padding: 24, width: 384, maxHeight: '90vh',
+        overflowY: 'auto', boxShadow: 'var(--shadow-modal)', animation: 'scaleIn 0.18s ease',
+      }} onClick={e => e.stopPropagation()}>
 
-        <div className="flex gap-1 mb-5 bg-[#1c1c1c] p-1 rounded-xl">
+        <h2 style={{ color: 'var(--text-primary)', fontWeight: 600, margin: '0 0 4px', fontSize: 16 }}>Alterar Card</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'DM Mono, monospace', margin: '0 0 20px' }}>{card.title}</p>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--bg-surface2)', padding: 4, borderRadius: 10 }}>
           {tabs.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${tab === t.key ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#8a8a8a]'}`}>
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              flex: 1, padding: '6px', borderRadius: 7, fontSize: 11, fontWeight: 500,
+              border: 'none', cursor: 'pointer', transition: 'all 0.13s',
+              background: tab === t.key ? 'var(--bg-surface)' : 'transparent',
+              color: tab === t.key ? 'var(--text-primary)' : 'var(--text-muted)',
+              boxShadow: tab === t.key ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+            }}>
               {t.label}
             </button>
           ))}
@@ -110,24 +111,32 @@ export default function StatusModal({ card, onClose, onSave }) {
 
         {/* STATUS */}
         {tab === 'status' && (
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {STATUSES.map(s => (
-              <button key={s.value} onClick={() => setSelected(s.value)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-sm transition-all ${selected === s.value ? 'border-[#3a3a3a] bg-[#1c1c1c]' : 'border-transparent hover:bg-[#1c1c1c]'}`}>
-                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                <span className="text-[#f0f0f0]">{s.label}</span>
+              <button key={s.value} onClick={() => setSelected(s.value)} style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 14px', borderRadius: 10, fontSize: 13,
+                border: '1px solid',
+                borderColor: selected === s.value ? 'var(--border-accent)' : 'transparent',
+                background: selected === s.value ? 'var(--bg-surface2)' : 'transparent',
+                color: 'var(--text-primary)', cursor: 'pointer', transition: 'all 0.13s',
+              }}
+              onMouseEnter={e => { if (selected !== s.value) e.currentTarget.style.background = 'var(--bg-surface2)'; }}
+              onMouseLeave={e => { if (selected !== s.value) e.currentTarget.style.background = 'transparent'; }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: s.color }} />
+                <span>{s.label}</span>
                 {selected === s.value && (
-                  <svg className="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg style={{ marginLeft: 'auto' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" strokeWidth="2.5" strokeLinecap="round">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 )}
               </button>
             ))}
             {selected === 'Scheduled' && (
-              <div className="mt-3">
-                <label className="block text-xs text-[#8a8a8a] mb-2 uppercase tracking-wider">Data agendada</label>
+              <div style={{ marginTop: 8 }}>
+                <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>Data agendada</label>
                 <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)}
-                  className="w-full bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl px-4 py-2.5 text-[#f0f0f0] text-sm outline-none" />
+                  style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-default)', borderRadius: 10, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }} />
               </div>
             )}
           </div>
@@ -135,22 +144,25 @@ export default function StatusModal({ card, onClose, onSave }) {
 
         {/* URGENTE */}
         {tab === 'urgente' && canUrgente && (
-          <div className="flex flex-col items-center gap-5 py-4">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '16px 0' }}>
             <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl cursor-pointer transition-all duration-200 border-2"
-              style={{ borderColor: urgente ? URGENTE_COLOR : '#2a2a2a', background: urgente ? `${URGENTE_COLOR}15` : '#1c1c1c' }}
+              style={{ width: 80, height: 80, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, cursor: 'pointer', transition: 'all 0.2s', border: '2px solid',
+                borderColor: urgente ? URGENTE_COLOR : 'var(--border-default)',
+                background: urgente ? `${URGENTE_COLOR}15` : 'var(--bg-surface2)' }}
               onClick={() => setUrgente(!urgente)}>
               {urgente ? '🟠' : '⚡'}
             </div>
-            <div className="text-center">
-              <p className="text-[#f0f0f0] font-medium">{urgente ? 'Marcado como Urgente' : 'Nao Urgente'}</p>
-              <p className="text-[#555] text-xs mt-1">Clique para {urgente ? 'remover' : 'marcar como urgente'}</p>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-primary)', fontWeight: 500, margin: 0 }}>{urgente ? 'Marcado como Urgente' : 'Não Urgente'}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>Clique para {urgente ? 'remover' : 'marcar como urgente'}</p>
             </div>
-            <button onClick={() => setUrgente(!urgente)}
-              className="w-full py-2.5 rounded-xl text-sm font-medium transition-all border"
-              style={urgente
-                ? { background: `${URGENTE_COLOR}20`, borderColor: `${URGENTE_COLOR}50`, color: URGENTE_COLOR }
-                : { background: '#1c1c1c', borderColor: '#2a2a2a', color: '#8a8a8a' }}>
+            <button onClick={() => setUrgente(!urgente)} style={{
+              width: '100%', padding: '10px', borderRadius: 10, fontSize: 13, fontWeight: 500,
+              border: '1px solid', cursor: 'pointer', transition: 'all 0.13s',
+              borderColor: urgente ? `${URGENTE_COLOR}50` : 'var(--border-default)',
+              background: urgente ? `${URGENTE_COLOR}20` : 'var(--bg-surface2)',
+              color: urgente ? URGENTE_COLOR : 'var(--text-secondary)',
+            }}>
               {urgente ? 'Urgente ativado' : 'Ativar Urgente'}
             </button>
           </div>
@@ -158,42 +170,33 @@ export default function StatusModal({ card, onClose, onSave }) {
 
         {/* CARGA */}
         {tab === 'carga' && canCarga && (
-          <div className="space-y-3">
-            {/* Itapira - sempre visivel */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
-              <p className="text-[#8a8a8a] text-xs uppercase tracking-wider mb-2">Sempre disponivel</p>
-              <ToggleBtn
-                label={CIDADE_SEMPRE}
-                value={carga === CIDADE_SEMPRE}
-                onChange={v => setCarga(v ? CIDADE_SEMPRE : null)}
-                color={CARGA_COLOR}
-              />
+              <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace', marginBottom: 8, marginTop: 0 }}>Sempre disponível</p>
+              <ToggleBtn label={CIDADE_SEMPRE} value={carga === CIDADE_SEMPRE} onChange={v => setCarga(v ? CIDADE_SEMPRE : null)} color={CARGA_COLOR} />
             </div>
 
-            {/* Cidades por dia */}
             {Object.entries(CARGA_POR_DIA).map(([dia, cidades]) => (
               <div key={dia}>
-                <button
-                  onClick={() => setDiaAberto(diaAberto === dia ? null : dia)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-[#8a8a8a] hover:text-[#f0f0f0] hover:bg-[#1c1c1c] transition-all uppercase tracking-wider"
-                >
+                <button onClick={() => setDiaAberto(diaAberto === dia ? null : dia)} style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '6px 10px', borderRadius: 8, fontSize: 10, fontWeight: 500,
+                  color: 'var(--text-secondary)', background: 'transparent', border: 'none',
+                  cursor: 'pointer', transition: 'all 0.13s', textTransform: 'uppercase', letterSpacing: '0.08em',
+                  fontFamily: 'DM Mono, monospace',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface2)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
                   <span>{dia}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                     style={{ transform: diaAberto === dia ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
-
                 {diaAberto === dia && (
-                  <div className="space-y-1.5 mt-1.5 pl-2">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6, paddingLeft: 8 }}>
                     {cidades.map(cidade => (
-                      <ToggleBtn
-                        key={cidade}
-                        label={`CARGA - ${cidade}`}
-                        value={carga === `CARGA - ${cidade}`}
-                        onChange={v => setCarga(v ? `CARGA - ${cidade}` : null)}
-                        color={CARGA_COLOR}
-                      />
+                      <ToggleBtn key={cidade} label={`CARGA - ${cidade}`} value={carga === `CARGA - ${cidade}`} onChange={v => setCarga(v ? `CARGA - ${cidade}` : null)} color={CARGA_COLOR} />
                     ))}
                   </div>
                 )}
@@ -201,7 +204,9 @@ export default function StatusModal({ card, onClose, onSave }) {
             ))}
 
             {carga && (
-              <button onClick={() => setCarga(null)} className="w-full py-2 text-[#555] text-xs hover:text-[#8a8a8a] transition-colors">
+              <button onClick={() => setCarga(null)} style={{ padding: '6px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', transition: 'color 0.13s' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
                 Remover carga
               </button>
             )}
@@ -210,20 +215,26 @@ export default function StatusModal({ card, onClose, onSave }) {
 
         {/* SERVICOS */}
         {tab === 'servicos' && canServicos && (
-          <div className="space-y-2">
-            <p className="text-[#8a8a8a] text-xs uppercase tracking-wider mb-3">Servicos</p>
-            {canServicoCorte && <ToggleBtn label="Corte"       value={corte}     onChange={setCorte}     color={CORTE_COLOR} />}
-            {canServicoDobra && <ToggleBtn label="Dobra"       value={dobra}     onChange={setDobra}     color={DOBRA_COLOR} />}
-            {canServicoMaoDeObra && <ToggleBtn label="Mao de Obra" value={maoDeObra} onChange={setMaoDeObra} color={MAO_COLOR}   />}
-            {canServicoCalandra && <ToggleBtn label="Calandra" value={calandra} onChange={setCalandra} color={CALANDRA_COLOR} />}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace', marginBottom: 4, marginTop: 0 }}>Serviços</p>
+            {canServicoCorte    && <ToggleBtn label="Corte"       value={corte}     onChange={setCorte}     color={CORTE_COLOR} />}
+            {canServicoDobra    && <ToggleBtn label="Dobra"       value={dobra}     onChange={setDobra}     color={DOBRA_COLOR} />}
+            {canServicoMaoDeObra && <ToggleBtn label="Mão de Obra" value={maoDeObra} onChange={setMaoDeObra} color={MAO_COLOR}   />}
+            {canServicoCalandra  && <ToggleBtn label="Calandra"    value={calandra}  onChange={setCalandra}  color={CALANDRA_COLOR} />}
           </div>
         )}
 
-        <div className="flex gap-2 mt-5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#2a2a2a] text-[#8a8a8a] text-sm hover:bg-[#1c1c1c] transition-colors">
+        <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+          <button onClick={onClose}
+            style={{ flex: 1, padding: '10px', borderRadius: 10, border: '1px solid var(--border-default)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', transition: 'all 0.13s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface2)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
             Cancelar
           </button>
-          <button onClick={handleSave} className="flex-1 py-2.5 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm transition-colors">
+          <button onClick={handleSave}
+            style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: 'var(--accent-blue)', color: '#fff', fontSize: 13, cursor: 'pointer', transition: 'background 0.13s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-blue-dim)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--accent-blue)'}>
             Salvar
           </button>
         </div>

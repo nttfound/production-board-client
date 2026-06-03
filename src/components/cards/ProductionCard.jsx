@@ -8,25 +8,27 @@ import { getStatus, URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConf
 import { cargaAtivaAgora } from '../../services/cargaConfig';
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-const CORTE_COLOR = '#06b6d4';
-const DOBRA_COLOR = '#8b5cf6';
-const MAO_COLOR   = '#f59e0b';
-const CALANDRA_COLOR = '#22c55e';
+
+// Service colors via CSS variable (já injetadas pelo ThemeContext)
+const CORTE_COLOR    = 'var(--corte)';
+const DOBRA_COLOR    = 'var(--dobra)';
+const MAO_COLOR      = 'var(--mao-obra)';
+const CALANDRA_COLOR = 'var(--calandra)';
 
 function ServicePill({ label, color }) {
   return (
-    <span style={{
+    <span className="tag-pill" style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
       fontFamily: 'DM Mono, monospace', textTransform: 'uppercase',
       color,
-      background: `${color}22`,
-      border: `1px solid ${color}55`,
+      background: `color-mix(in srgb, ${color} 12%, transparent)`,
+      border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
       borderRadius: 5, padding: '3px 8px',
     }}>
       <span style={{
         width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-        background: color, boxShadow: `0 0 6px ${color}cc`,
+        background: color,
       }} />
       {label}
     </span>
@@ -40,14 +42,11 @@ function CargaBadge({ label, color }) {
       fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
       fontFamily: 'DM Mono, monospace', textTransform: 'uppercase',
       color,
-      background: `${color}22`,
-      border: `1px solid ${color}55`,
+      background: `color-mix(in srgb, ${color} 12%, transparent)`,
+      border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
       borderRadius: 5, padding: '3px 8px',
     }}>
-      <span style={{
-        width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-        background: color, boxShadow: `0 0 6px ${color}cc`,
-      }} />
+      <span style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: color }} />
       {label}
     </span>
   );
@@ -59,15 +58,12 @@ function UrgenteBadge() {
       display: 'inline-flex', alignItems: 'center', gap: 5,
       fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
       fontFamily: 'DM Mono, monospace', textTransform: 'uppercase',
-      color: URGENTE_COLOR,
-      background: `${URGENTE_COLOR}22`,
-      border: `1px solid ${URGENTE_COLOR}55`,
+      color: 'var(--urgente)',
+      background: 'color-mix(in srgb, var(--urgente) 12%, transparent)',
+      border: '1px solid color-mix(in srgb, var(--urgente) 35%, transparent)',
       borderRadius: 5, padding: '3px 8px',
     }}>
-      <span style={{
-        width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-        background: URGENTE_COLOR, boxShadow: `0 0 6px ${URGENTE_COLOR}cc`,
-      }} />
+      <span style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: 'var(--urgente)' }} />
       Urgente
     </span>
   );
@@ -80,10 +76,9 @@ function OrderBadge({ order, color }) {
       minWidth: 22, height: 18,
       fontSize: 9, fontWeight: 800,
       fontFamily: 'DM Mono, monospace',
-      color: '#000',
+      color: '#fff',
       background: color,
       borderRadius: 4, padding: '0 5px',
-      boxShadow: `0 0 8px ${color}88`,
     }}>
       #{order}
     </span>
@@ -100,9 +95,15 @@ function ActionBtn({ onClick, title, danger, children, alwaysVisible }) {
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 26, height: 26, borderRadius: 6,
-        background: hover ? (danger ? 'rgba(239,68,68,0.10)' : 'rgba(255,255,255,0.06)') : 'transparent',
-        border: `1px solid ${hover ? (danger ? 'rgba(239,68,68,0.30)' : '#333') : '#1e1e1e'}`,
-        color: hover ? (danger ? '#ef4444' : '#aaa') : '#444',
+        background: hover
+          ? (danger ? 'rgba(239,68,68,0.10)' : 'var(--bg-surface3)')
+          : 'transparent',
+        border: `1px solid ${hover
+          ? (danger ? 'rgba(239,68,68,0.30)' : 'var(--border-accent)')
+          : 'var(--border-default)'}`,
+        color: hover
+          ? (danger ? 'var(--status-red)' : 'var(--text-secondary)')
+          : 'var(--text-muted)',
         cursor: 'pointer', transition: 'all 0.14s',
         opacity: alwaysVisible ? 1 : undefined,
       }}
@@ -120,6 +121,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
   const [showObsModal,    setShowObsModal]    = useState(false);
   const [localCard,       setLocalCard]       = useState(card);
   const [imgError,        setImgError]        = useState(false);
+  const [cardHover,       setCardHover]       = useState(false);
 
   useEffect(() => { setLocalCard(card); setImgError(false); }, [card]);
 
@@ -131,7 +133,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
   const mostrarCarga = cargaAtivaAgora(localCard.carga);
   const isUrgent     = localCard.urgente;
   const hasCarga     = mostrarCarga && localCard.carga;
-  const accentColor  = isUrgent ? URGENTE_COLOR : hasCarga ? CARGA_COLOR : s.color;
+  const accentColor  = isUrgent ? 'var(--urgente)' : hasCarga ? 'var(--carga)' : s.color;
 
   const formattedDate = new Date(localCard.created_at).toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: '2-digit',
@@ -142,16 +144,16 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
     : null;
 
   const services = [
-    localCard.corte       && { label: 'Corte',       color: CORTE_COLOR },
-    localCard.dobra       && { label: 'Dobra',       color: DOBRA_COLOR },
-    localCard.mao_de_obra && { label: 'Mão de Obra', color: MAO_COLOR   },
+    localCard.corte       && { label: 'Corte',       color: CORTE_COLOR    },
+    localCard.dobra       && { label: 'Dobra',       color: DOBRA_COLOR    },
+    localCard.mao_de_obra && { label: 'Mão de Obra', color: MAO_COLOR      },
     localCard.calandra    && { label: 'Calandra',    color: CALANDRA_COLOR },
   ].filter(Boolean);
 
-  const isCreator = user?.role === 'creator';
-  const canChangeStatus = isCreator || Boolean(user?.permissions?.mudar_status);
+  const isCreator          = user?.role === 'creator';
+  const canChangeStatus    = isCreator || Boolean(user?.permissions?.mudar_status);
   const canEditObservation = isCreator || Boolean(user?.permissions?.alterar_observacao);
-  const canDelete = isCreator || Boolean(user?.permissions?.deletar_card);
+  const canDelete          = isCreator || Boolean(user?.permissions?.deletar_card);
 
   return (
     <>
@@ -161,27 +163,19 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
           position: 'relative',
           display: 'flex', flexDirection: 'column',
           borderRadius: 10,
-          background: '#111',
-          border: '1px solid #1e1e1e',
+          background: 'var(--bg-card)',
+          border: `1px solid ${cardHover ? 'var(--border-light)' : 'var(--border-default)'}`,
           overflow: 'hidden',
           transition: 'border-color 0.2s, box-shadow 0.2s',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
+          boxShadow: cardHover ? 'var(--shadow-card-hover)' : 'var(--shadow-card)',
         }}
-        onMouseEnter={e => {
-          e.currentTarget.style.borderColor = '#2a2a2a';
-          e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.65)';
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.borderColor = '#1e1e1e';
-          e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.5)';
-        }}
+        onMouseEnter={() => setCardHover(true)}
+        onMouseLeave={() => setCardHover(false)}
       >
-
-
         {/* Image */}
         {imageUrl ? (
           <div
-            style={{ height: 144, background: '#0a0a0a', flexShrink: 0, overflow: 'hidden', position: 'relative', cursor: 'zoom-in' }}
+            style={{ height: 144, background: 'var(--bg-surface2)', flexShrink: 0, overflow: 'hidden', position: 'relative', cursor: 'zoom-in' }}
             onClick={() => setShowImageModal(true)}
           >
             <img
@@ -193,11 +187,11 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
               }}
               className="group-hover:scale-[1.04]"
             />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(17,17,17,0.85) 0%, transparent 50%)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.18) 45%, transparent 70%)', opacity: 1 }} />
             <div
               style={{
                 position: 'absolute', top: 8, right: 8,
-                background: 'rgba(0,0,0,0.65)', borderRadius: 6,
+                background: 'var(--bg-overlay)', borderRadius: 6,
                 padding: '4px 6px', backdropFilter: 'blur(8px)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 opacity: 0, transition: 'opacity 0.18s',
@@ -211,11 +205,11 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
           </div>
         ) : (
           <div style={{
-            height: 44, flexShrink: 0, background: '#0d0d0d',
-            borderBottom: '1px solid #1a1a1a',
+            height: 44, flexShrink: 0, background: 'var(--bg-surface2)',
+            borderBottom: '1px solid var(--border-default)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#252525" strokeWidth="1.5" strokeLinecap="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--border-light)" strokeWidth="1.5" strokeLinecap="round">
               <rect x="3" y="3" width="18" height="18" rx="2"/>
               <circle cx="8.5" cy="8.5" r="1.5"/>
               <polyline points="21 15 16 10 5 21"/>
@@ -234,7 +228,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
               {hasCarga && (
                 <CargaBadge
                   label={localCard.carga === 'Itapira' ? 'Itapira' : localCard.carga}
-                  color={CARGA_COLOR}
+                  color="var(--cargaitapira)"
                 />
               )}
             </div>
@@ -261,7 +255,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
 
           {/* Title */}
           <h3 style={{
-            color: '#e0e0e0', fontWeight: 700, fontSize: 13,
+            color: 'var(--text-primary)', fontWeight: 700, fontSize: 13,
             lineHeight: 1.5, margin: 0, letterSpacing: '-0.01em',
             display: '-webkit-box', WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical', overflow: 'hidden',
@@ -281,7 +275,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
             {localCard.observation ? (
               <div>
                 <p style={{
-                  color: '#999', fontSize: 11, lineHeight: 1.7,
+                  color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.7,
                   fontFamily: 'DM Mono, monospace', margin: 0,
                   display: '-webkit-box', WebkitLineClamp: 3,
                   WebkitBoxOrient: 'vertical', overflow: 'hidden',
@@ -289,13 +283,13 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
                   {localCard.observation}
                 </p>
                 {localCard.observation_by && (
-                  <p style={{ color: '#555', fontSize: 9, marginTop: 4, fontFamily: 'DM Mono, monospace' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 9, marginTop: 4, fontFamily: 'DM Mono, monospace' }}>
                     — {localCard.observation_by}
                   </p>
                 )}
               </div>
             ) : (
-              <p style={{ color: '#444', fontSize: 11, fontFamily: 'DM Mono, monospace', margin: 0, fontStyle: 'italic' }}>
+              <p style={{ color: 'var(--text-faint)', fontSize: 11, fontFamily: 'DM Mono, monospace', margin: 0, fontStyle: 'italic' }}>
                 sem observação
               </p>
             )}
@@ -306,12 +300,12 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
                   position: 'absolute', top: -1, right: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: 22, height: 22, borderRadius: 5,
-                  background: '#141414', border: '1px solid #222',
-                  color: '#444', cursor: 'pointer', transition: 'all 0.14s', opacity: 0,
+                  background: 'var(--bg-surface2)', border: '1px solid var(--border-default)',
+                  color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.14s', opacity: 0,
                 }}
                 className="group-hover/obs:opacity-100"
-                onMouseEnter={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.borderColor = '#333'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#444'; e.currentTarget.style.borderColor = '#222'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}
               >
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -321,18 +315,20 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
             )}
           </div>
 
-          {/* Accent divider — entre observação e footer */}
+          {/* Accent divider */}
           <div style={{
             height: 1, flexShrink: 0,
-            background: `linear-gradient(90deg, ${accentColor} 0%, ${accentColor}66 40%, transparent 100%)`,
+            background: `linear-gradient(90deg, ${accentColor} 0%, ${accentColor} 40%, transparent 100%)`,
+            opacity: 0.5,
           }} />
 
           {/* Scheduled */}
           {localCard.status === 'Scheduled' && scheduledStr && (
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 10, color: '#7c3aed', fontFamily: 'DM Mono, monospace',
-              background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.28)',
+              fontSize: 10, color: 'var(--status-purple)', fontFamily: 'DM Mono, monospace',
+              background: 'color-mix(in srgb, var(--status-purple) 10%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--status-purple) 28%, transparent)',
               borderRadius: 5, padding: '3px 8px', alignSelf: 'flex-start',
             }}>
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -344,7 +340,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
 
           {/* Footer */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
-            <span style={{ color: '#666', fontSize: 10, fontFamily: 'DM Mono, monospace', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'DM Mono, monospace', display: 'flex', alignItems: 'center', gap: 5 }}>
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>
@@ -353,7 +349,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {hasCarga && cargaOrder && <OrderBadge order={cargaOrder} color={CARGA_COLOR} />}
-              <span style={{ color: '#444', fontSize: 10, fontFamily: 'DM Mono, monospace' }}>
+              <span style={{ color: 'var(--text-faint)', fontSize: 10, fontFamily: 'DM Mono, monospace' }}>
                 {formattedDate}
               </span>
             </div>

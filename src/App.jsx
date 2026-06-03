@@ -1,6 +1,7 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import LoginPage from './pages/LoginPage';
 import BoardPage from './pages/BoardPage';
 import UpdateBanner from './components/ui/UpdateBanner';
@@ -11,8 +12,8 @@ function AppInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#2a2a2a] border-t-[#3b82f6] rounded-full animate-spin" />
+      <div style={{ minHeight: '100vh', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 28, height: 28, border: '2px solid var(--border-default)', borderTopColor: 'var(--accent-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
@@ -22,12 +23,14 @@ function AppInner() {
 
 export default function App() {
   return (
-    <NotificationProvider>
-      <AuthProvider>
-        <AppInner />
-        <NotificationCenter />
-        <UpdateBanner />
-      </AuthProvider>
-    </NotificationProvider>
+    <ThemeProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <AppInner />
+          <NotificationCenter />
+          <UpdateBanner />
+        </AuthProvider>
+      </NotificationProvider>
+    </ThemeProvider>
   );
 }

@@ -129,15 +129,15 @@ export default function UserManager({ onClose }) {
       >
         <div
           className="w-full max-w-2xl rounded-2xl flex flex-col overflow-hidden"
-          style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', maxHeight: '85vh' }}
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', maxHeight: '85vh' }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1c1c1c] flex-shrink-0">
             <div>
-              <p className="text-[#f0f0f0] text-sm font-semibold">Gerenciar Usuários</p>
-              <p className="text-[#555] text-[10px]">Somente itadobras</p>
+              <p className="text-[var(--text-primary)] text-sm font-semibold">Gerenciar Usuários</p>
+              <p className="text-[var(--text-muted)] text-[10px]">Somente itadobras</p>
             </div>
-            <button onClick={onClose} className="text-[#555] hover:text-[#8a8a8a] transition-colors">
+            <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
@@ -150,7 +150,7 @@ export default function UserManager({ onClose }) {
               <div className="flex-1 overflow-y-auto py-2">
                 {loading ? (
                   <div className="flex justify-center py-8">
-                    <div className="w-5 h-5 border-2 border-[#2a2a2a] border-t-[#3b82f6] rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-[var(--border-default)] border-t-[#3b82f6] rounded-full animate-spin" />
                   </div>
                 ) : users.map(u => (
                   <button
@@ -162,8 +162,8 @@ export default function UserManager({ onClose }) {
                       borderLeft: selected?.id === u.id ? '2px solid #2563eb' : '2px solid transparent',
                     }}
                   >
-                    <p className="text-[#f0f0f0] text-xs font-medium truncate">{u.display_name}</p>
-                    <p className="text-[#555] text-[10px] truncate">@{u.username}</p>
+                    <p className="text-[var(--text-primary)] text-xs font-medium truncate">{u.display_name}</p>
+                    <p className="text-[var(--text-muted)] text-[10px] truncate">@{u.username}</p>
                   </button>
                 ))}
               </div>
@@ -191,31 +191,31 @@ export default function UserManager({ onClose }) {
                 <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
                   {/* Nome */}
                   <div>
-                    <label className="text-[#555] text-[10px] uppercase tracking-wider mb-1.5 block">Nome de Exibição</label>
+                    <label className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider mb-1.5 block">Nome de Exibição</label>
                     <input
                       value={form.display_name}
                       onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
                       placeholder="Ex: Laser"
-                      className="w-full bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl px-3 py-2 text-[#f0f0f0] text-sm outline-none focus:border-[#2563eb] transition-all"
+                      className="w-full bg-[var(--bg-surface2)] border border-[var(--border-default)] rounded-xl px-3 py-2 text-[var(--text-primary)] text-sm outline-none focus:border-[var(--accent-blue)] transition-all"
                     />
                   </div>
 
                   {/* Usuário (só no create) */}
                   {isNew && (
                     <div>
-                      <label className="text-[#555] text-[10px] uppercase tracking-wider mb-1.5 block">Usuário (login)</label>
+                      <label className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider mb-1.5 block">Usuário (login)</label>
                       <input
                         value={form.username}
                         onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g,'') }))}
                         placeholder="Ex: laser"
-                        className="w-full bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl px-3 py-2 text-[#f0f0f0] text-sm outline-none focus:border-[#2563eb] transition-all"
+                        className="w-full bg-[var(--bg-surface2)] border border-[var(--border-default)] rounded-xl px-3 py-2 text-[var(--text-primary)] text-sm outline-none focus:border-[var(--accent-blue)] transition-all"
                       />
                     </div>
                   )}
 
                   {/* Senha */}
                   <div>
-                    <label className="text-[#555] text-[10px] uppercase tracking-wider mb-1.5 block">
+                    <label className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider mb-1.5 block">
                       {isNew ? 'Senha' : 'Nova Senha (deixe vazio para não alterar)'}
                     </label>
                     <input
@@ -223,21 +223,21 @@ export default function UserManager({ onClose }) {
                       value={form.password}
                       onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                       placeholder={isNew ? 'Senha' : '••••••'}
-                      className="w-full bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl px-3 py-2 text-[#f0f0f0] text-sm outline-none focus:border-[#2563eb] transition-all"
+                      className="w-full bg-[var(--bg-surface2)] border border-[var(--border-default)] rounded-xl px-3 py-2 text-[var(--text-primary)] text-sm outline-none focus:border-[var(--accent-blue)] transition-all"
                     />
                   </div>
 
                   {/* Permissões */}
                   <div>
-                    <label className="text-[#555] text-[10px] uppercase tracking-wider mb-2 block">Permissões</label>
-                    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1c1c1c' }}>
+                    <label className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider mb-2 block">Permissões</label>
+                    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-default)' }}>
                       {PERMISSIONS.map((p, i) => (
                         <div
                           key={p.key}
                           className="flex items-center justify-between px-4 py-3"
                           style={{ background: i % 2 === 0 ? '#141414' : '#111', borderBottom: i < PERMISSIONS.length - 1 ? '1px solid #1c1c1c' : 'none' }}
                         >
-                          <span className="text-[#8a8a8a] text-xs">{p.label}</span>
+                          <span className="text-[var(--text-secondary)] text-xs">{p.label}</span>
                           <Toggle value={!!form.permissions[p.key]} onChange={() => togglePerm(p.key)} />
                         </div>
                       ))}
@@ -266,7 +266,7 @@ export default function UserManager({ onClose }) {
                   <div className="flex-1" />
                   <button
                     onClick={onClose}
-                    className="px-4 py-2 rounded-xl text-xs font-medium text-[#555] hover:text-[#8a8a8a] transition-colors"
+                    className="px-4 py-2 rounded-xl text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
                   >
                     Cancelar
                   </button>

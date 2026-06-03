@@ -5,8 +5,8 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,12 +23,17 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#080808',
+      minHeight: '100vh', background: 'var(--bg-app)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       position: 'relative',
     }}>
-      {/* Grid background */}
-      <div className="grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.6 }} />
+      {/* Grid background - CORRIGIDO: remover className */}
+      <div style={{ 
+        position: 'absolute', inset: 0, opacity: 0.6,
+        backgroundImage: 'radial-gradient(var(--border-default) 0.5px, transparent 0.5px)',
+        backgroundSize: '24px 24px',
+        pointerEvents: 'none',
+      }} />
 
       {/* Radial glow */}
       <div style={{
@@ -38,25 +43,29 @@ export default function LoginPage() {
         pointerEvents: 'none',
       }} />
 
-      <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 340, padding: '0 20px', animation: 'scaleIn 0.2s ease' }}>
+      <div style={{ 
+        position: 'relative', zIndex: 10, width: '100%', maxWidth: 340, padding: '0 20px',
+        // Opcional: remover a animação se não tiver definida
+        // animation: 'scaleIn 0.2s ease',
+      }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: 52, height: 52, borderRadius: 14,
-            background: 'linear-gradient(135deg, #111, #0e0e0e)',
-            border: '1px solid #1e1e1e',
+            background: 'var(--bg-surface1)',
+            border: '1px solid var(--border-default)',
             marginBottom: 16,
-            boxShadow: '0 0 30px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.05)',
+            boxShadow: '0 0 30px rgba(59,130,246,0.1)',
           }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" strokeWidth="1.5" strokeLinecap="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
           </div>
-          <h1 style={{ color: '#e8e8e8', fontSize: 18, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>
+          <h1 style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>
             ITADOBRAS
           </h1>
-          <p style={{ color: '#2a2a2a', fontSize: 9, fontFamily: 'DM Mono, monospace', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 6 }}>
+          <p style={{ color: 'var(--text-disabled)', fontSize: 9, fontFamily: 'DM Mono, monospace', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 6 }}>
             controle de producao
           </p>
         </div>
@@ -65,18 +74,18 @@ export default function LoginPage() {
         <form
           onSubmit={handleSubmit}
           style={{
-            background: '#0c0c0c',
-            border: '1px solid #161616',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
             borderRadius: 14,
             padding: 24,
-            boxShadow: '0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.02)',
+            boxShadow: 'var(--shadow-modal)',
           }}
         >
           <div style={{ display: 'grid', gap: 14 }}>
             <div>
               <label style={{
                 display: 'block', fontSize: 9, fontWeight: 600,
-                color: '#333', fontFamily: 'DM Mono, monospace',
+                color: 'var(--text-faint)', fontFamily: 'DM Mono, monospace',
                 letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 7,
               }}>
                 Usuário
@@ -89,21 +98,21 @@ export default function LoginPage() {
                 placeholder="nome de usuário"
                 required
                 style={{
-                  width: '100%', background: '#0e0e0e',
-                  border: '1px solid #1a1a1a', borderRadius: 9,
-                  padding: '10px 14px', color: '#ccc', fontSize: 13,
+                  width: '100%', background: 'var(--bg-input)',
+                  border: '1px solid var(--border-default)', borderRadius: 9,
+                  padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13,
                   fontFamily: 'Syne, sans-serif', outline: 'none',
                   transition: 'border-color 0.15s',
                 }}
-                onFocus={e => e.target.style.borderColor = '#2563eb'}
-                onBlur={e => e.target.style.borderColor = '#1a1a1a'}
+                onFocus={e => e.target.style.borderColor = 'var(--accent-blue)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
               />
             </div>
 
             <div>
               <label style={{
                 display: 'block', fontSize: 9, fontWeight: 600,
-                color: '#333', fontFamily: 'DM Mono, monospace',
+                color: 'var(--text-faint)', fontFamily: 'DM Mono, monospace',
                 letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 7,
               }}>
                 Senha
@@ -116,15 +125,15 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 required
                 style={{
-                  width: '100%', background: '#0e0e0e',
-                  border: '1px solid #1a1a1a', borderRadius: 9,
-                  padding: '10px 14px', color: '#ccc', fontSize: 13,
+                  width: '100%', background: 'var(--bg-input)',
+                  border: '1px solid var(--border-default)', borderRadius: 9,
+                  padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13,
                   fontFamily: 'Syne, sans-serif', outline: 'none',
                   transition: 'border-color 0.15s',
                   letterSpacing: '0.15em',
                 }}
-                onFocus={e => e.target.style.borderColor = '#2563eb'}
-                onBlur={e => e.target.style.borderColor = '#1a1a1a'}
+                onFocus={e => e.target.style.borderColor = 'var(--accent-blue)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
               />
             </div>
           </div>
@@ -133,7 +142,7 @@ export default function LoginPage() {
             <div style={{
               marginTop: 14, padding: '9px 12px', borderRadius: 8,
               background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)',
-              color: '#ef4444', fontSize: 11, fontFamily: 'DM Mono, monospace',
+              color: 'var(--status-red)', fontSize: 11, fontFamily: 'DM Mono, monospace',
             }}>
               {error}
             </div>
@@ -144,10 +153,10 @@ export default function LoginPage() {
             disabled={loading}
             style={{
               marginTop: 18, width: '100%',
-              background: loading ? '#111' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-              border: loading ? '1px solid #1e1e1e' : '1px solid rgba(59,130,246,0.3)',
+              background: loading ? 'var(--bg-surface2)' : 'linear-gradient(135deg, var(--accent-blue), var(--accent-blue-dim))',
+              border: loading ? '1px solid var(--border-default)' : '1px solid rgba(59,130,246,0.3)',
               borderRadius: 9, padding: '11px',
-              color: loading ? '#333' : '#fff',
+              color: loading ? 'var(--text-muted)' : '#fff',
               fontSize: 13, fontWeight: 700, fontFamily: 'Syne, sans-serif',
               cursor: loading ? 'not-allowed' : 'pointer',
               letterSpacing: '0.04em',

@@ -24,7 +24,7 @@ function DeleteBtn({ onDelete, mine }) {
       style={{
         position: 'absolute', top: -8, right: mine ? 'auto' : -8, left: mine ? -8 : 'auto',
         width: 20, height: 20, borderRadius: 5,
-        background: '#0c0c0c', border: '1px solid #1a1a1a',
+        background: 'var(--bg-surface)', border: '1px solid var(--border-default)',
         color: hovered ? '#ef4444' : '#333', cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         opacity: hovered ? 1 : 0,
@@ -133,8 +133,8 @@ export default function ChatPanel({ onClose }) {
     <aside style={{
       position: 'fixed', right: 0, top: 0, zIndex: 50,
       height: '100vh', width: 360, maxWidth: '92vw',
-      background: '#090909',
-      borderLeft: '1px solid #141414',
+      background: 'var(--bg-surface)',
+      borderLeft: '1px solid var(--border-default)',
       boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
       display: 'flex', flexDirection: 'column',
       animation: 'fadeIn 0.18s ease',
@@ -143,7 +143,7 @@ export default function ChatPanel({ onClose }) {
       <div style={{
         height: 52,
         padding: '0 16px',
-        borderBottom: '1px solid #141414',
+        borderBottom: '1px solid var(--border-default)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexShrink: 0,
       }}>
@@ -154,8 +154,8 @@ export default function ChatPanel({ onClose }) {
             boxShadow: '0 0 8px rgba(34,197,94,0.5)',
           }} />
           <div>
-            <h2 style={{ color: '#ddd', fontSize: 13, fontWeight: 700, lineHeight: 1, margin: 0 }}>Chat</h2>
-            <p style={{ color: '#333', fontSize: 9, fontFamily: 'DM Mono, monospace', margin: 0, marginTop: 2 }}>
+            <h2 style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, lineHeight: 1, margin: 0 }}>Chat</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'DM Mono, monospace', margin: 0, marginTop: 2 }}>
               {messages.length} msgs
             </p>
           </div>
@@ -164,12 +164,12 @@ export default function ChatPanel({ onClose }) {
           onClick={onClose}
           style={{
             width: 28, height: 28, borderRadius: 7,
-            background: 'transparent', border: '1px solid #1a1a1a',
-            color: '#444', cursor: 'pointer', transition: 'all 0.13s',
+            background: 'transparent', border: '1px solid var(--border-default)',
+            color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.13s',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#141414'; e.currentTarget.style.color = '#ccc'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#444'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface2)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M18 6 6 18M6 6l12 12"/>
@@ -192,13 +192,13 @@ export default function ChatPanel({ onClose }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 4px' }}>
         {messages.length === 0 ? (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--border-accent)" strokeWidth="1.5" strokeLinecap="round">
               <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
             </svg>
-            <span style={{ color: '#2a2a2a', fontSize: 12, fontFamily: 'DM Mono, monospace' }}>nenhuma mensagem</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'DM Mono, monospace' }}>nenhuma mensagem</span>
           </div>
         ) : groupedMessages.map(msg => {
-          const mine = msg.username === user?.username;
+          const mine = msg.username === user?.username || msg.user_id === user?.id;
           const canDelete = mine || user?.role === 'creator';
 
           return (
@@ -226,7 +226,7 @@ export default function ChatPanel({ onClose }) {
                     <span style={{ color: msg.color || '#3b82f6', fontSize: 10, fontWeight: 700, fontFamily: 'Syne, sans-serif' }}>
                       {msg.display_name || msg.username}
                     </span>
-                    <span style={{ color: '#2a2a2a', fontSize: 9, fontFamily: 'DM Mono, monospace' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'DM Mono, monospace' }}>
                       {formatTime(msg.created_at)}
                     </span>
                   </div>
@@ -236,14 +236,14 @@ export default function ChatPanel({ onClose }) {
                   style={{
                     padding: '8px 11px',
                     borderRadius: mine ? '10px 10px 4px 10px' : '10px 10px 10px 4px',
-                    background: mine ? 'rgba(37,99,235,0.15)' : '#111',
-                    border: mine ? '1px solid rgba(59,130,246,0.2)' : '1px solid #1a1a1a',
+                    background: mine ? 'rgba(37,99,235,0.15)' : 'var(--bg-surface1)',
+                    border: mine ? '1px solid rgba(59,130,246,0.2)' : '1px solid var(--border-default)',
                     position: 'relative',
                   }}
                 >
                   {msg.text && (
                     <p style={{
-                      color: '#ccc', fontSize: 12, lineHeight: 1.55,
+                      color: 'var(--text-primary)', fontSize: 12, lineHeight: 1.55,
                       whiteSpace: 'pre-wrap', wordBreak: 'break-words',
                       margin: 0, fontFamily: 'Syne, sans-serif',
                     }}>
@@ -260,13 +260,13 @@ export default function ChatPanel({ onClose }) {
                         display: 'flex', alignItems: 'center', gap: 8,
                         marginTop: msg.text ? 6 : 0,
                         padding: '7px 10px', borderRadius: 7,
-                        border: '1px solid #1e1e1e', background: '#0c0c0c',
-                        color: '#888', fontSize: 11, textDecoration: 'none',
+                        border: '1px solid var(--border-default)', background: 'var(--bg-surface)',
+                        color: 'var(--text-secondary)', fontSize: 11, textDecoration: 'none',
                         fontFamily: 'DM Mono, monospace',
                         transition: 'border-color 0.13s',
                       }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = '#2a2a2a'}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = '#1e1e1e'}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-accent)'}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -275,7 +275,7 @@ export default function ChatPanel({ onClose }) {
                       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {msg.file_name || 'arquivo'}
                       </span>
-                      <span style={{ color: '#333', flexShrink: 0 }}>{formatSize(msg.file_size)}</span>
+                      <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{formatSize(msg.file_size)}</span>
                     </a>
                   )}
 
@@ -293,7 +293,7 @@ export default function ChatPanel({ onClose }) {
       {/* Input */}
       <div style={{
         padding: '10px 12px 12px',
-        borderTop: '1px solid #111',
+        borderTop: '1px solid var(--border-default)',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <input ref={fileRef} type="file" style={{ display: 'none' }} accept=".png,.jpg,.jpeg,.dxf,.dwg,.pdf" onChange={sendFile} />
@@ -304,14 +304,14 @@ export default function ChatPanel({ onClose }) {
           disabled={sendingFile}
           style={{
             width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-            border: '1px solid #1a1a1a', background: 'transparent',
-            color: sendingFile ? '#222' : '#444',
+            border: '1px solid var(--border-default)', background: 'transparent',
+            color: sendingFile ? 'var(--text-faint)' : 'var(--text-muted)',
             cursor: sendingFile ? 'not-allowed' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.13s',
           }}
-          onMouseEnter={e => { if (!sendingFile) { e.currentTarget.style.background = '#111'; e.currentTarget.style.color = '#888'; }}}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#444'; }}
+          onMouseEnter={e => { if (!sendingFile) { e.currentTarget.style.background = 'var(--bg-surface1)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
@@ -327,13 +327,13 @@ export default function ChatPanel({ onClose }) {
             placeholder="mensagem..."
             style={{
               flex: 1, height: 36,
-              background: '#0e0e0e', border: '1px solid #1a1a1a',
+              background: 'var(--bg-input)', border: '1px solid var(--border-default)',
               borderRadius: 8, padding: '0 12px',
-              color: '#ccc', fontSize: 12, fontFamily: 'Syne, sans-serif',
+              color: 'var(--text-primary)', fontSize: 12, fontFamily: 'Syne, sans-serif',
               outline: 'none', transition: 'border-color 0.13s',
             }}
-            onFocus={e => e.target.style.borderColor = '#2a2a2a'}
-            onBlur={e => e.target.style.borderColor = '#1a1a1a'}
+            onFocus={e => e.target.style.borderColor = 'var(--border-accent)'}
+            onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
           />
           <button
             type="submit"
