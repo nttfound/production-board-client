@@ -66,7 +66,7 @@ export default function StatusModal({ card, onClose, onSave }) {
       onClick={() => onChange(!value)}
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-        padding: '10px 14px', borderRadius: 10, border: '1px solid',
+        padding: '10px 14px', borderRadius: 12, border: '1px solid',
         fontSize: 13, transition: 'all 0.13s', cursor: 'pointer',
         borderColor: value ? `${color}60` : 'var(--border-default)',
         background: value ? `${color}12` : 'transparent',
@@ -92,13 +92,13 @@ export default function StatusModal({ card, onClose, onSave }) {
       }} onClick={e => e.stopPropagation()}>
 
         <h2 style={{ color: 'var(--text-primary)', fontWeight: 600, margin: '0 0 4px', fontSize: 16 }}>Alterar Card</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'DM Mono, monospace', margin: '0 0 20px' }}>{card.title}</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', margin: '0 0 20px' }}>{card.title}</p>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--bg-surface2)', padding: 4, borderRadius: 10 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--bg-surface2)', padding: 4, borderRadius: 12 }}>
           {tabs.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
-              flex: 1, padding: '6px', borderRadius: 7, fontSize: 11, fontWeight: 500,
+              flex: 1, padding: '6px', borderRadius: 12, fontSize: 11, fontWeight: 500,
               border: 'none', cursor: 'pointer', transition: 'all 0.13s',
               background: tab === t.key ? 'var(--bg-surface)' : 'transparent',
               color: tab === t.key ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -115,7 +115,7 @@ export default function StatusModal({ card, onClose, onSave }) {
             {STATUSES.map(s => (
               <button key={s.value} onClick={() => setSelected(s.value)} style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                padding: '10px 14px', borderRadius: 10, fontSize: 13,
+                padding: '10px 14px', borderRadius: 12, fontSize: 13,
                 border: '1px solid',
                 borderColor: selected === s.value ? 'var(--border-accent)' : 'transparent',
                 background: selected === s.value ? 'var(--bg-surface2)' : 'transparent',
@@ -134,9 +134,9 @@ export default function StatusModal({ card, onClose, onSave }) {
             ))}
             {selected === 'Scheduled' && (
               <div style={{ marginTop: 8 }}>
-                <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>Data agendada</label>
+                <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Data agendada</label>
                 <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)}
-                  style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-default)', borderRadius: 10, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }} />
+                  style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-default)', borderRadius: 12, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }} />
               </div>
             )}
           </div>
@@ -157,7 +157,7 @@ export default function StatusModal({ card, onClose, onSave }) {
               <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>Clique para {urgente ? 'remover' : 'marcar como urgente'}</p>
             </div>
             <button onClick={() => setUrgente(!urgente)} style={{
-              width: '100%', padding: '10px', borderRadius: 10, fontSize: 13, fontWeight: 500,
+              width: '100%', padding: '10px', borderRadius: 12, fontSize: 13, fontWeight: 500,
               border: '1px solid', cursor: 'pointer', transition: 'all 0.13s',
               borderColor: urgente ? `${URGENTE_COLOR}50` : 'var(--border-default)',
               background: urgente ? `${URGENTE_COLOR}20` : 'var(--bg-surface2)',
@@ -172,7 +172,7 @@ export default function StatusModal({ card, onClose, onSave }) {
         {tab === 'carga' && canCarga && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
-              <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace', marginBottom: 8, marginTop: 0 }}>Sempre disponível</p>
+              <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace', marginBottom: 8, marginTop: 0 }}>Sempre disponível</p>
               <ToggleBtn label={CIDADE_SEMPRE} value={carga === CIDADE_SEMPRE} onChange={v => setCarga(v ? CIDADE_SEMPRE : null)} color={CARGA_COLOR} />
             </div>
 
@@ -180,10 +180,10 @@ export default function StatusModal({ card, onClose, onSave }) {
               <div key={dia}>
                 <button onClick={() => setDiaAberto(diaAberto === dia ? null : dia)} style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '6px 10px', borderRadius: 8, fontSize: 10, fontWeight: 500,
+                  padding: '6px 10px', borderRadius: 12, fontSize: 10, fontWeight: 500,
                   color: 'var(--text-secondary)', background: 'transparent', border: 'none',
                   cursor: 'pointer', transition: 'all 0.13s', textTransform: 'uppercase', letterSpacing: '0.08em',
-                  fontFamily: 'DM Mono, monospace',
+                  fontFamily: 'JetBrains Mono, monospace',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface2)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
@@ -216,7 +216,7 @@ export default function StatusModal({ card, onClose, onSave }) {
         {/* SERVICOS */}
         {tab === 'servicos' && canServicos && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace', marginBottom: 4, marginTop: 0 }}>Serviços</p>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace', marginBottom: 4, marginTop: 0 }}>Serviços</p>
             {canServicoCorte    && <ToggleBtn label="Corte"       value={corte}     onChange={setCorte}     color={CORTE_COLOR} />}
             {canServicoDobra    && <ToggleBtn label="Dobra"       value={dobra}     onChange={setDobra}     color={DOBRA_COLOR} />}
             {canServicoMaoDeObra && <ToggleBtn label="Mão de Obra" value={maoDeObra} onChange={setMaoDeObra} color={MAO_COLOR}   />}
@@ -226,13 +226,13 @@ export default function StatusModal({ card, onClose, onSave }) {
 
         <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
           <button onClick={onClose}
-            style={{ flex: 1, padding: '10px', borderRadius: 10, border: '1px solid var(--border-default)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', transition: 'all 0.13s' }}
+            style={{ flex: 1, padding: '10px', borderRadius: 12, border: '1px solid var(--border-default)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', transition: 'all 0.13s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface2)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
             Cancelar
           </button>
           <button onClick={handleSave}
-            style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: 'var(--accent-blue)', color: '#fff', fontSize: 13, cursor: 'pointer', transition: 'background 0.13s' }}
+            style={{ flex: 1, padding: '10px', borderRadius: 12, border: 'none', background: 'var(--accent-blue)', color: '#fff', fontSize: 13, cursor: 'pointer', transition: 'background 0.13s' }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-blue-dim)'}
             onMouseLeave={e => e.currentTarget.style.background = 'var(--accent-blue)'}>
             Salvar

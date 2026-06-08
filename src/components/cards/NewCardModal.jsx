@@ -13,7 +13,7 @@ const inputStyle = {
   border: '1px solid var(--border-default)',
   borderRadius: 12, padding: '10px 16px',
   color: 'var(--text-primary)', fontSize: 14,
-  fontFamily: 'Syne, sans-serif', outline: 'none',
+  fontFamily: 'Inter, sans-serif', outline: 'none',
   transition: 'border-color 0.15s, box-shadow 0.15s',
 };
 
@@ -115,11 +115,11 @@ export default function NewCardModal({ onClose, onCreated }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Image */}
           <div>
-            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>Imagem</label>
+            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Imagem</label>
             {imagePreview ? (
               <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', background: 'var(--bg-surface2)' }}>
                 <img src={imagePreview} alt="preview" style={{ width: '100%', maxHeight: 192, objectFit: 'cover', display: 'block' }} />
-                <button onClick={removeImage} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: 8, padding: 6, color: '#fff', cursor: 'pointer', display: 'flex' }}
+                <button onClick={removeImage} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: 12, padding: 6, color: '#fff', cursor: 'pointer', display: 'flex' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.85)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -150,14 +150,14 @@ export default function NewCardModal({ onClose, onCreated }) {
                   <path d="M17 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
                   <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
                 </svg>
-                <span>Cole a imagem aqui <kbd style={{ fontFamily: 'DM Mono, monospace', background: 'var(--bg-surface3)', border: '1px solid var(--border-default)', padding: '1px 6px', borderRadius: 4, fontSize: 10 }}>Ctrl+V</kbd></span>
+                <span>Cole a imagem aqui <kbd style={{ fontFamily: 'JetBrains Mono, monospace', background: 'var(--bg-surface3)', border: '1px solid var(--border-default)', padding: '1px 6px', borderRadius: 4, fontSize: 10 }}>Ctrl+V</kbd></span>
               </div>
             )}
           </div>
 
           {/* Title */}
           <div>
-            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>Título *</label>
+            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Título *</label>
             <input
               type="text" value={title} onChange={e => setTitle(e.target.value)}
               placeholder="Título do card"
@@ -169,7 +169,7 @@ export default function NewCardModal({ onClose, onCreated }) {
 
           {/* Observation */}
           <div>
-            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>Observação</label>
+            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Observação</label>
             <textarea
               value={observation} onChange={e => setObservation(e.target.value)}
               placeholder="Detalhes, notas..." rows={3}
@@ -181,7 +181,7 @@ export default function NewCardModal({ onClose, onCreated }) {
 
           {/* Status */}
           <div>
-            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>Status inicial</label>
+            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Status inicial</label>
             <select value={status} onChange={e => setStatus(e.target.value)} style={inputStyle}
               onFocus={e => { e.target.style.borderColor = 'var(--accent-blue)'; e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--accent-blue) 15%, transparent)'; }}
               onBlur={e => { e.target.style.borderColor = 'var(--border-default)'; e.target.style.boxShadow = 'none'; }}>
@@ -192,7 +192,7 @@ export default function NewCardModal({ onClose, onCreated }) {
           {/* Scheduled date */}
           {status === 'Scheduled' && (
             <div style={{ animation: 'scaleIn 0.15s ease' }}>
-              <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>Data agendada *</label>
+              <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Data agendada *</label>
               <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)} style={inputStyle}
                 onFocus={e => { e.target.style.borderColor = '#a855f7'; e.target.style.boxShadow = '0 0 0 3px rgba(168,85,247,0.15)'; }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border-default)'; e.target.style.boxShadow = 'none'; }} />
@@ -201,20 +201,20 @@ export default function NewCardModal({ onClose, onCreated }) {
         </div>
 
         {error && (
-          <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--status-red)', fontSize: 13 }}>
+          <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--status-red)', fontSize: 13 }}>
             {error}
           </div>
         )}
 
         <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
           <button onClick={onClose}
-            style={{ flex: 1, padding: '10px', borderRadius: 10, border: '1px solid var(--border-default)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', transition: 'all 0.13s' }}
+            style={{ flex: 1, padding: '10px', borderRadius: 12, border: '1px solid var(--border-default)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', transition: 'all 0.13s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface2)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
             Cancelar
           </button>
           <button onClick={handleSubmit} disabled={loading}
-            style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: 'var(--accent-blue)', color: '#fff', fontSize: 13, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, transition: 'all 0.13s' }}
+            style={{ flex: 1, padding: '10px', borderRadius: 12, border: 'none', background: 'var(--accent-blue)', color: '#fff', fontSize: 13, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, transition: 'all 0.13s' }}
             onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--accent-blue-dim)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent-blue)'; }}>
             {loading ? 'Salvando...' : 'Criar Card'}

@@ -20,7 +20,7 @@ function ServicePill({ label, color }) {
     <span className="tag-pill" style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-      fontFamily: 'DM Mono, monospace', textTransform: 'uppercase',
+      fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase',
       color,
       background: `color-mix(in srgb, ${color} 12%, transparent)`,
       border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
@@ -40,7 +40,7 @@ function CargaBadge({ label, color }) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-      fontFamily: 'DM Mono, monospace', textTransform: 'uppercase',
+      fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase',
       color,
       background: `color-mix(in srgb, ${color} 12%, transparent)`,
       border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
@@ -57,7 +57,7 @@ function UrgenteBadge() {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-      fontFamily: 'DM Mono, monospace', textTransform: 'uppercase',
+      fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase',
       color: 'var(--urgente)',
       background: 'color-mix(in srgb, var(--urgente) 12%, transparent)',
       border: '1px solid color-mix(in srgb, var(--urgente) 35%, transparent)',
@@ -75,7 +75,7 @@ function OrderBadge({ order, color }) {
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       minWidth: 22, height: 18,
       fontSize: 9, fontWeight: 800,
-      fontFamily: 'DM Mono, monospace',
+      fontFamily: 'JetBrains Mono, monospace',
       color: '#fff',
       background: color,
       borderRadius: 4, padding: '0 5px',
@@ -94,7 +94,7 @@ function ActionBtn({ onClick, title, danger, children, alwaysVisible }) {
       onMouseLeave={() => setHover(false)}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 26, height: 26, borderRadius: 6,
+        width: 26, height: 26, borderRadius: 8,
         background: hover
           ? (danger ? 'rgba(239,68,68,0.10)' : 'var(--bg-surface3)')
           : 'transparent',
@@ -155,6 +155,14 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
   const canEditObservation = isCreator || Boolean(user?.permissions?.alterar_observacao);
   const canDelete          = isCreator || Boolean(user?.permissions?.deletar_card);
 
+  // Define a cor da carga baseada no tipo
+  const getCargaColor = () => {
+    if (localCard.carga === 'Itapira') {
+      return 'var(--cargaitapira)';
+    }
+    return 'var(--carga)';
+  };
+
   return (
     <>
       <div
@@ -162,7 +170,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
         style={{
           position: 'relative',
           display: 'flex', flexDirection: 'column',
-          borderRadius: 10,
+          borderRadius: 12,
           background: 'var(--bg-card)',
           border: `1px solid ${cardHover ? 'var(--border-light)' : 'var(--border-default)'}`,
           overflow: 'hidden',
@@ -175,7 +183,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
         {/* Image */}
         {imageUrl ? (
           <div
-            style={{ height: 144, background: 'var(--bg-surface2)', flexShrink: 0, overflow: 'hidden', position: 'relative', cursor: 'zoom-in' }}
+            style={{ height: 160, background: 'var(--bg-surface2)', flexShrink: 0, overflow: 'hidden', position: 'relative', cursor: 'zoom-in' }}
             onClick={() => setShowImageModal(true)}
           >
             <img
@@ -191,7 +199,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
             <div
               style={{
                 position: 'absolute', top: 8, right: 8,
-                background: 'var(--bg-overlay)', borderRadius: 6,
+                background: 'var(--bg-overlay)', borderRadius: 8,
                 padding: '4px 6px', backdropFilter: 'blur(8px)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 opacity: 0, transition: 'opacity 0.18s',
@@ -228,7 +236,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
               {hasCarga && (
                 <CargaBadge
                   label={localCard.carga === 'Itapira' ? 'Itapira' : localCard.carga}
-                  color="var(--cargaitapira)"
+                  color={getCargaColor()}  // ← CORRIGIDO: usa a função que define a cor correta
                 />
               )}
             </div>
@@ -276,20 +284,20 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
               <div>
                 <p style={{
                   color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.7,
-                  fontFamily: 'DM Mono, monospace', margin: 0,
+                  fontFamily: 'JetBrains Mono, monospace', margin: 0,
                   display: '-webkit-box', WebkitLineClamp: 3,
                   WebkitBoxOrient: 'vertical', overflow: 'hidden',
                 }}>
                   {localCard.observation}
                 </p>
                 {localCard.observation_by && (
-                  <p style={{ color: 'var(--text-muted)', fontSize: 9, marginTop: 4, fontFamily: 'DM Mono, monospace' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 9, marginTop: 4, fontFamily: 'JetBrains Mono, monospace' }}>
                     — {localCard.observation_by}
                   </p>
                 )}
               </div>
             ) : (
-              <p style={{ color: 'var(--text-faint)', fontSize: 11, fontFamily: 'DM Mono, monospace', margin: 0, fontStyle: 'italic' }}>
+              <p style={{ color: 'var(--text-faint)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', margin: 0, fontStyle: 'italic' }}>
                 sem observação
               </p>
             )}
@@ -326,7 +334,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
           {localCard.status === 'Scheduled' && scheduledStr && (
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 10, color: 'var(--status-purple)', fontFamily: 'DM Mono, monospace',
+              fontSize: 10, color: 'var(--status-purple)', fontFamily: 'JetBrains Mono, monospace',
               background: 'color-mix(in srgb, var(--status-purple) 10%, transparent)',
               border: '1px solid color-mix(in srgb, var(--status-purple) 28%, transparent)',
               borderRadius: 5, padding: '3px 8px', alignSelf: 'flex-start',
@@ -340,7 +348,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
 
           {/* Footer */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'DM Mono, monospace', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', display: 'flex', alignItems: 'center', gap: 5 }}>
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>
@@ -349,7 +357,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {hasCarga && cargaOrder && <OrderBadge order={cargaOrder} color={CARGA_COLOR} />}
-              <span style={{ color: 'var(--text-faint)', fontSize: 10, fontFamily: 'DM Mono, monospace' }}>
+              <span style={{ color: 'var(--text-faint)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}>
                 {formattedDate}
               </span>
             </div>

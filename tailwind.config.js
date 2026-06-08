@@ -10,12 +10,12 @@ module.exports = {
         accent:   { blue: '#3b82f6', orange: '#F75003' },
       },
       fontFamily: {
-        sans:  ['Syne', 'system-ui', 'sans-serif'],
-        mono:  ['DM Mono', 'monospace'],
+        sans:  ['Inter', 'system-ui', 'sans-serif'],
+        mono:  ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
-        card: '10px',
-        tag: '6px',
+        card: '12px',
+        tag: '8px',
       },
       boxShadow: {
         card:        '0 1px 3px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3)',

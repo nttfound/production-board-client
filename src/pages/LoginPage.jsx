@@ -65,7 +65,7 @@ export default function LoginPage() {
           <h1 style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>
             ITADOBRAS
           </h1>
-          <p style={{ color: 'var(--text-disabled)', fontSize: 9, fontFamily: 'DM Mono, monospace', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 6 }}>
+          <p style={{ color: 'var(--text-disabled)', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 6 }}>
             controle de producao
           </p>
         </div>
@@ -85,7 +85,7 @@ export default function LoginPage() {
             <div>
               <label style={{
                 display: 'block', fontSize: 9, fontWeight: 600,
-                color: 'var(--text-faint)', fontFamily: 'DM Mono, monospace',
+                color: 'var(--text-faint)', fontFamily: 'JetBrains Mono, monospace',
                 letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 7,
               }}>
                 Usuário
@@ -101,7 +101,7 @@ export default function LoginPage() {
                   width: '100%', background: 'var(--bg-input)',
                   border: '1px solid var(--border-default)', borderRadius: 9,
                   padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13,
-                  fontFamily: 'Syne, sans-serif', outline: 'none',
+                  fontFamily: 'Inter, sans-serif', outline: 'none',
                   transition: 'border-color 0.15s',
                 }}
                 onFocus={e => e.target.style.borderColor = 'var(--accent-blue)'}
@@ -112,7 +112,7 @@ export default function LoginPage() {
             <div>
               <label style={{
                 display: 'block', fontSize: 9, fontWeight: 600,
-                color: 'var(--text-faint)', fontFamily: 'DM Mono, monospace',
+                color: 'var(--text-faint)', fontFamily: 'JetBrains Mono, monospace',
                 letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 7,
               }}>
                 Senha
@@ -128,7 +128,7 @@ export default function LoginPage() {
                   width: '100%', background: 'var(--bg-input)',
                   border: '1px solid var(--border-default)', borderRadius: 9,
                   padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13,
-                  fontFamily: 'Syne, sans-serif', outline: 'none',
+                  fontFamily: 'Inter, sans-serif', outline: 'none',
                   transition: 'border-color 0.15s',
                   letterSpacing: '0.15em',
                 }}
@@ -140,9 +140,9 @@ export default function LoginPage() {
 
           {error && (
             <div style={{
-              marginTop: 14, padding: '9px 12px', borderRadius: 8,
+              marginTop: 14, padding: '9px 12px', borderRadius: 12,
               background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)',
-              color: 'var(--status-red)', fontSize: 11, fontFamily: 'DM Mono, monospace',
+              color: 'var(--status-red)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
             }}>
               {error}
             </div>
@@ -157,7 +157,7 @@ export default function LoginPage() {
               border: loading ? '1px solid var(--border-default)' : '1px solid rgba(59,130,246,0.3)',
               borderRadius: 9, padding: '11px',
               color: loading ? 'var(--text-muted)' : '#fff',
-              fontSize: 13, fontWeight: 700, fontFamily: 'Syne, sans-serif',
+              fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif',
               cursor: loading ? 'not-allowed' : 'pointer',
               letterSpacing: '0.04em',
               transition: 'all 0.15s',

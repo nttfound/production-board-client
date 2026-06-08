@@ -128,7 +128,7 @@ export default function BoardPage() {
       if (prev) {
         if (prev.status !== updated.status && updated.status === 'Producing') notifyProducing(updated.title);
         if (prev.status !== updated.status && updated.status === 'Ready') notifyReady(updated.title);
-        if (!prev.urgente && updated.urgente) notifyUrgent(updated.title);
+        if (!prev.urgente && updated.urgente) notifyUrgent(updated.title, updated.updated_by || updated.created_by);
       }
       setCards(prev => sortCards(prev.map(c => c.id === updated.id ? updated : c)));
     };
@@ -227,12 +227,12 @@ export default function BoardPage() {
         total={cards.filter(c => c.status !== 'Ready').length}
       />
 
-      <main style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+      <main style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         {loading ? (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 28, height: 28, border: '2px solid var(--border-default)', borderTopColor: 'var(--accent-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              <span style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'DM Mono, monospace' }}>carregando...</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}>carregando...</span>
             </div>
           </div>
         ) : filtered.length === 0 ? (
@@ -242,11 +242,11 @@ export default function BoardPage() {
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <line x1="9" y1="9" x2="15" y2="15" /><line x1="15" y1="9" x2="9" y2="15" />
               </svg>
-              <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'DM Mono, monospace' }}>nenhum card encontrado</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}>nenhum card encontrado</p>
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(272px, 1fr))' }}>
+          <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
             {filtered.map(card => (
               <ProductionCard
                 key={card.id}
@@ -286,7 +286,7 @@ export default function BoardPage() {
             minWidth: 18, height: 18, padding: '0 4px',
             borderRadius: 9, background: 'var(--status-red)',
             color: '#fff', fontSize: 9, lineHeight: '18px',
-            textAlign: 'center', fontFamily: 'DM Mono, monospace', fontWeight: 700,
+            textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
           }}>
             {chatUnread > 9 ? '9+' : chatUnread}
           </span>

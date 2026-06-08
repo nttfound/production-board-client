@@ -72,7 +72,7 @@ export default function AnexoGlobal() {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1c1c1c] border border-[#2a2a2a] min-w-[200px] max-w-[280px]">
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] min-w-[200px] max-w-[280px]">
       <input
         ref={inputRef}
         type="file"

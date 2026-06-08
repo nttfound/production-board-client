@@ -39,13 +39,13 @@ const THEMES = {
     statusPurple:  '#7c3aed',
 
     // Service colors
-    corte:    '#06b6d4',
-    dobra:    '#8b5cf6',
+    corte:    '#8d99ae',
+    dobra:    '#81b29a',
     maoObra:  '#f59e0b',
-    calandra: '#7148B3',
-    urgente:  '#99582a',
-    carga:    '#0096c7',
-    cargaitapira:  '#84a98c',
+    calandra: '#5a189a',
+    urgente:  '#f35b04',
+    carga:    '#99d98c',
+    cargaitapira:  '#d9ed92',
 
     // Misc
     scrollbar:      '#2a2a2a',
@@ -93,12 +93,13 @@ const THEMES = {
     statusPurple:  '#7c3aed',
 
     // Service colors
-    corte:    '#0891b2',
-    dobra:    '#7c3aed',
-    maoObra:  '#d97706',
-    calandra: '#16a34a',
-    urgente:  '#dc2626',
-    carga:    '#ea580c',
+   corte:    '#8d99ae',
+    dobra:    '#81b29a',
+    maoObra:  '#f59e0b',
+    calandra: '#5a189a',
+    urgente:  '#f35b04',
+    carga:    '#99d98c',
+    cargaitapira:  '#d9ed92',
 
     // Misc
     scrollbar:      '#c4c4cc',

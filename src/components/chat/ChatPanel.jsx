@@ -42,12 +42,12 @@ function Avatar({ name, color }) {
   const initials = (name || '?').slice(0, 2).toUpperCase();
   return (
     <div style={{
-      width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+      width: 26, height: 26, borderRadius: 12, flexShrink: 0,
       background: `${color || '#3b82f6'}20`,
       border: `1px solid ${color || '#3b82f6'}30`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       color: color || '#3b82f6', fontSize: 9, fontWeight: 700,
-      fontFamily: 'DM Mono, monospace',
+      fontFamily: 'JetBrains Mono, monospace',
     }}>
       {initials}
     </div>
@@ -155,7 +155,7 @@ export default function ChatPanel({ onClose }) {
           }} />
           <div>
             <h2 style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, lineHeight: 1, margin: 0 }}>Chat</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'DM Mono, monospace', margin: 0, marginTop: 2 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', margin: 0, marginTop: 2 }}>
               {messages.length} msgs
             </p>
           </div>
@@ -163,7 +163,7 @@ export default function ChatPanel({ onClose }) {
         <button
           onClick={onClose}
           style={{
-            width: 28, height: 28, borderRadius: 7,
+            width: 28, height: 28, borderRadius: 12,
             background: 'transparent', border: '1px solid var(--border-default)',
             color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.13s',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -180,9 +180,9 @@ export default function ChatPanel({ onClose }) {
       {/* Error */}
       {error && (
         <div style={{
-          margin: '8px 12px 0', padding: '8px 12px', borderRadius: 8,
+          margin: '8px 12px 0', padding: '8px 12px', borderRadius: 12,
           background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)',
-          color: '#ef4444', fontSize: 11, fontFamily: 'DM Mono, monospace',
+          color: '#ef4444', fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
         }}>
           {error}
         </div>
@@ -195,7 +195,7 @@ export default function ChatPanel({ onClose }) {
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--border-accent)" strokeWidth="1.5" strokeLinecap="round">
               <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
             </svg>
-            <span style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'DM Mono, monospace' }}>nenhuma mensagem</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}>nenhuma mensagem</span>
           </div>
         ) : groupedMessages.map(msg => {
           const mine = msg.username === user?.username || msg.user_id === user?.id;
@@ -223,10 +223,10 @@ export default function ChatPanel({ onClose }) {
               <div style={{ maxWidth: '78%', display: 'flex', flexDirection: 'column', gap: 2, alignItems: mine ? 'flex-end' : 'flex-start' }}>
                 {msg.showAvatar && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexDirection: mine ? 'row-reverse' : 'row' }}>
-                    <span style={{ color: msg.color || '#3b82f6', fontSize: 10, fontWeight: 700, fontFamily: 'Syne, sans-serif' }}>
+                    <span style={{ color: msg.color || '#3b82f6', fontSize: 10, fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>
                       {msg.display_name || msg.username}
                     </span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'DM Mono, monospace' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'JetBrains Mono, monospace' }}>
                       {formatTime(msg.created_at)}
                     </span>
                   </div>
@@ -245,7 +245,7 @@ export default function ChatPanel({ onClose }) {
                     <p style={{
                       color: 'var(--text-primary)', fontSize: 12, lineHeight: 1.55,
                       whiteSpace: 'pre-wrap', wordBreak: 'break-words',
-                      margin: 0, fontFamily: 'Syne, sans-serif',
+                      margin: 0, fontFamily: 'Inter, sans-serif',
                     }}>
                       {msg.text}
                     </p>
@@ -259,10 +259,10 @@ export default function ChatPanel({ onClose }) {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         marginTop: msg.text ? 6 : 0,
-                        padding: '7px 10px', borderRadius: 7,
+                        padding: '7px 10px', borderRadius: 12,
                         border: '1px solid var(--border-default)', background: 'var(--bg-surface)',
                         color: 'var(--text-secondary)', fontSize: 11, textDecoration: 'none',
-                        fontFamily: 'DM Mono, monospace',
+                        fontFamily: 'JetBrains Mono, monospace',
                         transition: 'border-color 0.13s',
                       }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-accent)'}
@@ -303,7 +303,7 @@ export default function ChatPanel({ onClose }) {
           onClick={() => fileRef.current?.click()}
           disabled={sendingFile}
           style={{
-            width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+            width: 36, height: 36, borderRadius: 12, flexShrink: 0,
             border: '1px solid var(--border-default)', background: 'transparent',
             color: sendingFile ? 'var(--text-faint)' : 'var(--text-muted)',
             cursor: sendingFile ? 'not-allowed' : 'pointer',
@@ -328,8 +328,8 @@ export default function ChatPanel({ onClose }) {
             style={{
               flex: 1, height: 36,
               background: 'var(--bg-input)', border: '1px solid var(--border-default)',
-              borderRadius: 8, padding: '0 12px',
-              color: 'var(--text-primary)', fontSize: 12, fontFamily: 'Syne, sans-serif',
+              borderRadius: 12, padding: '0 12px',
+              color: 'var(--text-primary)', fontSize: 12, fontFamily: 'Inter, sans-serif',
               outline: 'none', transition: 'border-color 0.13s',
             }}
             onFocus={e => e.target.style.borderColor = 'var(--border-accent)'}
@@ -338,7 +338,7 @@ export default function ChatPanel({ onClose }) {
           <button
             type="submit"
             style={{
-              width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+              width: 36, height: 36, borderRadius: 12, flexShrink: 0,
               background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
               border: '1px solid rgba(59,130,246,0.25)',
               color: '#fff', cursor: 'pointer',
