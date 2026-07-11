@@ -4,13 +4,14 @@
  */
 
 import React, { useState } from 'react';
-import { URGENTE_COLOR, CARGA_COLOR, CALANDRA_COLOR } from '../../services/statusConfig';
+import { URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConfig';
 import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { STATUSES } from '../../services/statusConfig';
 
 const CORTE_COLOR = '#06b6d4';
 const DOBRA_COLOR = '#8b5cf6';
 const MAO_COLOR   = '#f59e0b';
+const CALANDRA_COLOR = '#14b8a6';
 
 const TAGS = [
   { key: 'urgente',    label: 'Urgente',     color: URGENTE_COLOR },
@@ -20,7 +21,9 @@ const TAGS = [
   { key: 'calandra',   label: 'Calandra',    color: CALANDRA_COLOR },
 ];
 
-export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onApplyCarga, onCancel }) {
+const MAX_URGENT_CARDS = 2;
+
+export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onApplyCarga, onDelete, onCancel, urgentCount = 0 }) {
   const [activePanel, setActivePanel] = useState(null); // 'tag' | 'status' | 'carga'
   const [diaAberto,   setDiaAberto]   = useState(null);
   const [loading,     setLoading]     = useState(false);
@@ -31,6 +34,7 @@ export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onAppl
   };
 
   const handleTag = async (tagKey, value) => {
+    if (tagKey === 'urgente' && value && urgentCount >= MAX_URGENT_CARDS) return;
     setLoading(true);
     await onApplyTag(tagKey, value);
     setLoading(false);
@@ -115,6 +119,25 @@ export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onAppl
                 <p className="text-[#555] text-[10px] uppercase tracking-wider mb-2 px-1">Ativar ou remover tag em todos</p>
                 <div className="space-y-1">
                   {TAGS.map(tag => (
+                    tag.key === 'urgente' && urgentCount >= MAX_URGENT_CARDS ? (
+                    <div
+                      key={tag.key}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                      style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)' }}
+                    >
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }} />
+                      <span className="text-[#f0f0f0] text-xs flex-1">{tag.label}</span>
+                      <span className="text-[10px] font-medium" style={{ color: '#ef4444' }}>Limite atingido</span>
+                      <button
+                        onClick={() => handleTag(tag.key, false)}
+                        disabled={loading}
+                        className="px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all hover:opacity-80"
+                        style={{ background: '#2a2a2a', color: '#8a8a8a', border: '1px solid #3a3a3a' }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                    ) : (
                     <div
                       key={tag.key}
                       className="flex items-center gap-2 px-3 py-2 rounded-xl"
@@ -139,6 +162,7 @@ export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onAppl
                         Remover
                       </button>
                     </div>
+                    )
                   ))}
                 </div>
               </div>
@@ -277,6 +301,21 @@ export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onAppl
 
           {/* Separador */}
           <div className="w-px h-5 bg-[#2a2a2a]" />
+
+          {/* Excluir */}
+          <button
+            onClick={onDelete}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all hover:bg-[#1c1c1c]"
+            style={{ color: '#ef4444', border: '1px solid #ef444430', background: '#ef444410' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+            </svg>
+            Excluir
+          </button>
 
           {/* Spinner quando carregando */}
           {loading && (

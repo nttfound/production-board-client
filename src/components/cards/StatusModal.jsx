@@ -8,8 +8,9 @@ const CORTE_COLOR    = 'var(--corte)';
 const DOBRA_COLOR    = 'var(--dobra)';
 const MAO_COLOR      = 'var(--mao-obra)';
 const CALANDRA_COLOR = 'var(--calandra)';
+const MAX_URGENT_CARDS = 2;
 
-export default function StatusModal({ card, onClose, onSave }) {
+export default function StatusModal({ card, urgentCount = 0, onClose, onSave }) {
   const { user } = useAuth();
   const [selected,  setSelected]  = useState(card.status);
   const [schedDate, setSchedDate] = useState(card.scheduled_date?.slice(0, 10) || '');
@@ -21,6 +22,7 @@ export default function StatusModal({ card, onClose, onSave }) {
   const [calandra,  setCalandra]  = useState(card.calandra || false);
   const [tab,       setTab]       = useState('status');
   const [diaAberto, setDiaAberto] = useState(null);
+  const [erro,      setErro]      = useState('');
 
   const isCreator = user?.role === 'creator';
   const canUrgente = isCreator || Boolean(user?.permissions?.marcar_urgente);
@@ -30,6 +32,16 @@ export default function StatusModal({ card, onClose, onSave }) {
   const canServicoMaoDeObra = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_mao_de_obra);
   const canServicoCalandra  = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_calandra);
   const canServicos = canServicoCorte || canServicoDobra || canServicoMaoDeObra || canServicoCalandra;
+  const urgentLimitReached = !card.urgente && !urgente && urgentCount >= MAX_URGENT_CARDS;
+
+  const toggleUrgente = () => {
+    if (urgentLimitReached) {
+      setErro(`Limite de ${MAX_URGENT_CARDS} cards urgentes atingido.`);
+      return;
+    }
+    setErro('');
+    setUrgente(value => !value);
+  };
 
   const tabs = [{ key: 'status', label: 'Status' }];
   if (canUrgente) tabs.push({ key: 'urgente',  label: 'Urgente'  });
@@ -39,26 +51,31 @@ export default function StatusModal({ card, onClose, onSave }) {
   const handleSave = async () => {
     if (selected === 'Scheduled' && !schedDate) return;
     const updates = {};
-    if (canUrgente && urgente !== (card.urgente || false)) {
-      await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
-      updates.urgente = urgente;
-    }
-    if (canCarga && carga !== (card.carga || null)) {
-      await api.patch(`/api/cards/${card.id}/carga`, { carga });
-      updates.carga = carga;
-    }
-    if (canServicos) {
-      if (corte !== (card.corte||false) || dobra !== (card.dobra||false) || maoDeObra !== (card.mao_de_obra||false) || calandra !== (card.calandra||false)) {
-        const payload = {};
-        if (canServicoCorte)     payload.corte       = corte;
-        if (canServicoDobra)     payload.dobra       = dobra;
-        if (canServicoMaoDeObra) payload.mao_de_obra = maoDeObra;
-        if (canServicoCalandra)  payload.calandra    = calandra;
-        await api.patch(`/api/cards/${card.id}/servicos`, payload);
-        updates.corte = corte; updates.dobra = dobra; updates.mao_de_obra = maoDeObra; updates.calandra = calandra;
+    try {
+      setErro('');
+      if (canUrgente && urgente !== (card.urgente || false)) {
+        await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
+        updates.urgente = urgente;
       }
+      if (canCarga && carga !== (card.carga || null)) {
+        await api.patch(`/api/cards/${card.id}/carga`, { carga });
+        updates.carga = carga;
+      }
+      if (canServicos) {
+        if (corte !== (card.corte||false) || dobra !== (card.dobra||false) || maoDeObra !== (card.mao_de_obra||false) || calandra !== (card.calandra||false)) {
+          const payload = {};
+          if (canServicoCorte)     payload.corte       = corte;
+          if (canServicoDobra)     payload.dobra       = dobra;
+          if (canServicoMaoDeObra) payload.mao_de_obra = maoDeObra;
+          if (canServicoCalandra)  payload.calandra    = calandra;
+          await api.patch(`/api/cards/${card.id}/servicos`, payload);
+          updates.corte = corte; updates.dobra = dobra; updates.mao_de_obra = maoDeObra; updates.calandra = calandra;
+        }
+      }
+      onSave(selected, schedDate || null, updates);
+    } catch (err) {
+      setErro(err.response?.data?.error || 'Nao foi possivel salvar as alteracoes.');
     }
-    onSave(selected, schedDate || null, updates);
   };
 
   const ToggleBtn = ({ label, value, onChange, color }) => (
@@ -92,7 +109,7 @@ export default function StatusModal({ card, onClose, onSave }) {
       }} onClick={e => e.stopPropagation()}>
 
         <h2 style={{ color: 'var(--text-primary)', fontWeight: 600, margin: '0 0 4px', fontSize: 16 }}>Alterar Card</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', margin: '0 0 20px' }}>{card.title}</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-text)', margin: '0 0 20px' }}>{card.title}</p>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--bg-surface2)', padding: 4, borderRadius: 12 }}>
@@ -134,7 +151,7 @@ export default function StatusModal({ card, onClose, onSave }) {
             ))}
             {selected === 'Scheduled' && (
               <div style={{ marginTop: 8 }}>
-                <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Data agendada</label>
+                <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Data agendada</label>
                 <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)}
                   style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-default)', borderRadius: 12, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }} />
               </div>
@@ -147,23 +164,25 @@ export default function StatusModal({ card, onClose, onSave }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '16px 0' }}>
             <div
               style={{ width: 80, height: 80, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, cursor: 'pointer', transition: 'all 0.2s', border: '2px solid',
-                borderColor: urgente ? URGENTE_COLOR : 'var(--border-default)',
-                background: urgente ? `${URGENTE_COLOR}15` : 'var(--bg-surface2)' }}
-              onClick={() => setUrgente(!urgente)}>
+                borderColor: urgente ? URGENTE_COLOR : urgentLimitReached ? 'rgba(239,68,68,0.36)' : 'var(--border-default)',
+                background: urgente ? `${URGENTE_COLOR}15` : urgentLimitReached ? 'rgba(239,68,68,0.08)' : 'var(--bg-surface2)' }}
+              onClick={toggleUrgente}>
               {urgente ? '🟠' : '⚡'}
             </div>
             <div style={{ textAlign: 'center' }}>
               <p style={{ color: 'var(--text-primary)', fontWeight: 500, margin: 0 }}>{urgente ? 'Marcado como Urgente' : 'Não Urgente'}</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>Clique para {urgente ? 'remover' : 'marcar como urgente'}</p>
+              <p style={{ color: urgentLimitReached ? 'var(--status-red)' : 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>
+                {urgentLimitReached ? `Ja existem ${MAX_URGENT_CARDS} cards urgentes` : `Clique para ${urgente ? 'remover' : 'marcar como urgente'}`}
+              </p>
             </div>
-            <button onClick={() => setUrgente(!urgente)} style={{
+            <button onClick={toggleUrgente} disabled={urgentLimitReached} style={{
               width: '100%', padding: '10px', borderRadius: 12, fontSize: 13, fontWeight: 500,
-              border: '1px solid', cursor: 'pointer', transition: 'all 0.13s',
-              borderColor: urgente ? `${URGENTE_COLOR}50` : 'var(--border-default)',
-              background: urgente ? `${URGENTE_COLOR}20` : 'var(--bg-surface2)',
-              color: urgente ? URGENTE_COLOR : 'var(--text-secondary)',
+              border: '1px solid', cursor: urgentLimitReached ? 'not-allowed' : 'pointer', transition: 'all 0.13s',
+              borderColor: urgente ? `${URGENTE_COLOR}50` : urgentLimitReached ? 'rgba(239,68,68,0.30)' : 'var(--border-default)',
+              background: urgente ? `${URGENTE_COLOR}20` : urgentLimitReached ? 'rgba(239,68,68,0.08)' : 'var(--bg-surface2)',
+              color: urgente ? URGENTE_COLOR : urgentLimitReached ? 'var(--status-red)' : 'var(--text-secondary)',
             }}>
-              {urgente ? 'Urgente ativado' : 'Ativar Urgente'}
+              {urgente ? 'Urgente ativado' : urgentLimitReached ? 'Limite atingido' : 'Ativar Urgente'}
             </button>
           </div>
         )}
@@ -172,7 +191,7 @@ export default function StatusModal({ card, onClose, onSave }) {
         {tab === 'carga' && canCarga && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
-              <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace', marginBottom: 8, marginTop: 0 }}>Sempre disponível</p>
+              <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)', marginBottom: 8, marginTop: 0 }}>Sempre disponível</p>
               <ToggleBtn label={CIDADE_SEMPRE} value={carga === CIDADE_SEMPRE} onChange={v => setCarga(v ? CIDADE_SEMPRE : null)} color={CARGA_COLOR} />
             </div>
 
@@ -183,7 +202,7 @@ export default function StatusModal({ card, onClose, onSave }) {
                   padding: '6px 10px', borderRadius: 12, fontSize: 10, fontWeight: 500,
                   color: 'var(--text-secondary)', background: 'transparent', border: 'none',
                   cursor: 'pointer', transition: 'all 0.13s', textTransform: 'uppercase', letterSpacing: '0.08em',
-                  fontFamily: 'JetBrains Mono, monospace',
+                  fontFamily: 'var(--font-text)',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface2)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
@@ -216,12 +235,18 @@ export default function StatusModal({ card, onClose, onSave }) {
         {/* SERVICOS */}
         {tab === 'servicos' && canServicos && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace', marginBottom: 4, marginTop: 0 }}>Serviços</p>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)', marginBottom: 4, marginTop: 0 }}>Serviços</p>
             {canServicoCorte    && <ToggleBtn label="Corte"       value={corte}     onChange={setCorte}     color={CORTE_COLOR} />}
             {canServicoDobra    && <ToggleBtn label="Dobra"       value={dobra}     onChange={setDobra}     color={DOBRA_COLOR} />}
             {canServicoMaoDeObra && <ToggleBtn label="Mão de Obra" value={maoDeObra} onChange={setMaoDeObra} color={MAO_COLOR}   />}
             {canServicoCalandra  && <ToggleBtn label="Calandra"    value={calandra}  onChange={setCalandra}  color={CALANDRA_COLOR} />}
           </div>
+        )}
+
+        {erro && (
+          <p style={{ color: 'var(--status-red)', fontSize: 11, margin: '14px 0 0', fontFamily: 'var(--font-text)' }}>
+            {erro}
+          </p>
         )}
 
         <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>

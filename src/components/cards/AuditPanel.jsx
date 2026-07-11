@@ -3,7 +3,7 @@ import api    from '../../services/api';
 import socket from '../../services/socket';
 
 function formatHora(ts) {
-  return new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'America/Sao_Paulo' });
 }
 
 function acaoCor(acao) {
@@ -84,10 +84,10 @@ export default function AuditPanel({ onClose }) {
                 <div key={log.id} style={{ borderRadius: 10, padding: 12, background: 'var(--bg-surface1)', border: '1px solid var(--border-default)', borderLeft: `3px solid ${acaoCor(log.acao)}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                     <span style={{ fontSize: 11, fontWeight: 600, color: acaoCor(log.acao) }}>{log.username}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'DM Mono, monospace' }}>{formatHora(log.criado_at)}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'var(--font-text)' }}>{formatHora(log.criado_at)}</span>
                   </div>
                   <p style={{ color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.5, margin: 0 }}>{log.acao}</p>
-                  <p style={{ fontSize: 10, marginTop: 6, fontFamily: 'DM Mono, monospace', color: 'var(--text-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: '6px 0 0' }} title={log.card_title}>
+                  <p style={{ fontSize: 10, marginTop: 6, fontFamily: 'var(--font-text)', color: 'var(--text-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: '6px 0 0' }} title={log.card_title}>
                     {log.card_title}
                   </p>
                 </div>

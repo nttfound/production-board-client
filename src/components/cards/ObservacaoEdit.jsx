@@ -22,12 +22,12 @@ export default function ObservacaoEdit({ card, onSave, onClose }) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-overlay)' }} onClick={onClose}>
       <div style={{ background: 'var(--bg-surface1)', border: '1px solid var(--border-default)', borderRadius: 16, padding: 24, width: 384, boxShadow: 'var(--shadow-modal)', animation: 'scaleIn 0.18s ease' }} onClick={e => e.stopPropagation()}>
         <h2 style={{ color: 'var(--text-primary)', fontWeight: 600, margin: '0 0 4px', fontSize: 16 }}>Editar Observação</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', margin: '0 0 16px' }}>{card.title}</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-text)', margin: '0 0 16px' }}>{card.title}</p>
 
         <textarea
           value={text} onChange={e => setText(e.target.value)} rows={5}
           placeholder="Observação..." autoFocus
-          style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-default)', borderRadius: 12, padding: '12px 14px', color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'none', fontFamily: 'Inter, sans-serif', transition: 'border-color 0.13s', boxSizing: 'border-box' }}
+          style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-default)', borderRadius: 12, padding: '12px 14px', color: 'var(--text-primary)', fontSize: 13, outline: 'none', resize: 'none', fontFamily: 'var(--font-text)', transition: 'border-color 0.13s', boxSizing: 'border-box' }}
           onFocus={e => e.target.style.borderColor = 'var(--accent-blue)'}
           onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
         />

@@ -5,7 +5,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import LoginPage from './pages/LoginPage';
 import BoardPage from './pages/BoardPage';
 import UpdateBanner from './components/ui/UpdateBanner';
-import NotificationCenter from './components/ui/NotificationCenter';
 
 function AppInner() {
   const { user, loading } = useAuth();
@@ -27,7 +26,6 @@ export default function App() {
       <NotificationProvider>
         <AuthProvider>
           <AppInner />
-          <NotificationCenter />
           <UpdateBanner />
         </AuthProvider>
       </NotificationProvider>

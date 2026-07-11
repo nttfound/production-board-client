@@ -1,12 +1,20 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const NotificationContext = createContext(null);
 
 let idCounter = 0;
 const nextId = () => ++idCounter;
 
+function sendOSToast(type, title, body) {
+  try {
+    window.electronAPI?.sendNotification({ type, title, body });
+  } catch (e) {
+    // Fora do Electron, fica apenas no historico do app.
+  }
+}
+
 /**
- * Tipos suportados: 'chat' | 'producing' | 'urgent' | 'ready' | 'info'
+ * Tipos: 'chat' | 'producing' | 'urgent' | 'ready' | 'info'
  */
 export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
@@ -16,37 +24,26 @@ export function NotificationProvider({ children }) {
     setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 320);
   }, []);
 
-  // Limpar todas ao entrar no app (mount)
-  useEffect(() => {
-    setNotifications([]);
-  }, []);
+  useEffect(() => { setNotifications([]); }, []);
 
   const push = useCallback((type, title, body) => {
     const id = nextId();
 
     setNotifications(prev => {
       const next = [...prev, { id, type, title, body, exiting: false }];
-      // Máximo 5 toasts na tela
       if (next.length > 5) next.shift();
       return next;
     });
 
-    // Sem auto-dismiss — só some ao fechar manualmente ou reabrir o app
+    sendOSToast(type, title, body);
+
     return id;
   }, []);
 
-  // Atalhos semânticos
-  const notifyChat = useCallback((sender, preview) =>
-    push('chat', `Mensagem de ${sender}`, preview), [push]);
-
-  const notifyProducing = useCallback((cardTitle) =>
-    push('producing', 'Em produção', cardTitle), [push]);
-
-  const notifyUrgent = useCallback((cardTitle, changedBy) =>
-    push('urgent', '🚨 Urgente', `${cardTitle}${changedBy ? `\nalterado por ${changedBy}` : ''}`), [push]);
-
-  const notifyReady = useCallback((cardTitle) =>
-    push('ready', 'Pronto', cardTitle), [push]);
+  const notifyChat     = useCallback((sender, preview) => push('chat',      `Mensagem de ${sender}`, preview), [push]);
+  const notifyProducing = useCallback((cardTitle)        => push('producing', 'Em produção',           cardTitle), [push]);
+  const notifyUrgent   = useCallback((cardTitle, by)     => push('urgent',    '🚨 Urgente',            `${cardTitle}${by ? ` — ${by}` : ''}`), [push]);
+  const notifyReady    = useCallback((cardTitle)          => push('ready',     'Pronto ✓',              cardTitle), [push]);
 
   return (
     <NotificationContext.Provider value={{

@@ -6,8 +6,9 @@ import ObservacaoEdit from './ObservacaoEdit';
 import { useAuth } from '../../contexts/AuthContext';
 import { getStatus, URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConfig';
 import { cargaAtivaAgora } from '../../services/cargaConfig';
+import { API_BASE_URL } from '../../services/config';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const BASE_URL = API_BASE_URL;
 
 // Service colors via CSS variable (já injetadas pelo ThemeContext)
 const CORTE_COLOR    = 'var(--corte)';
@@ -20,7 +21,7 @@ function ServicePill({ label, color }) {
     <span className="tag-pill" style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-      fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase',
+      fontFamily: 'var(--font-text)', textTransform: 'uppercase',
       color,
       background: `color-mix(in srgb, ${color} 12%, transparent)`,
       border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
@@ -40,7 +41,7 @@ function CargaBadge({ label, color }) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-      fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase',
+      fontFamily: 'var(--font-text)', textTransform: 'uppercase',
       color,
       background: `color-mix(in srgb, ${color} 12%, transparent)`,
       border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
@@ -57,7 +58,7 @@ function UrgenteBadge() {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-      fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase',
+      fontFamily: 'var(--font-text)', textTransform: 'uppercase',
       color: 'var(--urgente)',
       background: 'color-mix(in srgb, var(--urgente) 12%, transparent)',
       border: '1px solid color-mix(in srgb, var(--urgente) 35%, transparent)',
@@ -75,7 +76,7 @@ function OrderBadge({ order, color }) {
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       minWidth: 22, height: 18,
       fontSize: 9, fontWeight: 800,
-      fontFamily: 'JetBrains Mono, monospace',
+      fontFamily: 'var(--font-text)',
       color: '#fff',
       background: color,
       borderRadius: 4, padding: '0 5px',
@@ -86,42 +87,45 @@ function OrderBadge({ order, color }) {
 }
 
 function ActionBtn({ onClick, title, danger, children, alwaysVisible }) {
-  const [hover, setHover] = useState(false);
   return (
     <button
-      onClick={onClick} title={title}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(e);
+      }}
+      title={title}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 26, height: 26, borderRadius: 8,
-        background: hover
-          ? (danger ? 'rgba(239,68,68,0.10)' : 'var(--bg-surface3)')
-          : 'transparent',
-        border: `1px solid ${hover
-          ? (danger ? 'rgba(239,68,68,0.30)' : 'var(--border-accent)')
-          : 'var(--border-default)'}`,
-        color: hover
-          ? (danger ? 'var(--status-red)' : 'var(--text-secondary)')
-          : 'var(--text-muted)',
+        background: 'transparent',
+        border: '1px solid var(--border-default)',
+        color: 'var(--text-muted)',
         cursor: 'pointer', transition: 'all 0.14s',
         opacity: alwaysVisible ? 1 : undefined,
       }}
-      className={alwaysVisible ? undefined : 'group-hover:opacity-100'}
+      className={`card-action-btn${danger ? ' card-action-btn-danger' : ''}${alwaysVisible ? '' : ' group-hover:opacity-100'}`}
     >
       {children}
     </button>
   );
 }
 
-export default function ProductionCard({ card, cargaOrder, onStatusChange, onDelete }) {
+export default function ProductionCard({
+  card,
+  cargaOrder,
+  onStatusChange,
+  onDelete,
+  isSelected = false,
+  selectionEnabled = false,
+  onToggleSelected,
+  urgentCount = 0,
+}) {
   const { user } = useAuth();
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showImageModal,  setShowImageModal]  = useState(false);
   const [showObsModal,    setShowObsModal]    = useState(false);
   const [localCard,       setLocalCard]       = useState(card);
   const [imgError,        setImgError]        = useState(false);
-  const [cardHover,       setCardHover]       = useState(false);
 
   useEffect(() => { setLocalCard(card); setImgError(false); }, [card]);
 
@@ -133,14 +137,15 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
   const mostrarCarga = cargaAtivaAgora(localCard.carga);
   const isUrgent     = localCard.urgente;
   const hasCarga     = mostrarCarga && localCard.carga;
-  const accentColor  = isUrgent ? 'var(--urgente)' : hasCarga ? 'var(--carga)' : s.color;
+  const isItapira    = localCard.carga === 'Itapira';
+  const accentColor  = isItapira ? 'var(--cargaitapira)' : hasCarga ? 'var(--carga)' : s.color;
 
   const formattedDate = new Date(localCard.created_at).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: '2-digit',
+    day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/Sao_Paulo',
   });
 
   const scheduledStr = localCard.scheduled_date
-    ? new Date(localCard.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    ? new Date(localCard.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' })
     : null;
 
   const services = [
@@ -155,6 +160,23 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
   const canEditObservation = isCreator || Boolean(user?.permissions?.alterar_observacao);
   const canDelete          = isCreator || Boolean(user?.permissions?.deletar_card);
 
+  const handleCardClick = (e) => {
+    if (!selectionEnabled || (!e.ctrlKey && !e.metaKey)) return;
+    if (e.target.closest('button, input, textarea, select, a')) return;
+    e.preventDefault();
+    onToggleSelected?.(localCard.id);
+  };
+
+  const handleImageClick = (e) => {
+    e.stopPropagation();
+    if (selectionEnabled && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      onToggleSelected?.(localCard.id);
+      return;
+    }
+    setShowImageModal(true);
+  };
+
   // Define a cor da carga baseada no tipo
   const getCargaColor = () => {
     if (localCard.carga === 'Itapira') {
@@ -166,25 +188,53 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
   return (
     <>
       <div
-        className="production-card group"
+        className={`production-card group${isSelected ? ' is-selected' : ''}`}
         style={{
           position: 'relative',
           display: 'flex', flexDirection: 'column',
           borderRadius: 12,
           background: 'var(--bg-card)',
-          border: `1px solid ${cardHover ? 'var(--border-light)' : 'var(--border-default)'}`,
+          border: '1px solid var(--border-default)',
           overflow: 'hidden',
-          transition: 'border-color 0.2s, box-shadow 0.2s',
-          boxShadow: cardHover ? 'var(--shadow-card-hover)' : 'var(--shadow-card)',
+          cursor: selectionEnabled ? 'default' : undefined,
         }}
-        onMouseEnter={() => setCardHover(true)}
-        onMouseLeave={() => setCardHover(false)}
+        onClick={handleCardClick}
       >
+        {selectionEnabled && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 9,
+              left: 9,
+              zIndex: 3,
+              width: 22,
+              height: 22,
+              borderRadius: 7,
+              border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'var(--border-light)'}`,
+              background: isSelected ? 'var(--accent-blue)' : 'var(--bg-overlay)',
+              color: isSelected ? '#fff' : 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'opacity 0.15s, background 0.15s, border-color 0.15s',
+              pointerEvents: 'none',
+              backdropFilter: 'blur(8px)',
+            }}
+            className={`selection-indicator${isSelected ? ' is-selected' : ''}`}
+          >
+            {isSelected && (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </div>
+        )}
+
         {/* Image */}
         {imageUrl ? (
           <div
             style={{ height: 160, background: 'var(--bg-surface2)', flexShrink: 0, overflow: 'hidden', position: 'relative', cursor: 'zoom-in' }}
-            onClick={() => setShowImageModal(true)}
+            onClick={handleImageClick}
           >
             <img
               src={imageUrl} alt={localCard.title} onError={() => setImgError(true)}
@@ -250,7 +300,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
                 </ActionBtn>
               )}
               {canDelete && (
-                <ActionBtn onClick={() => onDelete(localCard.id)} title="Excluir" danger>
+                <ActionBtn onClick={() => onDelete(localCard)} title="Excluir" danger>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6l-1 14H6L5 6"/>
@@ -284,26 +334,26 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
               <div>
                 <p style={{
                   color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.7,
-                  fontFamily: 'JetBrains Mono, monospace', margin: 0,
+                  fontFamily: 'var(--font-text)', margin: 0,
                   display: '-webkit-box', WebkitLineClamp: 3,
                   WebkitBoxOrient: 'vertical', overflow: 'hidden',
                 }}>
                   {localCard.observation}
                 </p>
                 {localCard.observation_by && (
-                  <p style={{ color: 'var(--text-muted)', fontSize: 9, marginTop: 4, fontFamily: 'JetBrains Mono, monospace' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 9, marginTop: 4, fontFamily: 'var(--font-text)' }}>
                     — {localCard.observation_by}
                   </p>
                 )}
               </div>
             ) : (
-              <p style={{ color: 'var(--text-faint)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', margin: 0, fontStyle: 'italic' }}>
+              <p style={{ color: 'var(--text-faint)', fontSize: 11, fontFamily: 'var(--font-text)', margin: 0, fontStyle: 'italic' }}>
                 sem observação
               </p>
             )}
             {canEditObservation && (
               <button
-                onClick={() => setShowObsModal(true)} title="Editar observação"
+                onClick={(e) => { e.stopPropagation(); setShowObsModal(true); }} title="Editar observação"
                 style={{
                   position: 'absolute', top: -1, right: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -326,15 +376,15 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
           {/* Accent divider */}
           <div style={{
             height: 1, flexShrink: 0,
-            background: `linear-gradient(90deg, ${accentColor} 0%, ${accentColor} 40%, transparent 100%)`,
-            opacity: 0.5,
+            background: accentColor,
+            opacity: 0.75,
           }} />
 
           {/* Scheduled */}
           {localCard.status === 'Scheduled' && scheduledStr && (
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 10, color: 'var(--status-purple)', fontFamily: 'JetBrains Mono, monospace',
+              fontSize: 10, color: 'var(--status-purple)', fontFamily: 'var(--font-text)',
               background: 'color-mix(in srgb, var(--status-purple) 10%, transparent)',
               border: '1px solid color-mix(in srgb, var(--status-purple) 28%, transparent)',
               borderRadius: 5, padding: '3px 8px', alignSelf: 'flex-start',
@@ -348,7 +398,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
 
           {/* Footer */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-text)', display: 'flex', alignItems: 'center', gap: 5 }}>
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>
@@ -357,7 +407,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {hasCarga && cargaOrder && <OrderBadge order={cargaOrder} color={CARGA_COLOR} />}
-              <span style={{ color: 'var(--text-faint)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}>
+              <span style={{ color: 'var(--text-faint)', fontSize: 10, fontFamily: 'var(--font-text)' }}>
                 {formattedDate}
               </span>
             </div>
@@ -368,6 +418,7 @@ export default function ProductionCard({ card, cargaOrder, onStatusChange, onDel
       {showStatusModal && (
         <StatusModal
           card={localCard}
+          urgentCount={urgentCount}
           onClose={() => setShowStatusModal(false)}
           onSave={(status, date, updates) => {
             setLocalCard(prev => ({ ...prev, status, scheduled_date: date, ...updates }));

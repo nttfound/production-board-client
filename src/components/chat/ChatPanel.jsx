@@ -3,15 +3,25 @@ import api from '../../services/api';
 import socket from '../../services/socket';
 import { useAuth } from '../../contexts/AuthContext';
 
+const EMOJIS = ['😀', '😄', '😂', '😊', '😍', '😎', '🤔', '😅', '🙌', '👍', '👏', '🔥', '✅', '⚠️', '🙏', '💪', '👀', '🚀', '❤️', '🎉'];
+
 function formatTime(value) {
   if (!value) return '';
-  return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 }
 
 function formatSize(bytes) {
   if (!bytes) return '';
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}kb`;
   return `${(bytes / (1024 * 1024)).toFixed(1)}mb`;
+}
+
+function shouldShowTime(current, previous) {
+  if (!previous) return true;
+  const currentTime = new Date(current.created_at).getTime();
+  const previousTime = new Date(previous.created_at).getTime();
+  if (!Number.isFinite(currentTime) || !Number.isFinite(previousTime)) return true;
+  return currentTime - previousTime > 60 * 1000;
 }
 
 function DeleteBtn({ onDelete, mine }) {
@@ -47,7 +57,7 @@ function Avatar({ name, color }) {
       border: `1px solid ${color || '#3b82f6'}30`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       color: color || '#3b82f6', fontSize: 9, fontWeight: 700,
-      fontFamily: 'JetBrains Mono, monospace',
+      fontFamily: 'var(--font-text)',
     }}>
       {initials}
     </div>
@@ -60,9 +70,11 @@ export default function ChatPanel({ onClose }) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [sendingFile, setSendingFile] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
   const inputRef = useRef(null);
+  const emojiRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -92,6 +104,17 @@ export default function ChatPanel({ onClose }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
+
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+    function handleOutsideClick(event) {
+      if (emojiRef.current && !emojiRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showEmojiPicker]);
 
   const sendText = (event) => {
     event.preventDefault();
@@ -123,17 +146,36 @@ export default function ChatPanel({ onClose }) {
     socket.emit('chat:delete', { id });
   };
 
-  // Group messages by sender for visual grouping
+  const insertEmoji = (emoji) => {
+    const input = inputRef.current;
+    if (!input) {
+      setText(prev => `${prev}${emoji}`);
+      return;
+    }
+
+    const start = input.selectionStart ?? text.length;
+    const end = input.selectionEnd ?? text.length;
+    const next = `${text.slice(0, start)}${emoji}${text.slice(end)}`;
+    setText(next);
+    requestAnimationFrame(() => {
+      input.focus();
+      const cursor = start + emoji.length;
+      input.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  // Group messages by sender and show time only after a 1 minute gap.
   const groupedMessages = messages.map((msg, i) => ({
     ...msg,
-    showAvatar: i === 0 || messages[i - 1].username !== msg.username,
+    showTime: shouldShowTime(msg, messages[i - 1]),
+    showAvatar: i === 0 || messages[i - 1].username !== msg.username || shouldShowTime(msg, messages[i - 1]),
   }));
 
   return (
     <aside style={{
       position: 'fixed', right: 0, top: 0, zIndex: 50,
       height: '100vh', width: 360, maxWidth: '92vw',
-      background: 'var(--bg-surface)',
+      background: 'var(--bg-app)',
       borderLeft: '1px solid var(--border-default)',
       boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
       display: 'flex', flexDirection: 'column',
@@ -141,7 +183,7 @@ export default function ChatPanel({ onClose }) {
     }}>
       {/* Header */}
       <div style={{
-        height: 52,
+        height: 56,
         padding: '0 16px',
         borderBottom: '1px solid var(--border-default)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -149,13 +191,19 @@ export default function ChatPanel({ onClose }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 8, height: 8, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-            boxShadow: '0 0 8px rgba(34,197,94,0.5)',
-          }} />
+            width: 30, height: 30, borderRadius: 9,
+            background: 'var(--bg-surface1)',
+            border: '1px solid var(--border-default)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--accent-blue)',
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+            </svg>
+          </div>
           <div>
-            <h2 style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, lineHeight: 1, margin: 0 }}>Chat</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', margin: 0, marginTop: 2 }}>
+            <h2 style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 700, lineHeight: 1, margin: 0 }}>Chat</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'var(--font-text)', margin: 0, marginTop: 2 }}>
               {messages.length} msgs
             </p>
           </div>
@@ -163,7 +211,7 @@ export default function ChatPanel({ onClose }) {
         <button
           onClick={onClose}
           style={{
-            width: 28, height: 28, borderRadius: 12,
+            width: 28, height: 28, borderRadius: 7,
             background: 'transparent', border: '1px solid var(--border-default)',
             color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.13s',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -180,72 +228,90 @@ export default function ChatPanel({ onClose }) {
       {/* Error */}
       {error && (
         <div style={{
-          margin: '8px 12px 0', padding: '8px 12px', borderRadius: 12,
+          margin: '8px 12px 0', padding: '8px 12px', borderRadius: 8,
           background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)',
-          color: '#ef4444', fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
+          color: '#ef4444', fontSize: 11, fontFamily: 'var(--font-text)',
         }}>
           {error}
         </div>
       )}
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 4px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 12px 6px' }}>
         {messages.length === 0 ? (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--border-accent)" strokeWidth="1.5" strokeLinecap="round">
               <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
             </svg>
-            <span style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}>nenhuma mensagem</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-text)' }}>nenhuma mensagem</span>
           </div>
         ) : groupedMessages.map(msg => {
           const mine = msg.username === user?.username || msg.user_id === user?.id;
           const canDelete = mine || user?.role === 'creator';
 
           return (
-            <div
-              key={msg.id}
-              className="group"
-              style={{
-                display: 'flex',
-                flexDirection: mine ? 'row-reverse' : 'row',
-                gap: 8,
-                marginBottom: msg.showAvatar ? 10 : 3,
-                alignItems: 'flex-end',
-              }}
-            >
-              {/* Avatar */}
-              {!mine && (
-                <div style={{ opacity: msg.showAvatar ? 1 : 0, flexShrink: 0 }}>
-                  <Avatar name={msg.display_name || msg.username} color={msg.color} />
+            <React.Fragment key={msg.id}>
+              {msg.showTime && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  margin: '8px 0 10px',
+                }}>
+                  <span style={{
+                    color: 'var(--text-muted)',
+                    fontSize: 10,
+                    fontFamily: 'var(--font-text)',
+                    padding: '3px 8px',
+                    borderRadius: 999,
+                    background: 'var(--bg-surface1)',
+                    border: '1px solid var(--border-default)',
+                  }}>
+                    {formatTime(msg.created_at)}
+                  </span>
                 </div>
               )}
 
-              <div style={{ maxWidth: '78%', display: 'flex', flexDirection: 'column', gap: 2, alignItems: mine ? 'flex-end' : 'flex-start' }}>
-                {msg.showAvatar && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexDirection: mine ? 'row-reverse' : 'row' }}>
-                    <span style={{ color: msg.color || '#3b82f6', fontSize: 10, fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>
-                      {msg.display_name || msg.username}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 9, fontFamily: 'JetBrains Mono, monospace' }}>
-                      {formatTime(msg.created_at)}
-                    </span>
+              <div
+                className="group"
+                style={{
+                  display: 'flex',
+                  flexDirection: mine ? 'row-reverse' : 'row',
+                  gap: 8,
+                  marginBottom: msg.showAvatar ? 9 : 3,
+                  alignItems: 'flex-end',
+                }}
+              >
+                {/* Avatar */}
+                {!mine && (
+                  <div style={{ opacity: msg.showAvatar ? 1 : 0, flexShrink: 0 }}>
+                    <Avatar name={msg.display_name || msg.username} color={msg.color} />
                   </div>
                 )}
 
-                <div
-                  style={{
-                    padding: '8px 11px',
-                    borderRadius: mine ? '10px 10px 4px 10px' : '10px 10px 10px 4px',
-                    background: mine ? 'rgba(37,99,235,0.15)' : 'var(--bg-surface1)',
-                    border: mine ? '1px solid rgba(59,130,246,0.2)' : '1px solid var(--border-default)',
-                    position: 'relative',
-                  }}
-                >
+                <div style={{ maxWidth: '78%', display: 'flex', flexDirection: 'column', gap: 2, alignItems: mine ? 'flex-end' : 'flex-start' }}>
+                  {msg.showAvatar && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexDirection: mine ? 'row-reverse' : 'row' }}>
+                      <span style={{ color: msg.color || '#3b82f6', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-text)' }}>
+                        {mine ? 'Voce' : (msg.display_name || msg.username)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      padding: '8px 11px',
+                      borderRadius: mine ? '11px 11px 4px 11px' : '11px 11px 11px 4px',
+                      background: mine ? 'rgba(37,99,235,0.16)' : 'var(--bg-surface)',
+                      border: mine ? '1px solid rgba(59,130,246,0.24)' : '1px solid var(--border-default)',
+                      position: 'relative',
+                      boxShadow: mine ? '0 2px 8px rgba(37,99,235,0.08)' : '0 1px 4px rgba(0,0,0,0.10)',
+                    }}
+                  >
                   {msg.text && (
                     <p style={{
                       color: 'var(--text-primary)', fontSize: 12, lineHeight: 1.55,
                       whiteSpace: 'pre-wrap', wordBreak: 'break-words',
-                      margin: 0, fontFamily: 'Inter, sans-serif',
+                      margin: 0, fontFamily: 'var(--font-text)',
                     }}>
                       {msg.text}
                     </p>
@@ -262,7 +328,7 @@ export default function ChatPanel({ onClose }) {
                         padding: '7px 10px', borderRadius: 12,
                         border: '1px solid var(--border-default)', background: 'var(--bg-surface)',
                         color: 'var(--text-secondary)', fontSize: 11, textDecoration: 'none',
-                        fontFamily: 'JetBrains Mono, monospace',
+                        fontFamily: 'var(--font-text)',
                         transition: 'border-color 0.13s',
                       }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-accent)'}
@@ -282,9 +348,10 @@ export default function ChatPanel({ onClose }) {
                   {canDelete && (
                     <DeleteBtn onDelete={() => deleteMessage(msg.id)} mine={mine} />
                   )}
+                  </div>
                 </div>
               </div>
-            </div>
+            </React.Fragment>
           );
         })}
         <div ref={bottomRef} />
@@ -319,22 +386,97 @@ export default function ChatPanel({ onClose }) {
         </button>
 
         <form onSubmit={sendText} style={{ flex: 1, display: 'flex', gap: 8 }}>
-          <input
-            ref={inputRef}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            maxLength={500}
-            placeholder="mensagem..."
-            style={{
-              flex: 1, height: 36,
-              background: 'var(--bg-input)', border: '1px solid var(--border-default)',
-              borderRadius: 12, padding: '0 12px',
-              color: 'var(--text-primary)', fontSize: 12, fontFamily: 'Inter, sans-serif',
-              outline: 'none', transition: 'border-color 0.13s',
-            }}
-            onFocus={e => e.target.style.borderColor = 'var(--border-accent)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
-          />
+          <div ref={emojiRef} style={{ position: 'relative', flex: 1, display: 'flex' }}>
+            {showEmojiPicker && (
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                bottom: 'calc(100% + 8px)',
+                width: 232,
+                padding: 8,
+                borderRadius: 10,
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-default)',
+                boxShadow: 'var(--shadow-modal)',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(5, 1fr)',
+                gap: 4,
+                zIndex: 5,
+              }}>
+                {EMOJIS.map(emoji => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => insertEmoji(emoji)}
+                    style={{
+                      width: 38,
+                      height: 32,
+                      border: '1px solid transparent',
+                      borderRadius: 7,
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      fontSize: 18,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background 0.13s, border-color 0.13s',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = 'var(--bg-surface2)';
+                      e.currentTarget.style.borderColor = 'var(--border-default)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.borderColor = 'transparent';
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(open => !open)}
+              style={{
+                position: 'absolute',
+                left: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 22,
+                height: 22,
+                border: 'none',
+                borderRadius: 6,
+                background: showEmojiPicker ? 'var(--bg-surface2)' : 'transparent',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1,
+              }}
+              title="Emojis"
+            >
+              <span style={{ fontSize: 14, lineHeight: 1 }}>😊</span>
+            </button>
+            <input
+              ref={inputRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              maxLength={500}
+              placeholder="mensagem..."
+              style={{
+                flex: 1, height: 36,
+                background: 'var(--bg-input)', border: '1px solid var(--border-default)',
+                borderRadius: 12, padding: '0 12px 0 36px',
+                color: 'var(--text-primary)', fontSize: 12, fontFamily: 'var(--font-text)',
+                outline: 'none', transition: 'border-color 0.13s',
+                minWidth: 0,
+              }}
+              onFocus={e => e.target.style.borderColor = 'var(--border-accent)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
+            />
+          </div>
           <button
             type="submit"
             style={{

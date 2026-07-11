@@ -10,27 +10,48 @@ export const CARGA_POR_DIA = {
 // Itapira aparece sempre, sem prefixo CARGA
 export const CIDADE_SEMPRE = 'Itapira';
 
+const ORDEM_DIAS = ['Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta'];
+const BR_TIME_ZONE = 'America/Sao_Paulo';
+
 // Dia efetivo considerando troca às 11h
+// Regra: antes das 11h = dia atual; após 11h = próximo dia útil
+// Sexta após 11h = Segunda (próxima semana)
+// Fim de semana = Segunda
 function getDiaEfetivo() {
-  const agora = new Date();
-  const dia = agora.getDay(); // 0=Dom, 6=Sab
-  const hora = agora.getHours();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: BR_TIME_ZONE,
+    weekday: 'short',
+    hour: 'numeric',
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const weekday = parts.find(part => part.type === 'weekday')?.value;
+  const hora = Number(parts.find(part => part.type === 'hour')?.value || 0) % 24;
+  const diaMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const dia = diaMap[weekday] ?? 1; // 0=Dom, 1=Seg, ..., 6=Sab
   const depoisDas11 = hora >= 11;
 
-  // Fim de semana
-  if (dia === 0 || dia === 6) return null;
-  // Sexta depois das 11h — sem carga até segunda
-  if (dia === 5 && depoisDas11) return null;
+  // Fim de semana → Segunda
+  if (dia === 0 || dia === 6) return 'Segunda';
 
-  const proximos = { 1: 'Terca', 2: 'Quarta', 3: 'Quinta', 4: 'Sexta', 5: null };
   const nomes    = { 1: 'Segunda', 2: 'Terca', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta' };
+  const proximos = { 1: 'Terca',   2: 'Quarta', 3: 'Quinta', 4: 'Sexta', 5: 'Segunda' };
 
-  if (depoisDas11) return proximos[dia];
+  if (depoisDas11) return proximos[dia]; // Sexta+11h → 'Segunda'
   return nomes[dia];
 }
 
 export function getLabelDia() {
   return getDiaEfetivo();
+}
+
+// Retorna os dias ordenados a partir do dia ativo (dia ativo primeiro)
+export function getDiasOrdenados() {
+  const diaAtivo = getDiaEfetivo();
+  if (!diaAtivo) return ORDEM_DIAS;
+  const idx = ORDEM_DIAS.indexOf(diaAtivo);
+  if (idx === -1) return ORDEM_DIAS;
+  return [...ORDEM_DIAS.slice(idx), ...ORDEM_DIAS.slice(0, idx)];
 }
 
 // Verifica se uma cidade deve aparecer agora

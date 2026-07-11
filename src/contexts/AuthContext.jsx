@@ -11,9 +11,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     api.get('/api/auth/me')
       .then(res => {
+        setAuthToken(res.data.token);
         setUser(res.data.user);
         // Conecta o socket assim que confirma autenticação
-        if (res.data.user) socket.connect();
+        if (res.data.user && res.data.token) {
+          socket.auth = { token: res.data.token };
+          socket.connect();
+        }
       })
       .catch(() => {
         setAuthToken(null);
@@ -32,6 +36,7 @@ export function AuthProvider({ children }) {
     const res = await api.post('/api/auth/login', { username, password });
     setAuthToken(res.data.token);
     setUser(res.data.user);
+    socket.auth = { token: res.data.token };
     socket.connect();
     return res.data.user;
   };

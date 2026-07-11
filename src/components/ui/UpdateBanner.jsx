@@ -51,7 +51,7 @@ export default function UpdateBanner() {
     borderRadius: 14,
     boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)',
     overflow: 'hidden',
-    fontFamily: 'Syne, sans-serif',
+    fontFamily: 'var(--font-display)',
     animation: 'slideInUp 0.25s cubic-bezier(0.34,1.56,0.64,1)',
   };
   const accentLine = (color) => ({ height: 2, background: `linear-gradient(90deg,${color}cc,${color}33,transparent)` });
@@ -91,7 +91,7 @@ export default function UpdateBanner() {
           </div>
           <div>
             <p style={{ color:'#e8e8e8',fontSize:12,fontWeight:700,margin:0 }}>Baixando atualização…</p>
-            <p style={{ color:'#3b82f6',fontSize:10,fontFamily:'DM Mono,monospace',margin:0 }}>{progress?.percent ?? 0}%</p>
+            <p style={{ color:'#3b82f6',fontSize:10,fontFamily:'var(--font-text)',margin:0 }}>{progress?.percent ?? 0}%</p>
           </div>
         </div>
         <div style={{ height:4,borderRadius:4,background:'#111',overflow:'hidden' }}>
@@ -117,12 +117,12 @@ export default function UpdateBanner() {
             </div>
             <div>
               <p style={{ color:'#e8e8e8',fontSize:12,fontWeight:700,margin:0 }}>Atualização disponível</p>
-              <p style={{ color:'#3b82f6',fontSize:10,fontFamily:'DM Mono,monospace',margin:0 }}>v{version}</p>
+              <p style={{ color:'#3b82f6',fontSize:10,fontFamily:'var(--font-text)',margin:0 }}>v{version}</p>
             </div>
           </div>
           <CloseBtn />
         </div>
-        <p style={{ color:'#555',fontSize:11,margin:'0 0 14px',lineHeight:1.5,fontFamily:'DM Mono,monospace' }}>
+        <p style={{ color:'#555',fontSize:11,margin:'0 0 14px',lineHeight:1.5,fontFamily:'var(--font-text)' }}>
           Nova versão disponível. Baixe agora para continuar atualizado.
         </p>
         <div style={{ display:'flex',gap:8 }}>
@@ -151,12 +151,12 @@ export default function UpdateBanner() {
             </div>
             <div>
               <p style={{ color:'#e8e8e8',fontSize:12,fontWeight:700,margin:0 }}>Pronto para instalar</p>
-              <p style={{ color:'#22c55e',fontSize:10,fontFamily:'DM Mono,monospace',margin:0 }}>v{version} baixada</p>
+              <p style={{ color:'#22c55e',fontSize:10,fontFamily:'var(--font-text)',margin:0 }}>v{version} baixada</p>
             </div>
           </div>
           <CloseBtn />
         </div>
-        <p style={{ color:'#555',fontSize:11,margin:'0 0 14px',lineHeight:1.5,fontFamily:'DM Mono,monospace' }}>
+        <p style={{ color:'#555',fontSize:11,margin:'0 0 14px',lineHeight:1.5,fontFamily:'var(--font-text)' }}>
           O app será reiniciado para aplicar a atualização.
         </p>
         <div style={{ display:'flex',gap:8 }}>
@@ -181,7 +181,7 @@ export default function UpdateBanner() {
           <p style={{ color:'#ef4444',fontSize:12,fontWeight:700,margin:0 }}>Erro ao atualizar</p>
           <CloseBtn />
         </div>
-        <p style={{ color:'#444',fontSize:10,fontFamily:'DM Mono,monospace',margin:0,wordBreak:'break-word' }}>{message}</p>
+        <p style={{ color:'#444',fontSize:10,fontFamily:'var(--font-text)',margin:0,wordBreak:'break-word' }}>{message}</p>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
+import { API_BASE_URL } from './config';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const BASE_URL = API_BASE_URL;
 
 // Função para pegar o token do sessionStorage
 const getToken = () => {
@@ -11,7 +12,7 @@ const socket = io(BASE_URL, {
   autoConnect: false,
   reconnection: true,
   reconnectionDelay: 500,
-  transports: ['polling', 'websocket'],
+  transports: ['websocket', 'polling'],
   withCredentials: true,
   auth: (cb) => {
     const token = getToken();

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL } from './config';
 
 // Restaura token da sessão anterior (mesma aba/reload)
 let authToken = sessionStorage.getItem('auth_token') || null;
@@ -17,7 +18,7 @@ export function getAuthToken() {
 }
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
+  baseURL: API_BASE_URL,
   timeout: 15000,
   withCredentials: true,
 });

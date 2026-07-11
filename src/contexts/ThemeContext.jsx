@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-// ─────────────────────────────────────────────
 //  TOKENS — edite aqui para mudar o visual todo
-// ─────────────────────────────────────────────
 const THEMES = {
   dark: {
     // Backgrounds

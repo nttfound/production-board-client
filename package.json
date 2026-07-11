@@ -1,6 +1,6 @@
 {
   "name": "producao-laser",
-  "version": "4.2.1",
+  "version": "5.3.0",
   "description": "Controle de Producao - Itadobras",
   "main": "electron/main.js",
   "homepage": "./",
@@ -8,7 +8,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "electron": "electron .",
-    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3001 && electron .\"",
+    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3001 && set ELECTRON_OPEN_DEVTOOLS=true&& electron .\"",
     "electron-build": "npm run build && electron-builder"
   },
   "dependencies": {

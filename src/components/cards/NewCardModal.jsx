@@ -13,7 +13,7 @@ const inputStyle = {
   border: '1px solid var(--border-default)',
   borderRadius: 12, padding: '10px 16px',
   color: 'var(--text-primary)', fontSize: 14,
-  fontFamily: 'Inter, sans-serif', outline: 'none',
+  fontFamily: 'var(--font-text)', outline: 'none',
   transition: 'border-color 0.15s, box-shadow 0.15s',
 };
 
@@ -71,14 +71,12 @@ export default function NewCardModal({ onClose, onCreated }) {
           formData.append('image', imageData);
         }
       }
-      const response = await api.post('/api/cards', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await api.post('/api/cards', formData);
       onCreated(response.data);
       onClose();
     } catch (err) {
-      console.error(err);
-      setError('Erro ao criar o card. Tente novamente.');
+      console.error('[NewCardModal] create card error:', err.response?.data || err);
+      setError(err.response?.data?.error || 'Erro ao criar o card. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -115,7 +113,7 @@ export default function NewCardModal({ onClose, onCreated }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Image */}
           <div>
-            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Imagem</label>
+            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Imagem</label>
             {imagePreview ? (
               <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', background: 'var(--bg-surface2)' }}>
                 <img src={imagePreview} alt="preview" style={{ width: '100%', maxHeight: 192, objectFit: 'cover', display: 'block' }} />
@@ -150,14 +148,14 @@ export default function NewCardModal({ onClose, onCreated }) {
                   <path d="M17 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
                   <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
                 </svg>
-                <span>Cole a imagem aqui <kbd style={{ fontFamily: 'JetBrains Mono, monospace', background: 'var(--bg-surface3)', border: '1px solid var(--border-default)', padding: '1px 6px', borderRadius: 4, fontSize: 10 }}>Ctrl+V</kbd></span>
+                <span>Cole a imagem aqui <kbd style={{ fontFamily: 'var(--font-text)', background: 'var(--bg-surface3)', border: '1px solid var(--border-default)', padding: '1px 6px', borderRadius: 4, fontSize: 10 }}>Ctrl+V</kbd></span>
               </div>
             )}
           </div>
 
           {/* Title */}
           <div>
-            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Título *</label>
+            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Título *</label>
             <input
               type="text" value={title} onChange={e => setTitle(e.target.value)}
               placeholder="Título do card"
@@ -169,7 +167,7 @@ export default function NewCardModal({ onClose, onCreated }) {
 
           {/* Observation */}
           <div>
-            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Observação</label>
+            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Observação</label>
             <textarea
               value={observation} onChange={e => setObservation(e.target.value)}
               placeholder="Detalhes, notas..." rows={3}
@@ -181,7 +179,7 @@ export default function NewCardModal({ onClose, onCreated }) {
 
           {/* Status */}
           <div>
-            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Status inicial</label>
+            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Status inicial</label>
             <select value={status} onChange={e => setStatus(e.target.value)} style={inputStyle}
               onFocus={e => { e.target.style.borderColor = 'var(--accent-blue)'; e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--accent-blue) 15%, transparent)'; }}
               onBlur={e => { e.target.style.borderColor = 'var(--border-default)'; e.target.style.boxShadow = 'none'; }}>
@@ -192,7 +190,7 @@ export default function NewCardModal({ onClose, onCreated }) {
           {/* Scheduled date */}
           {status === 'Scheduled' && (
             <div style={{ animation: 'scaleIn 0.15s ease' }}>
-              <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Data agendada *</label>
+              <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Data agendada *</label>
               <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)} style={inputStyle}
                 onFocus={e => { e.target.style.borderColor = '#a855f7'; e.target.style.boxShadow = '0 0 0 3px rgba(168,85,247,0.15)'; }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border-default)'; e.target.style.boxShadow = 'none'; }} />

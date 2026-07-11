@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNotifications } from '../../contexts/NotificationContext';
 
-// ─── Config por tipo ──────────────────────────────────────────────────────────
 const TYPE_CONFIG = {
   chat: {
     color:  '#3b82f6',
@@ -57,7 +56,6 @@ const TYPE_CONFIG = {
   },
 };
 
-// ─── Single toast ─────────────────────────────────────────────────────────────
 function Toast({ n, onDismiss }) {
   const cfg = TYPE_CONFIG[n.type] || TYPE_CONFIG.info;
   const [hovered, setHovered] = useState(false);
@@ -99,7 +97,7 @@ function Toast({ n, onDismiss }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{
           margin: 0, color: '#e0e0e0', fontSize: 12, fontWeight: 700,
-          fontFamily: 'Inter, sans-serif', lineHeight: 1.3,
+          fontFamily: 'var(--font-text)', lineHeight: 1.3,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {n.title}
@@ -107,7 +105,7 @@ function Toast({ n, onDismiss }) {
         {n.body && (
           <p style={{
             margin: '3px 0 0', color: '#666', fontSize: 11,
-            fontFamily: 'JetBrains Mono, monospace', lineHeight: 1.5,
+            fontFamily: 'var(--font-text)', lineHeight: 1.5,
             display: '-webkit-box', WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical', overflow: 'hidden',
           }}>
@@ -133,7 +131,6 @@ function Toast({ n, onDismiss }) {
   );
 }
 
-// ─── Bell button + history panel ──────────────────────────────────────────────
 function HistoryPanel({ history, onClear, onClose }) {
   return (
     <div style={{
@@ -151,14 +148,14 @@ function HistoryPanel({ history, onClear, onClose }) {
         padding: '12px 14px', borderBottom: '1px solid #141414',
         position: 'sticky', top: 0, background: 'rgba(10,10,10,0.98)', zIndex: 1,
       }}>
-        <span style={{ color: '#888', fontSize: 11, fontFamily: 'Inter, sans-serif', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <span style={{ color: '#888', fontSize: 11, fontFamily: 'var(--font-text)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           Notificações
         </span>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {history.length > 0 && (
             <button onClick={onClear} style={{
               background: 'none', border: 'none', color: '#333', fontSize: 10,
-              fontFamily: 'JetBrains Mono, monospace', cursor: 'pointer', transition: 'color 0.15s',
+              fontFamily: 'var(--font-text)', cursor: 'pointer', transition: 'color 0.15s',
             }}
             onMouseEnter={e => e.currentTarget.style.color = '#888'}
             onMouseLeave={e => e.currentTarget.style.color = '#333'}>
@@ -180,7 +177,7 @@ function HistoryPanel({ history, onClear, onClose }) {
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
-          <p style={{ color: '#2a2a2a', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', margin: 0 }}>sem notificações</p>
+          <p style={{ color: '#2a2a2a', fontSize: 11, fontFamily: 'var(--font-text)', margin: 0 }}>sem notificações</p>
         </div>
       ) : (
         <div style={{ padding: '6px 0' }}>
@@ -201,8 +198,8 @@ function HistoryPanel({ history, onClear, onClose }) {
                   <div style={{ transform: 'scale(0.85)' }}>{cfg.icon}</div>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, color: '#bbb', fontSize: 11, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>{item.title}</p>
-                  {item.body && <p style={{ margin: '2px 0 0', color: '#444', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.body}</p>}
+                  <p style={{ margin: 0, color: '#bbb', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-text)' }}>{item.title}</p>
+                  {item.body && <p style={{ margin: '2px 0 0', color: '#444', fontSize: 10, fontFamily: 'var(--font-text)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.body}</p>}
                 </div>
               </div>
             );
@@ -213,7 +210,6 @@ function HistoryPanel({ history, onClear, onClose }) {
   );
 }
 
-// ─── Main export: notification stack + bell ───────────────────────────────────
 export default function NotificationCenter() {
   const { notifications, dismiss } = useNotifications();
   const [history, setHistory]     = useState([]);
@@ -263,7 +259,6 @@ export default function NotificationCenter() {
   );
 }
 
-// ─── Bell — used inside TopBar ────────────────────────────────────────────────
 export function NotificationBell() {
   const { notifications, dismiss } = useNotifications();
   const [history, setHistory]     = useState([]);
@@ -313,7 +308,7 @@ export function NotificationBell() {
             minWidth: 16, height: 16, padding: '0 4px',
             borderRadius: 12, background: '#ef4444',
             color: '#fff', fontSize: 9, lineHeight: '16px', textAlign: 'center',
-            fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+            fontFamily: 'var(--font-text)', fontWeight: 700,
             animation: 'popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)',
           }}>
             {unread > 9 ? '9+' : unread}
