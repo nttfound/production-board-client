@@ -44,6 +44,16 @@ const TYPE_CONFIG = {
       </svg>
     ),
   },
+  attachment: {
+    color:  '#06b6d4',
+    bg:     'rgba(6,182,212,0.10)',
+    border: 'rgba(6,182,212,0.25)',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+      </svg>
+    ),
+  },
   info: {
     color:  '#9ca3af',
     bg:     'rgba(156,163,175,0.08)',

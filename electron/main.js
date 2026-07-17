@@ -125,9 +125,9 @@ function setupIPC() {
   });
 
   // Renderer principal → exibe toast estilizado
-  ipcMain.handle('notify:send', (_event, { type, title, body }) => {
+  ipcMain.handle('notify:send', (_event, { type, title, body, duration }) => {
     const id = ++toastIdCounter;
-    sendToastToWindow({ id, type, title, body });
+    sendToastToWindow({ id, type, title, body, duration });
   });
 
   ipcMain.handle('update:download', () => getAutoUpdater().downloadUpdate());

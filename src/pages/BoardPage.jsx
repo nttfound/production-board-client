@@ -16,6 +16,7 @@ import BulkActionBar from '../components/cards/BulkActionBar';
 import NewCardModal from '../components/cards/NewCardModal';
 import ChatPanel from '../components/chat/ChatPanel';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
+import ConeCalculator from '../components/caldeiraria/ConeCalculator';
 
 function getCardCity(card) {
   if (!card.carga) return null;
@@ -73,7 +74,7 @@ const CARDS_PER_PAGE = 18;
 
 export default function BoardPage() {
   const { user } = useAuth();
-  const { notifyChat, notifyProducing, notifyUrgent, notifyReady, push } = useNotifications();
+  const { notifyChat, notifyProducing, notifyUrgent, notifyReady, notifyAttachment, push } = useNotifications();
 
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
@@ -92,9 +93,13 @@ export default function BoardPage() {
   const cardsRef = useRef([]);
   const showChatRef = useRef(showChat);
   const mainRef = useRef(null);
+  const canViewCaldeiraria = user?.role === 'creator' || Boolean(user?.permissions?.ver_caldeiraria);
 
   useEffect(() => { cardsRef.current = cards; }, [cards]);
   useEffect(() => { showChatRef.current = showChat; }, [showChat]);
+  useEffect(() => {
+    if (filterStatus === 'caldeiraria' && !canViewCaldeiraria) setFilterStatus('fila');
+  }, [filterStatus, canViewCaldeiraria]);
 
   // Carregar cards iniciais
   useEffect(() => {
@@ -137,6 +142,7 @@ export default function BoardPage() {
         if (prev.status !== normalized.status && normalized.status === 'Producing') notifyProducing(normalized.title);
         if (prev.status !== normalized.status && normalized.status === 'Ready') notifyReady(normalized.title);
         if (!prev.urgente && normalized.urgente) notifyUrgent(normalized.title, normalized.updated_by || normalized.created_by);
+        if (prev.anexo_path !== normalized.anexo_path && normalized.anexo_path) notifyAttachment(normalized.anexo_nome);
       }
       setCards(prev => sortCards(prev.map(c => c.id === normalized.id ? normalized : c)));
     };
@@ -152,6 +158,9 @@ export default function BoardPage() {
         if (preview) notifyChat(sender, preview.slice(0, 80));
       }
     };
+    const handleAnexoAtualizado = (anexo) => {
+      if (anexo?.url) notifyAttachment(anexo.nome);
+    };
 
     socket.on('connect',       handleConnect);
     socket.on('disconnect',    handleDisconnect);
@@ -161,6 +170,7 @@ export default function BoardPage() {
     socket.on('card:updated',  handleCardUpdated);
     socket.on('card:deleted',  handleCardDeleted);
     socket.on('chat:message',  handleChatMessage);
+    socket.on('anexo:atualizado', handleAnexoAtualizado);
 
     return () => {
       socket.off('connect',       handleConnect);
@@ -171,8 +181,9 @@ export default function BoardPage() {
       socket.off('card:updated',  handleCardUpdated);
       socket.off('card:deleted',  handleCardDeleted);
       socket.off('chat:message',  handleChatMessage);
+      socket.off('anexo:atualizado', handleAnexoAtualizado);
     };
-  }, [user, notifyChat, notifyProducing, notifyUrgent, notifyReady]);
+  }, [user, notifyChat, notifyProducing, notifyUrgent, notifyReady, notifyAttachment]);
 
   const handleStatusChange = useCallback(async (id, status, scheduled_date) => {
     try {
@@ -276,6 +287,8 @@ export default function BoardPage() {
   const urgentCount = useMemo(() => cards.filter(c => c.urgente).length, [cards]);
 
   const filtered = useMemo(() => {
+    if (filterStatus === 'caldeiraria') return [];
+
     const q = search.trim().toLowerCase();
     const todasCidades = filterStatus === 'carga'
       ? new Set(Object.values(CARGA_POR_DIA).flat())
@@ -381,7 +394,9 @@ export default function BoardPage() {
       />
 
       <main ref={mainRef} style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-        {loading ? (
+        {filterStatus === 'caldeiraria' && canViewCaldeiraria ? (
+          <ConeCalculator />
+        ) : loading ? (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 28, height: 28, border: '2px solid var(--border-default)', borderTopColor: 'var(--accent-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />

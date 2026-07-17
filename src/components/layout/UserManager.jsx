@@ -16,6 +16,7 @@ const PERMISSIONS = [
   { key: 'servico_calandra',   label: 'Servico Calandra' },
   { key: 'ver_registro',       label: 'Ver Registro' },
   { key: 'upload_anexo',       label: 'Upload de Anexo' },
+  { key: 'ver_caldeiraria',    label: 'Ver Caldeiraria' },
 ];
 
 const EMPTY_PERMS = Object.fromEntries(PERMISSIONS.map(p => [p.key, false]));

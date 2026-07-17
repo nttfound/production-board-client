@@ -144,10 +144,12 @@ function UserAvatar({ name }) {
 }
 
 function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards }) {
+  const { user } = useAuth();
   const [cargaOpen, setCargaOpen] = useState(false);
   const cargaRef = useRef(null);
   const diasOrdenados = useMemo(() => getDiasOrdenados(), []);
   const diaAtivo = useMemo(() => getLabelDia(), []);
+  const canViewCaldeiraria = user?.role === 'creator' || Boolean(user?.permissions?.ver_caldeiraria);
   const cardsComCarga = useMemo(() =>
     (cards || []).filter(c => c.carga && c.carga !== CIDADE_SEMPRE && c.status !== 'Ready'),
     [cards]
@@ -181,6 +183,10 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
     { key: 'producing', label: 'Produzindo' },
   ];
 
+  if (canViewCaldeiraria) {
+    navItems.push({ key: 'caldeiraria', label: 'CALDEIRARIA', accent: '#f59e0b', separated: true });
+  }
+
   function handleNavClick(key) {
     if (key === 'carga') {
       if (filterStatus !== 'carga') {
@@ -213,28 +219,30 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
       {navItems.map(item => {
         const active = filterStatus === item.key;
         const isCarga = item.key === 'carga';
+        const accent = item.accent || 'var(--accent-blue)';
         return (
-          <div key={item.key} ref={isCarga ? cargaRef : null} style={{ position: 'relative', display: 'flex' }}>
+          <div key={item.key} ref={isCarga ? cargaRef : null} style={{ position: 'relative', display: 'flex', marginLeft: item.separated ? 18 : 0 }}>
             <button
               onClick={() => handleNavClick(item.key)}
               style={{
                 position: 'relative',
-                minWidth: 52,
+                minWidth: item.key === 'caldeiraria' ? 94 : 52,
                 padding: '0 4px',
                 border: 'none',
                 background: 'transparent',
-                color: active ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                color: active ? accent : item.key === 'caldeiraria' ? '#d97706' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontSize: 12,
-                fontWeight: 500,
+                fontWeight: item.key === 'caldeiraria' ? 700 : 500,
                 fontFamily: 'var(--font-text)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                letterSpacing: item.key === 'caldeiraria' ? '0.04em' : 0,
                 transition: 'color 0.15s',
               }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--text-primary)'; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--text-secondary)'; }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.color = item.key === 'caldeiraria' ? '#f59e0b' : 'var(--text-primary)'; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.color = item.key === 'caldeiraria' ? '#d97706' : 'var(--text-secondary)'; }}
             >
               {item.label}
               {isCarga && cargaDay && (
@@ -249,7 +257,7 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
                 bottom: 0,
                 height: 3,
                 borderRadius: '3px 3px 0 0',
-                background: active ? 'var(--accent-blue)' : 'transparent',
+                background: active ? accent : 'transparent',
                 transition: 'background 0.15s',
               }} />
             </button>

@@ -7,9 +7,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readClipboardImage: () => ipcRenderer.invoke('clipboard:readImage'),
 
   // ── Toast estilizado (aparece mesmo com app em segundo plano) ───────────
-  // type: 'chat' | 'producing' | 'urgent' | 'ready' | 'info'
-  sendNotification: ({ type, title, body }) =>
-    ipcRenderer.invoke('notify:send', { type, title, body }),
+  // type: 'chat' | 'producing' | 'urgent' | 'ready' | 'attachment' | 'info'
+  sendNotification: ({ type, title, body, duration }) =>
+    ipcRenderer.invoke('notify:send', { type, title, body, duration }),
 
   getVersion: () => ipcRenderer.invoke('app:version'),
 
