@@ -17,6 +17,7 @@ const PERMISSIONS = [
   { key: 'ver_registro',       label: 'Ver Registro' },
   { key: 'upload_anexo',       label: 'Upload de Anexo' },
   { key: 'ver_caldeiraria',    label: 'Ver Caldeiraria' },
+  { key: 'ver_visualizacao',   label: 'Ver Visualização' },
 ];
 
 const EMPTY_PERMS = Object.fromEntries(PERMISSIONS.map(p => [p.key, false]));

@@ -19,6 +19,7 @@ const inputStyle = {
 
 export default function NewCardModal({ onClose, onCreated }) {
   const [title,        setTitle]        = useState('');
+  const [quantidade,   setQuantidade]   = useState('1');
   const [observation,  setObservation]  = useState('');
   const [status,       setStatus]       = useState('Pending');
   const [schedDate,    setSchedDate]    = useState('');
@@ -27,6 +28,98 @@ export default function NewCardModal({ onClose, onCreated }) {
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState('');
   const pasteAreaRef = useRef(null);
+
+  // Autocomplete de clientes no título
+  const [clienteSelecionado, setClienteSelecionado] = useState(null); // { nome, cidade } | null
+  const [sugestoes,          setSugestoes]           = useState([]);
+  const [sugestoesAbertas,   setSugestoesAbertas]    = useState(false);
+  const [indiceAtivo,        setIndiceAtivo]         = useState(-1);
+  const buscaTimeoutRef = useRef(null);
+  const buscaSeqRef     = useRef(0);
+  const titleWrapperRef = useRef(null);
+
+  const buscarClientes = useCallback((termo) => {
+    if (buscaTimeoutRef.current) clearTimeout(buscaTimeoutRef.current);
+    if (!termo.trim()) {
+      setSugestoes([]);
+      setSugestoesAbertas(false);
+      return;
+    }
+    buscaTimeoutRef.current = setTimeout(async () => {
+      const seq = ++buscaSeqRef.current;
+      try {
+        const res = await api.get('/api/clientes/search', { params: { q: termo } });
+        if (seq !== buscaSeqRef.current) return; // resposta antiga, ignora
+        setSugestoes(res.data || []);
+        setSugestoesAbertas(true);
+        setIndiceAtivo(-1);
+      } catch {
+        if (seq !== buscaSeqRef.current) return;
+        setSugestoes([]);
+      }
+    }, 200);
+  }, []);
+
+  const handleTitleChange = (e) => {
+    const novoTitulo = e.target.value;
+    setTitle(novoTitulo);
+
+    // Se um cliente já foi selecionado, mas o usuário apagou/alterou o
+    // trecho com o nome do cliente, desfaz a seleção (cliente e cidade
+    // voltam a ficar vazios até uma nova seleção).
+    if (clienteSelecionado && !novoTitulo.startsWith(clienteSelecionado.nome)) {
+      setClienteSelecionado(null);
+    }
+
+    if (!clienteSelecionado || !novoTitulo.startsWith(clienteSelecionado.nome)) {
+      buscarClientes(novoTitulo);
+    } else {
+      setSugestoesAbertas(false);
+    }
+  };
+
+  const selecionarCliente = (cliente) => {
+    setTitle(`${cliente.nome} - `);
+    setClienteSelecionado({ nome: cliente.nome, cidade: cliente.cidade });
+    setSugestoes([]);
+    setSugestoesAbertas(false);
+    setIndiceAtivo(-1);
+    // Foca de volta no título, com o cursor no final, para o usuário continuar digitando
+    requestAnimationFrame(() => {
+      const el = titleWrapperRef.current?.querySelector('input');
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    });
+  };
+
+  const handleTitleKeyDown = (e) => {
+    if (!sugestoesAbertas || sugestoes.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setIndiceAtivo(i => (i + 1) % sugestoes.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setIndiceAtivo(i => (i - 1 + sugestoes.length) % sugestoes.length);
+    } else if (e.key === 'Enter') {
+      if (indiceAtivo >= 0 && indiceAtivo < sugestoes.length) {
+        e.preventDefault();
+        selecionarCliente(sugestoes[indiceAtivo]);
+      }
+    } else if (e.key === 'Escape') {
+      setSugestoesAbertas(false);
+    }
+  };
+
+  useEffect(() => {
+    function handleOutsideClick(e) {
+      if (titleWrapperRef.current && !titleWrapperRef.current.contains(e.target)) {
+        setSugestoesAbertas(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  useEffect(() => () => { if (buscaTimeoutRef.current) clearTimeout(buscaTimeoutRef.current); }, []);
 
   const handlePaste = useCallback(async (e) => {
     if (window.electronAPI?.readClipboardImage) {
@@ -53,14 +146,24 @@ export default function NewCardModal({ onClose, onCreated }) {
   useEffect(() => { pasteAreaRef.current?.focus(); }, []);
 
   const handleSubmit = async () => {
+    const quantidadeNum = Number.parseInt(quantidade, 10);
+    if (!Number.isInteger(quantidadeNum) || quantidadeNum < 1) {
+      setError('Informe uma quantidade valida.');
+      return;
+    }
     if (!title.trim()) { setError('O título é obrigatório.'); return; }
     if (status === 'Scheduled' && !schedDate) { setError('Informe a data de agendamento.'); return; }
     setLoading(true); setError('');
     try {
       const formData = new FormData();
       formData.append('title',       title.trim());
+      formData.append('quantidade',  String(quantidadeNum));
       formData.append('observation', observation.trim());
       formData.append('status',      status);
+      if (clienteSelecionado) {
+        formData.append('cliente_nome',   clienteSelecionado.nome);
+        formData.append('cliente_cidade', clienteSelecionado.cidade);
+      }
       if (status === 'Scheduled') formData.append('scheduled_date', schedDate);
       if (imageData) {
         if (typeof imageData === 'string') {
@@ -153,16 +256,59 @@ export default function NewCardModal({ onClose, onCreated }) {
             )}
           </div>
 
-          {/* Title */}
-          <div>
-            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Título *</label>
-            <input
-              type="text" value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="Título do card"
-              style={{ ...inputStyle, '::placeholder': { color: 'var(--text-muted)' } }}
-              onFocus={e => { e.target.style.borderColor = 'var(--accent-blue)'; e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--accent-blue) 15%, transparent)'; }}
-              onBlur={e => { e.target.style.borderColor = 'var(--border-default)'; e.target.style.boxShadow = 'none'; }}
-            />
+          {/* Title + Quantidade de peças */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1, position: 'relative' }} ref={titleWrapperRef}>
+              <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Título *</label>
+              <input
+                type="text" value={title} onChange={handleTitleChange}
+                onKeyDown={handleTitleKeyDown}
+                onFocus={e => { e.target.style.borderColor = 'var(--accent-blue)'; e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--accent-blue) 15%, transparent)'; if (sugestoes.length > 0) setSugestoesAbertas(true); }}
+                onBlur={e => { e.target.style.borderColor = 'var(--border-default)'; e.target.style.boxShadow = 'none'; }}
+                placeholder="Título do card"
+                autoComplete="off"
+                style={{ ...inputStyle, '::placeholder': { color: 'var(--text-muted)' } }}
+              />
+              {sugestoesAbertas && sugestoes.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 60,
+                  background: 'var(--bg-surface1)', border: '1px solid var(--border-default)',
+                  borderRadius: 12, boxShadow: 'var(--shadow-modal)', overflow: 'hidden',
+                  maxHeight: 180, overflowY: 'auto',
+                }}>
+                  {sugestoes.map((cliente, i) => (
+                    <div
+                      key={cliente.id}
+                      onMouseDown={e => { e.preventDefault(); selecionarCliente(cliente); }}
+                      onMouseEnter={() => setIndiceAtivo(i)}
+                      style={{
+                        padding: '8px 14px', cursor: 'pointer',
+                        background: i === indiceAtivo ? 'var(--bg-surface3)' : 'transparent',
+                        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'var(--font-text)' }}>{cliente.nome}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-text)', whiteSpace: 'nowrap' }}>{cliente.cidade}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ width: 130, flexShrink: 0 }}>
+              <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Qtd. de peças *</label>
+              <input
+                type="number" inputMode="numeric" min="1" step="1" required
+                value={quantidade}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '' || /^[0-9]+$/.test(v)) setQuantidade(v);
+                }}
+                placeholder="1"
+                style={inputStyle}
+                onFocus={e => { e.target.style.borderColor = 'var(--accent-blue)'; e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--accent-blue) 15%, transparent)'; }}
+                onBlur={e => { e.target.style.borderColor = 'var(--border-default)'; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
           </div>
 
           {/* Observation */}

@@ -17,6 +17,7 @@ import NewCardModal from '../components/cards/NewCardModal';
 import ChatPanel from '../components/chat/ChatPanel';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import ConeCalculator from '../components/caldeiraria/ConeCalculator';
+import DxfViewerPage from './DxfViewerPage';
 
 function getCardCity(card) {
   if (!card.carga) return null;
@@ -94,12 +95,16 @@ export default function BoardPage() {
   const showChatRef = useRef(showChat);
   const mainRef = useRef(null);
   const canViewCaldeiraria = user?.role === 'creator' || Boolean(user?.permissions?.ver_caldeiraria);
+  const canViewVisualizacao = user?.role === 'creator' || Boolean(user?.permissions?.ver_visualizacao);
 
   useEffect(() => { cardsRef.current = cards; }, [cards]);
   useEffect(() => { showChatRef.current = showChat; }, [showChat]);
   useEffect(() => {
     if (filterStatus === 'caldeiraria' && !canViewCaldeiraria) setFilterStatus('fila');
   }, [filterStatus, canViewCaldeiraria]);
+  useEffect(() => {
+    if (filterStatus === 'dxf' && !canViewVisualizacao) setFilterStatus('fila');
+  }, [filterStatus, canViewVisualizacao]);
 
   // Carregar cards iniciais
   useEffect(() => {
@@ -287,7 +292,7 @@ export default function BoardPage() {
   const urgentCount = useMemo(() => cards.filter(c => c.urgente).length, [cards]);
 
   const filtered = useMemo(() => {
-    if (filterStatus === 'caldeiraria') return [];
+    if (filterStatus === 'caldeiraria' || filterStatus === 'dxf') return [];
 
     const q = search.trim().toLowerCase();
     const todasCidades = filterStatus === 'carga'
@@ -393,8 +398,20 @@ export default function BoardPage() {
         cards={cards}
       />
 
-      <main ref={mainRef} style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-        {filterStatus === 'caldeiraria' && canViewCaldeiraria ? (
+      <main
+        ref={mainRef}
+        className={filterStatus === 'dxf' && canViewVisualizacao ? 'board-main board-main-dxf' : 'board-main'}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: filterStatus === 'dxf' && canViewVisualizacao ? 'hidden' : 'auto',
+          padding: '20px',
+          display: filterStatus === 'dxf' && canViewVisualizacao ? 'flex' : undefined,
+        }}
+      >
+        {filterStatus === 'dxf' && canViewVisualizacao ? (
+          <DxfViewerPage cards={cards} search={search} />
+        ) : filterStatus === 'caldeiraria' && canViewCaldeiraria ? (
           <ConeCalculator />
         ) : loading ? (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

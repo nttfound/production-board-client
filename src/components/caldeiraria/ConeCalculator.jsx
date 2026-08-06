@@ -9,6 +9,12 @@ const DEFAULT_VALUES = {
   espessura: '1,50',
 };
 
+const DEFAULT_CHINESE_HAT_VALUES = {
+  diametro: '150',
+  altura: '40',
+  espessura: '2',
+};
+
 function parseNumber(value) {
   const normalized = String(value || '').replace(',', '.');
   const parsed = Number.parseFloat(normalized);
@@ -60,6 +66,38 @@ function calculateCone(values) {
   };
 }
 
+function calculateChineseHat(values) {
+  const d = parseNumber(values.diametro);
+  const h = parseNumber(values.altura);
+  const e = parseNumber(values.espessura);
+  const neutralRadius = (d - e) / 2;
+
+  if (d <= 0 || h <= 0 || e < 0 || neutralRadius <= 0) {
+    return null;
+  }
+
+  const raio = Math.sqrt((neutralRadius * neutralRadius) + (h * h));
+  const anguloChapa = (360 * neutralRadius) / raio;
+  const anguloRecorte = 360 - anguloChapa;
+  const cordaRecorte = 2 * raio * Math.sin(((anguloRecorte / 2) * Math.PI) / 180);
+  const flatSize = getSectorPatternSize(raio, anguloChapa);
+  const areaChapaMm2 = (anguloChapa / 360) * Math.PI * raio * raio;
+
+  return {
+    d,
+    h,
+    e,
+    raio,
+    cordaRecorte,
+    anguloChapa,
+    anguloRecorte,
+    flatWidth: flatSize.width,
+    flatHeight: flatSize.height,
+    areaChapaMm2,
+    areaChapaM2: areaChapaMm2 / 1000000,
+  };
+}
+
 function getFlatPatternSize(outerRadius, innerRadius, angle) {
   const halfAngle = angle / 2;
   const start = -90 - halfAngle;
@@ -72,6 +110,26 @@ function getFlatPatternSize(outerRadius, innerRadius, angle) {
   }
   points.push(polarPoint(0, 0, outerRadius, end));
   points.push(polarPoint(0, 0, innerRadius, end));
+
+  const xs = points.map(point => point.x);
+  const ys = points.map(point => point.y);
+  return {
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
+  };
+}
+
+function getSectorPatternSize(radius, angle) {
+  const cutoutAngle = Math.max(0, 360 - angle);
+  const halfCutout = cutoutAngle / 2;
+  const start = 90 + halfCutout;
+  const end = 450 - halfCutout;
+  const points = [{ x: 0, y: 0 }];
+
+  for (let a = start; a <= end; a += 1) {
+    points.push(polarPoint(0, 0, radius, a));
+  }
+  points.push(polarPoint(0, 0, radius, end));
 
   const xs = points.map(point => point.x);
   const ys = points.map(point => point.y);
@@ -284,7 +342,138 @@ function FrustumPreview({ result }) {
   );
 }
 
-function Preview3DModal({ result, onClose }) {
+function ChineseHatPreview({ result }) {
+  const mountRef = useRef(null);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return undefined;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+    camera.position.set(3, 2, 4.2);
+    camera.lookAt(0, 0.2, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    mount.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enablePan = true;
+    controls.enableZoom = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.15;
+    controls.minDistance = 2.4;
+    controls.maxDistance = 9;
+    controls.target.set(0, 0.15, 0);
+
+    const group = new THREE.Group();
+    scene.add(group);
+
+    const diameter = result?.d || 150;
+    const height = result?.h || 40;
+    const baseRadius = 1.35;
+    const modelHeight = Math.min(2.2, Math.max(0.85, height / Math.max(diameter, 1) * 4.2));
+
+    const bodyGeometry = new THREE.ConeGeometry(baseRadius, modelHeight, 128, 1, true);
+    const bodyMaterial = new THREE.MeshStandardMaterial({
+      color: 0xb8c0c8,
+      metalness: 0.84,
+      roughness: 0.23,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.94,
+    });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    group.add(body);
+
+    const edges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(bodyGeometry, 24),
+      new THREE.LineBasicMaterial({ color: 0xf8fafc, transparent: true, opacity: 0.28 })
+    );
+    group.add(edges);
+
+    const bottomRing = new THREE.Mesh(
+      new THREE.TorusGeometry(baseRadius, 0.02, 10, 128),
+      new THREE.MeshBasicMaterial({ color: 0xf5f5f5 })
+    );
+    bottomRing.position.y = -modelHeight / 2;
+    bottomRing.rotation.x = Math.PI / 2;
+    group.add(bottomRing);
+
+    const seamGeometry = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, modelHeight / 2, 0),
+      new THREE.Vector3(baseRadius, -modelHeight / 2, 0),
+    ]);
+    const seam = new THREE.Line(seamGeometry, new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.78 }));
+    group.add(seam);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x111827, 1.9));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    keyLight.position.set(3, 4, 5);
+    scene.add(keyLight);
+    const rimLight = new THREE.DirectionalLight(0x93c5fd, 1.05);
+    rimLight.position.set(-4, 2, -3);
+    scene.add(rimLight);
+
+    const resize = () => {
+      const width = Math.max(mount.clientWidth, 1);
+      const heightPx = Math.max(mount.clientHeight, 1);
+      camera.aspect = width / heightPx;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, heightPx, false);
+    };
+
+    const observer = new ResizeObserver(resize);
+    observer.observe(mount);
+    resize();
+
+    let raf = 0;
+    const animate = () => {
+      group.rotation.x = -0.08;
+      controls.update();
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+      mount.removeChild(renderer.domElement);
+      controls.dispose();
+      bodyGeometry.dispose();
+      bodyMaterial.dispose();
+      edges.geometry.dispose();
+      bottomRing.geometry.dispose();
+      seamGeometry.dispose();
+      renderer.dispose();
+    };
+  }, [result]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 184 }}>
+      <div ref={mountRef} style={{ position: 'absolute', inset: 0 }} />
+      <span style={{
+        position: 'absolute',
+        top: 12,
+        left: 14,
+        color: '#f59e0b',
+        fontSize: 10,
+        fontFamily: 'var(--font-text)',
+        fontWeight: 800,
+        letterSpacing: '0.08em',
+      }}>
+        VISUAL 3D
+      </span>
+    </div>
+  );
+}
+
+function Preview3DModal({ result, onClose, kind = 'cone' }) {
   return (
     <>
       <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(0,0,0,0.72)' }} onClick={onClose} />
@@ -339,7 +528,7 @@ function Preview3DModal({ result, onClose }) {
           </button>
         </div>
         <div style={{ flex: 1, minHeight: 260, background: 'var(--bg-app)' }}>
-          <FrustumPreview result={result} />
+          {kind === 'chapeu-chines' ? <ChineseHatPreview result={result} /> : <FrustumPreview result={result} />}
         </div>
       </div>
     </>
@@ -452,7 +641,97 @@ function DevelopmentSketch({ result }) {
   );
 }
 
-export default function ConeCalculator() {
+function ChineseHatSketch() {
+  return (
+    <svg viewBox="0 0 360 210" style={{ width: '100%', height: 'auto', maxHeight: 210, display: 'block' }} role="img" aria-label="Chapeu chines">
+      <line x1="72" y1="150" x2="288" y2="150" stroke="#e5e7eb" strokeWidth="3" strokeLinecap="round" />
+      <line x1="72" y1="150" x2="180" y2="66" stroke="#e5e7eb" strokeWidth="3" strokeLinecap="round" />
+      <line x1="180" y1="66" x2="288" y2="150" stroke="#e5e7eb" strokeWidth="3" strokeLinecap="round" />
+      <line x1="72" y1="176" x2="288" y2="176" stroke="#8a8a8a" strokeWidth="1.5" />
+      <line x1="72" y1="168" x2="72" y2="184" stroke="#8a8a8a" strokeWidth="1.5" />
+      <line x1="288" y1="168" x2="288" y2="184" stroke="#8a8a8a" strokeWidth="1.5" />
+      <line x1="194" y1="66" x2="320" y2="66" stroke="#8a8a8a" strokeWidth="1.5" />
+      <line x1="300" y1="66" x2="300" y2="150" stroke="#8a8a8a" strokeWidth="1.5" />
+      <line x1="291" y1="66" x2="309" y2="66" stroke="#8a8a8a" strokeWidth="1.5" />
+      <line x1="291" y1="150" x2="309" y2="150" stroke="#8a8a8a" strokeWidth="1.5" />
+      <text x="180" y="198" textAnchor="middle" fill="#f3f4f6" fontSize="16" fontWeight="700">d</text>
+      <text x="316" y="112" fill="#f3f4f6" fontSize="16" fontWeight="700">h</text>
+    </svg>
+  );
+}
+
+function ChineseHatDevelopmentSketch({ result }) {
+  if (!result) {
+    return (
+      <div style={{ height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+        Informe medidas validas para gerar o desenvolvimento.
+      </div>
+    );
+  }
+
+  const cx = 360;
+  const cy = 210;
+  const radius = 168;
+  const cutoutAngle = Math.max(0, 360 - result.anguloChapa);
+  const halfCutout = cutoutAngle / 2;
+  const startAngle = 90 + halfCutout;
+  const endAngle = 450 - halfCutout;
+  const largeArc = result.anguloChapa > 180 ? 1 : 0;
+  const arcStart = polarPoint(cx, cy, radius, startAngle);
+  const arcEnd = polarPoint(cx, cy, radius, endAngle);
+  const radiusLabelPoint = polarPoint(cx, cy, radius * 0.62, 0);
+  const cutoutLabelPoint = polarPoint(cx, cy, radius * 0.34, 90);
+  const chordY = Math.min(Math.max(arcStart.y, arcEnd.y) + 58, 396);
+
+  const path = [
+    `M ${cx} ${cy}`,
+    `L ${arcStart.x} ${arcStart.y}`,
+    `A ${radius} ${radius} 0 ${largeArc} 1 ${arcEnd.x} ${arcEnd.y}`,
+    'Z',
+  ].join(' ');
+
+  return (
+    <svg viewBox="0 0 720 420" style={{ width: '100%', display: 'block' }} role="img" aria-label="Desenvolvimento do chapeu chines">
+      <defs>
+        <marker id="hatArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#d1d5db" />
+        </marker>
+        <marker id="hatArrowRed" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+        </marker>
+      </defs>
+      <path d={path} fill="rgba(245,158,11,0.08)" stroke="#e5e7eb" strokeWidth="2.5" />
+      <line x1={cx} y1={cy} x2={arcStart.x} y2={arcStart.y} stroke="#d1d5db" strokeWidth="1.4" />
+      <line x1={cx} y1={cy} x2={arcEnd.x} y2={arcEnd.y} stroke="#d1d5db" strokeWidth="1.4" />
+      <line x1={cx} y1={cy} x2={cx + radius} y2={cy} stroke="#d1d5db" strokeWidth="1.3" markerEnd="url(#hatArrow)" />
+      <line x1={cx} y1={cy} x2={cutoutLabelPoint.x} y2={cutoutLabelPoint.y} stroke="#ef4444" strokeWidth="2" markerEnd="url(#hatArrowRed)" />
+      <line x1={arcStart.x} y1={arcStart.y} x2={arcStart.x} y2={chordY + 14} stroke="#8a8a8a" strokeWidth="1" />
+      <line x1={arcEnd.x} y1={arcEnd.y} x2={arcEnd.x} y2={chordY + 14} stroke="#8a8a8a" strokeWidth="1" />
+      <line x1={arcStart.x} y1={chordY} x2={arcEnd.x} y2={chordY} stroke="#d1d5db" strokeWidth="1.4" markerStart="url(#hatArrow)" markerEnd="url(#hatArrow)" />
+      <circle cx={cx} cy={cy} r="4" fill="#f59e0b" />
+      <text x={radiusLabelPoint.x + 12} y={radiusLabelPoint.y - 8} fill="#f3f4f6" fontSize="13">R=</text>
+      <text x={radiusLabelPoint.x + 38} y={radiusLabelPoint.y - 8} fill="#f3f4f6" fontSize="13">{formatNumber(result.raio, 2)}</text>
+      <text x={cutoutLabelPoint.x - 62} y={cutoutLabelPoint.y - 18} fill="#f3f4f6" fontSize="13">Angulo do recorte</text>
+      <text x={cutoutLabelPoint.x - 16} y={cutoutLabelPoint.y} fill="#f59e0b" fontSize="13" fontWeight="700">{formatNumber(result.anguloRecorte, 2)}</text>
+      <text x={cx} y={chordY + 24} textAnchor="middle" fill="#f3f4f6" fontSize="13">{formatNumber(result.cordaRecorte, 2)}</text>
+    </svg>
+  );
+}
+
+function ToolSelector({ activeTool, onChange }) {
+  return (
+    <div className="cone-tool-selector" role="tablist" aria-label="Ferramentas de caldeiraria">
+      <button type="button" className={activeTool === 'cone' ? 'active' : ''} onClick={() => onChange('cone')}>
+        Cone
+      </button>
+      <button type="button" className={activeTool === 'chapeu-chines' ? 'active' : ''} onClick={() => onChange('chapeu-chines')}>
+        Chapeu Chines
+      </button>
+    </div>
+  );
+}
+
+function ConeTool() {
   const [values, setValues] = useState(DEFAULT_VALUES);
   const [show3D, setShow3D] = useState(false);
   const result = useMemo(() => calculateCone(values), [values]);
@@ -460,6 +739,142 @@ export default function ConeCalculator() {
   const updateValue = (key, value) => {
     setValues(prev => ({ ...prev, [key]: value }));
   };
+
+  return (
+    <>
+      <div className="cone-workspace">
+        <section className="cone-panel">
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <p className="cone-panel-title">
+                Medidas externas
+              </p>
+              <p className="cone-panel-subtitle">
+                Valores em milimetros.
+              </p>
+            </div>
+          </div>
+
+          <div className="cone-input-grid">
+            <InputField label="Diametro Maior" value={values.diametroMaior} onChange={value => updateValue('diametroMaior', value)} />
+            <InputField label="Diametro Menor" value={values.diametroMenor} onChange={value => updateValue('diametroMenor', value)} />
+            <InputField label="Altura" value={values.altura} onChange={value => updateValue('altura', value)} />
+            <InputField label="Espessura" value={values.espessura} onChange={value => updateValue('espessura', value)} />
+          </div>
+
+          <div className="cone-sketch-card">
+            <ConeSketch />
+          </div>
+        </section>
+
+        <section className="cone-panel">
+          <div className="cone-result-header">
+            <p className="cone-panel-title">
+              Desenvolvimento
+            </p>
+            <button
+              onClick={() => setShow3D(true)}
+              className="cone-view-3d"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>
+              </svg>
+              Visualizar 3D
+            </button>
+          </div>
+
+          <div className="cone-result-grid">
+            <SizePanel result={result} />
+            <ResultCell label="Raio externo" value={result?.raioExterno} />
+            <ResultCell label="Raio interno" value={result?.raioInterno} />
+            <ResultCell label="V.G" value={result?.geratriz} digits={2} />
+            <ResultCell label="Corda externa" value={result?.cordaExterna} />
+            <ResultCell label="Corda interna" value={result?.cordaInterna} />
+            <ResultCell label="Angulo da chapa" value={result?.anguloChapa} />
+          </div>
+
+          <div className="cone-drawing-card">
+            <DevelopmentSketch result={result} />
+          </div>
+        </section>
+      </div>
+
+      {show3D && <Preview3DModal result={result} onClose={() => setShow3D(false)} />}
+    </>
+  );
+}
+
+function ChineseHatTool() {
+  const [values, setValues] = useState(DEFAULT_CHINESE_HAT_VALUES);
+  const [show3D, setShow3D] = useState(false);
+  const result = useMemo(() => calculateChineseHat(values), [values]);
+
+  const updateValue = (key, value) => {
+    setValues(prev => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <div className="cone-workspace">
+      <section className="cone-panel">
+        <div>
+          <p className="cone-panel-title">
+            Medidas externas
+          </p>
+          <p className="cone-panel-subtitle">
+            Valores em milimetros.
+          </p>
+        </div>
+
+        <div className="cone-input-grid">
+          <InputField label="Diametro" value={values.diametro} onChange={value => updateValue('diametro', value)} />
+          <InputField label="Altura" value={values.altura} onChange={value => updateValue('altura', value)} />
+          <InputField label="Espessura" value={values.espessura} onChange={value => updateValue('espessura', value)} />
+        </div>
+
+        <div className="cone-sketch-card">
+          <ChineseHatSketch />
+        </div>
+      </section>
+
+      <section className="cone-panel">
+        <div className="cone-result-header">
+          <p className="cone-panel-title">
+            Desenvolvimento
+          </p>
+          <button
+            onClick={() => setShow3D(true)}
+            className="cone-view-3d"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>
+            </svg>
+            Visualizar 3D
+          </button>
+        </div>
+
+        <div className="cone-result-grid">
+          <SizePanel result={result} />
+          <ResultCell label="Raio" value={result?.raio} digits={2} />
+          <ResultCell label="Corda do recorte" value={result?.cordaRecorte} digits={2} />
+          <ResultCell label="Angulo do recorte" value={result?.anguloRecorte} digits={2} />
+          <ResultCell label="Angulo da chapa" value={result?.anguloChapa} digits={2} />
+          <ResultCell label="Chapa total m2" value={result?.areaChapaM2} digits={4} />
+        </div>
+
+        <div className="cone-drawing-card">
+          <ChineseHatDevelopmentSketch result={result} />
+        </div>
+      </section>
+
+      {show3D && <Preview3DModal result={result} onClose={() => setShow3D(false)} kind="chapeu-chines" />}
+    </div>
+  );
+}
+
+export default function ConeCalculator() {
+  const [activeTool, setActiveTool] = useState('cone');
 
   return (
     <div className="cone-page">
@@ -475,6 +890,31 @@ export default function ConeCalculator() {
           align-items: center;
           justify-content: space-between;
           gap: 12px;
+        }
+        .cone-tool-selector {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          border: 1px solid var(--border-default);
+          background: var(--bg-surface);
+          border-radius: 8px;
+          padding: 4px;
+        }
+        .cone-tool-selector button {
+          height: 32px;
+          border: 0;
+          border-radius: 6px;
+          background: transparent;
+          color: var(--text-muted);
+          padding: 0 12px;
+          font-size: 11px;
+          font-family: var(--font-text);
+          font-weight: 800;
+          cursor: pointer;
+        }
+        .cone-tool-selector button.active {
+          background: rgba(245,158,11,0.14);
+          color: #f59e0b;
         }
         .cone-workspace {
           display: grid;
@@ -620,70 +1060,13 @@ export default function ConeCalculator() {
             CALDEIRARIA
           </p>
           <h1 style={{ margin: '4px 0 0', color: 'var(--text-primary)', fontSize: 22, fontFamily: 'var(--font-text)', fontWeight: 800 }}>
-            CONE
+            {activeTool === 'chapeu-chines' ? 'CHAPEU CHINES' : 'CONE'}
           </h1>
         </div>
+        <ToolSelector activeTool={activeTool} onChange={setActiveTool} />
       </div>
 
-      <div className="cone-workspace">
-        <section className="cone-panel">
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-            <div>
-              <p className="cone-panel-title">
-                Medidas externas
-              </p>
-              <p className="cone-panel-subtitle">
-                Valores em milimetros.
-              </p>
-            </div>
-          </div>
-
-          <div className="cone-input-grid">
-            <InputField label="Diametro Maior" value={values.diametroMaior} onChange={value => updateValue('diametroMaior', value)} />
-            <InputField label="Diametro Menor" value={values.diametroMenor} onChange={value => updateValue('diametroMenor', value)} />
-            <InputField label="Altura" value={values.altura} onChange={value => updateValue('altura', value)} />
-            <InputField label="Espessura" value={values.espessura} onChange={value => updateValue('espessura', value)} />
-          </div>
-
-          <div className="cone-sketch-card">
-            <ConeSketch />
-          </div>
-        </section>
-
-        <section className="cone-panel">
-          <div className="cone-result-header">
-            <p className="cone-panel-title">
-              Desenvolvimento
-            </p>
-            <button
-              onClick={() => setShow3D(true)}
-              className="cone-view-3d"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                <path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>
-              </svg>
-              Visualizar 3D
-            </button>
-          </div>
-
-          <div className="cone-result-grid">
-            <SizePanel result={result} />
-            <ResultCell label="Raio externo" value={result?.raioExterno} />
-            <ResultCell label="Raio interno" value={result?.raioInterno} />
-            <ResultCell label="V.G" value={result?.geratriz} digits={2} />
-            <ResultCell label="Corda externa" value={result?.cordaExterna} />
-            <ResultCell label="Corda interna" value={result?.cordaInterna} />
-            <ResultCell label="Angulo da chapa" value={result?.anguloChapa} />
-          </div>
-
-          <div className="cone-drawing-card">
-            <DevelopmentSketch result={result} />
-          </div>
-        </section>
-      </div>
-
-      {show3D && <Preview3DModal result={result} onClose={() => setShow3D(false)} />}
+      {activeTool === 'chapeu-chines' ? <ChineseHatTool /> : <ConeTool />}
     </div>
   );
 }

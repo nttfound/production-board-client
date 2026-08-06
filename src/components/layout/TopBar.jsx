@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import UserManager from './UserManager';
+import ClienteManager from './ClienteManager';
 import { NotificationBell } from '../ui/NotificationCenter';
 import { CARGA_POR_DIA, CIDADE_SEMPRE, getLabelDia, getDiasOrdenados } from '../../services/cargaConfig';
 
@@ -150,6 +151,7 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
   const diasOrdenados = useMemo(() => getDiasOrdenados(), []);
   const diaAtivo = useMemo(() => getLabelDia(), []);
   const canViewCaldeiraria = user?.role === 'creator' || Boolean(user?.permissions?.ver_caldeiraria);
+  const canViewVisualizacao = user?.role === 'creator' || Boolean(user?.permissions?.ver_visualizacao);
   const cardsComCarga = useMemo(() =>
     (cards || []).filter(c => c.carga && c.carga !== CIDADE_SEMPRE && c.status !== 'Ready'),
     [cards]
@@ -183,6 +185,10 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
     { key: 'producing', label: 'Produzindo' },
   ];
 
+  if (canViewVisualizacao) {
+    navItems.unshift({ key: 'dxf', label: 'Visualizacao', minWidth: 112 });
+  }
+
   if (canViewCaldeiraria) {
     navItems.push({ key: 'caldeiraria', label: 'CALDEIRARIA', accent: '#f59e0b', separated: true });
   }
@@ -205,7 +211,7 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
   }
 
   return (
-    <nav style={{
+    <nav className="topbar-quick-nav" style={{
       position: 'absolute',
       left: '50%',
       top: 0,
@@ -226,7 +232,7 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
               onClick={() => handleNavClick(item.key)}
               style={{
                 position: 'relative',
-                minWidth: item.key === 'caldeiraria' ? 94 : 52,
+                minWidth: item.minWidth || (item.key === 'caldeiraria' ? 94 : 52),
                 padding: '0 4px',
                 border: 'none',
                 background: 'transparent',
@@ -334,14 +340,17 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
 export default function TopBar({ onNewCard, connected, filterStatus, onFilterStatus, cargaDay, onCargaDay, cards }) {
   const { user, logout } = useAuth();
   const [showUsers, setShowUsers] = useState(false);
+  const [showClientes, setShowClientes] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { updateInfo, progress, appVersion, checkForUpdate, downloadUpdate, installUpdate } = useUpdater();
   const isCreator = user?.role === 'creator';
   const canCreateCard = isCreator || Boolean(user?.permissions?.criar_card);
+  // Módulo de Clientes: visível/gerenciável apenas pelo usuário itadobras (não por qualquer 'creator')
+  const isItadobras = user?.username === 'itadobras';
 
   return (
     <>
-      <header style={{
+      <header className="app-topbar" style={{
         position: 'relative',
         height: 52,
         background: 'var(--bg-surface)',
@@ -350,7 +359,7 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
         padding: '0 20px', gap: 10, flexShrink: 0,
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', marginRight: 6, flexShrink: 0 }}>
+        <div className="topbar-logo" style={{ display: 'flex', alignItems: 'center', marginRight: 6, flexShrink: 0 }}>
           <img
             src={`${process.env.PUBLIC_URL}/brand-mark.svg`}
             alt="ITADOBRAS LASER"
@@ -374,7 +383,7 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
         <div style={{ flex: 1 }} />
 
         {/* Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {canCreateCard && (
             <button
               onClick={onNewCard}
@@ -493,6 +502,27 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
                     Gerenciar usuários
                   </button>
                 )}
+                {isItadobras && (
+                  <button
+                    onClick={() => { setShowClientes(true); setUserMenuOpen(false); }}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '8px 12px', borderRadius: 12, border: 'none',
+                      background: 'transparent', color: 'var(--text-secondary)',
+                      fontSize: 11, fontFamily: 'var(--font-text)', cursor: 'pointer',
+                      transition: 'all 0.13s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface3)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <rect x="3" y="4" width="18" height="16" rx="2"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                      <line x1="8" y1="15" x2="12" y2="15"/>
+                    </svg>
+                    Gerenciar clientes
+                  </button>
+                )}
                 <button
                   onClick={() => { logout(); setUserMenuOpen(false); }}
                   style={{
@@ -518,6 +548,7 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
       </header>
 
       {showUsers && <UserManager onClose={() => setShowUsers(false)} />}
+      {showClientes && <ClienteManager onClose={() => setShowClientes(false)} />}
     </>
   );
 }
