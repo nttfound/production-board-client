@@ -21,7 +21,16 @@ export default function StatusModal({ card, urgentCount = 0, onClose, onSave }) 
   const [maoDeObra, setMaoDeObra] = useState(card.mao_de_obra || false);
   const [calandra,  setCalandra]  = useState(card.calandra || false);
   const [tab,       setTab]       = useState('status');
-  const [diaAberto, setDiaAberto] = useState(null);
+  // Ao abrir a aba "Carga", já expande o dia que contém a cidade atualmente
+  // selecionada no card — assim a seleção herdada do cliente fica visível
+  // imediatamente, sem o usuário precisar procurar em qual dia ela está.
+  const [diaAberto, setDiaAberto] = useState(() => {
+    const cargaAtual = card.carga || null;
+    if (!cargaAtual || cargaAtual === CIDADE_SEMPRE) return null;
+    const cidadeAtual = cargaAtual.startsWith('CARGA - ') ? cargaAtual.replace('CARGA - ', '') : cargaAtual;
+    const dia = Object.entries(CARGA_POR_DIA).find(([, cidades]) => cidades.includes(cidadeAtual))?.[0];
+    return dia || null;
+  });
   const [erro,      setErro]      = useState('');
 
   const isCreator = user?.role === 'creator';
