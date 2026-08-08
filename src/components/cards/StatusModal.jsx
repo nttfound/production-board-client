@@ -8,7 +8,7 @@ const CORTE_COLOR    = 'var(--corte)';
 const DOBRA_COLOR    = 'var(--dobra)';
 const MAO_COLOR      = 'var(--mao-obra)';
 const CALANDRA_COLOR = 'var(--calandra)';
-const MAX_URGENT_CARDS = 2;
+const MAX_URGENT_CARDS = 3;
 
 export default function StatusModal({ card, urgentCount = 0, onClose, onSave }) {
   const { user } = useAuth();
