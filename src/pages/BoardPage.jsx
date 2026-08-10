@@ -18,6 +18,7 @@ import ChatPanel from '../components/chat/ChatPanel';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import ConeCalculator from '../components/caldeiraria/ConeCalculator';
 import DxfViewerPage from './DxfViewerPage';
+import EstatisticasPage from '../components/estatisticas/EstatisticasPage';
 
 function getCardCity(card) {
   if (!card.carga) return null;
@@ -96,6 +97,7 @@ export default function BoardPage() {
   const mainRef = useRef(null);
   const canViewCaldeiraria = user?.role === 'creator' || Boolean(user?.permissions?.ver_caldeiraria);
   const canViewVisualizacao = user?.role === 'creator' || Boolean(user?.permissions?.ver_visualizacao);
+  const canViewEstatisticas = user?.role === 'creator' || Boolean(user?.permissions?.ver_estatisticas);
 
   useEffect(() => { cardsRef.current = cards; }, [cards]);
   useEffect(() => { showChatRef.current = showChat; }, [showChat]);
@@ -105,6 +107,9 @@ export default function BoardPage() {
   useEffect(() => {
     if (filterStatus === 'dxf' && !canViewVisualizacao) setFilterStatus('fila');
   }, [filterStatus, canViewVisualizacao]);
+  useEffect(() => {
+    if (filterStatus === 'estatisticas' && !canViewEstatisticas) setFilterStatus('fila');
+  }, [filterStatus, canViewEstatisticas]);
 
   // Carregar cards iniciais
   useEffect(() => {
@@ -292,7 +297,7 @@ export default function BoardPage() {
   const urgentCount = useMemo(() => cards.filter(c => c.urgente).length, [cards]);
 
   const filtered = useMemo(() => {
-    if (filterStatus === 'caldeiraria' || filterStatus === 'dxf') return [];
+    if (filterStatus === 'caldeiraria' || filterStatus === 'dxf' || filterStatus === 'estatisticas') return [];
 
     const q = search.trim().toLowerCase();
     const todasCidades = filterStatus === 'carga'
@@ -413,6 +418,8 @@ export default function BoardPage() {
           <DxfViewerPage cards={cards} search={search} />
         ) : filterStatus === 'caldeiraria' && canViewCaldeiraria ? (
           <ConeCalculator />
+        ) : filterStatus === 'estatisticas' && canViewEstatisticas ? (
+          <EstatisticasPage />
         ) : loading ? (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>

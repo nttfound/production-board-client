@@ -152,6 +152,7 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
   const diaAtivo = useMemo(() => getLabelDia(), []);
   const canViewCaldeiraria = user?.role === 'creator' || Boolean(user?.permissions?.ver_caldeiraria);
   const canViewVisualizacao = user?.role === 'creator' || Boolean(user?.permissions?.ver_visualizacao);
+  const canViewEstatisticas = user?.role === 'creator' || Boolean(user?.permissions?.ver_estatisticas);
   const cardsComCarga = useMemo(() =>
     (cards || []).filter(c => c.carga && c.carga !== CIDADE_SEMPRE && c.status !== 'Ready'),
     [cards]
@@ -187,6 +188,10 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
 
   if (canViewVisualizacao) {
     navItems.unshift({ key: 'dxf', label: 'Visualizacao', minWidth: 112 });
+  }
+
+  if (canViewEstatisticas) {
+    navItems.push({ key: 'estatisticas', label: 'Estatisticas', minWidth: 88 });
   }
 
   if (canViewCaldeiraria) {
