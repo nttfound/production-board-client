@@ -17,13 +17,7 @@ import NewCardModal from '../components/cards/NewCardModal';
 import ChatPanel from '../components/chat/ChatPanel';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import ConeCalculator from '../components/caldeiraria/ConeCalculator';
-import DxfViewerPage from './DxfViewerPage';
 import EstatisticasPage from '../components/estatisticas/EstatisticasPage';
-
-function getCardCity(card) {
-  if (!card.carga) return null;
-  return card.carga.startsWith('CARGA - ') ? card.carga.replace('CARGA - ', '') : card.carga;
-}
 
 // Prioridade de serviço: dobra > calandra > corte
 function getServiceOrder(card) {
@@ -96,7 +90,6 @@ export default function BoardPage() {
   const showChatRef = useRef(showChat);
   const mainRef = useRef(null);
   const canViewCaldeiraria = user?.role === 'creator' || Boolean(user?.permissions?.ver_caldeiraria);
-  const canViewVisualizacao = user?.role === 'creator' || Boolean(user?.permissions?.ver_visualizacao);
   const canViewEstatisticas = user?.role === 'creator' || Boolean(user?.permissions?.ver_estatisticas);
 
   useEffect(() => { cardsRef.current = cards; }, [cards]);
@@ -104,9 +97,6 @@ export default function BoardPage() {
   useEffect(() => {
     if (filterStatus === 'caldeiraria' && !canViewCaldeiraria) setFilterStatus('fila');
   }, [filterStatus, canViewCaldeiraria]);
-  useEffect(() => {
-    if (filterStatus === 'dxf' && !canViewVisualizacao) setFilterStatus('fila');
-  }, [filterStatus, canViewVisualizacao]);
   useEffect(() => {
     if (filterStatus === 'estatisticas' && !canViewEstatisticas) setFilterStatus('fila');
   }, [filterStatus, canViewEstatisticas]);
@@ -297,7 +287,7 @@ export default function BoardPage() {
   const urgentCount = useMemo(() => cards.filter(c => c.urgente).length, [cards]);
 
   const filtered = useMemo(() => {
-    if (filterStatus === 'caldeiraria' || filterStatus === 'dxf' || filterStatus === 'estatisticas') return [];
+    if (filterStatus === 'caldeiraria' || filterStatus === 'estatisticas') return [];
 
     const q = search.trim().toLowerCase();
     const todasCidades = filterStatus === 'carga'
@@ -405,18 +395,15 @@ export default function BoardPage() {
 
       <main
         ref={mainRef}
-        className={filterStatus === 'dxf' && canViewVisualizacao ? 'board-main board-main-dxf' : 'board-main'}
+        className="board-main"
         style={{
           flex: 1,
           minHeight: 0,
-          overflowY: filterStatus === 'dxf' && canViewVisualizacao ? 'hidden' : 'auto',
+          overflowY: 'auto',
           padding: '20px',
-          display: filterStatus === 'dxf' && canViewVisualizacao ? 'flex' : undefined,
         }}
       >
-        {filterStatus === 'dxf' && canViewVisualizacao ? (
-          <DxfViewerPage cards={cards} search={search} />
-        ) : filterStatus === 'caldeiraria' && canViewCaldeiraria ? (
+        {filterStatus === 'caldeiraria' && canViewCaldeiraria ? (
           <ConeCalculator />
         ) : filterStatus === 'estatisticas' && canViewEstatisticas ? (
           <EstatisticasPage />
