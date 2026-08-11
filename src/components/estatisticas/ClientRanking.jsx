@@ -1,6 +1,8 @@
 /**
  * client/src/components/estatisticas/ClientRanking.jsx
- * Ranking geral/historico de clientes por quantidade de pecas solicitadas.
+ * Top 10 clientes que mais solicitaram pecas (ranking geral/historico).
+ * Ordenacao: 1) maior total de pecas, 2) em empate, maior numero de pedidos
+ * (resolvido no backend — ver server/routes/estatisticas.js).
  */
 
 import React from 'react';
@@ -10,6 +12,7 @@ function formatPecas(n) {
 }
 
 const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
+const COLUMNS = '40px 1fr 140px 150px 110px';
 
 export default function ClientRanking({ ranking, loading }) {
   return (
@@ -21,24 +24,24 @@ export default function ClientRanking({ ranking, loading }) {
     }}>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '48px 1fr 140px 120px',
+        gridTemplateColumns: COLUMNS,
         gap: 8,
         padding: '10px 16px',
         borderBottom: '1px solid var(--border-default)',
         background: 'var(--bg-surface2)',
       }}>
-        {['#', 'Cliente', 'Peças solicitadas', 'Pedidos'].map((h, i) => (
+        {['#', 'Cliente', 'Cidade', 'Peças solicitadas', 'Pedidos'].map((h, i) => (
           <span key={h} style={{
             fontSize: 10, fontFamily: 'var(--font-text)', fontWeight: 700,
             color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em',
-            textAlign: i >= 2 ? 'right' : 'left',
+            textAlign: i >= 3 ? 'right' : 'left',
           }}>
             {h}
           </span>
         ))}
       </div>
 
-      <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+      <div>
         {loading ? (
           <div style={{ padding: '28px 16px', display: 'flex', justifyContent: 'center' }}>
             <div style={{ width: 22, height: 22, border: '2px solid var(--border-default)', borderTopColor: 'var(--accent-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
@@ -52,7 +55,7 @@ export default function ClientRanking({ ranking, loading }) {
             key={row.cliente}
             style={{
               display: 'grid',
-              gridTemplateColumns: '48px 1fr 140px 120px',
+              gridTemplateColumns: COLUMNS,
               gap: 8,
               padding: '10px 16px',
               alignItems: 'center',
@@ -62,16 +65,12 @@ export default function ClientRanking({ ranking, loading }) {
             <span style={{ fontSize: 12, fontFamily: 'var(--font-text)', color: 'var(--text-secondary)', fontWeight: 700 }}>
               {MEDALS[row.posicao] || `${row.posicao}º`}
             </span>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 12, fontFamily: 'var(--font-text)', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {row.cliente}
-              </p>
-              {row.cidade && (
-                <p style={{ margin: '1px 0 0', fontSize: 10, fontFamily: 'var(--font-text)', color: 'var(--text-muted)' }}>
-                  {row.cidade}
-                </p>
-              )}
-            </div>
+            <p style={{ margin: 0, fontSize: 12, fontFamily: 'var(--font-text)', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {row.cliente}
+            </p>
+            <p style={{ margin: 0, fontSize: 12, fontFamily: 'var(--font-text)', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {row.cidade || '—'}
+            </p>
             <span style={{ fontSize: 12, fontFamily: 'var(--font-text)', color: 'var(--text-primary)', fontWeight: 700, textAlign: 'right' }}>
               {formatPecas(row.totalPecas)}
             </span>

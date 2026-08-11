@@ -44,7 +44,7 @@ const inputStyle = {
 };
 
 const EMPTY_STATS = {
-  resumo: { totalPecas: 0, totalPedidos: 0, mediaPecasPorPedido: 0, clienteTop: null },
+  resumo: { totalEncomendadas: 0, totalProntas: 0, totalPendentes: 0, totalPedidos: 0, mediaPecasPorPedido: 0, clienteTop: null },
   semanal: [],
   mensal: [],
   ranking: [],
@@ -134,13 +134,15 @@ export default function EstatisticasPage() {
   const semanalData = stats.semanal.map((s, i) => ({
     key: s.inicioSemana,
     label: `Semana ${i + 1}`,
-    value: s.totalPecas,
+    encomendadas: s.totalEncomendadas,
+    prontas: s.totalProntas,
   }));
 
   const mensalData = stats.mensal.map(m => ({
     key: m.inicioMes,
     label: formatMesAno(parseYmd(m.inicioMes)),
-    value: m.totalPecas,
+    encomendadas: m.totalEncomendadas,
+    prontas: m.totalProntas,
   }));
 
   const temFiltrosAtivos = Boolean(filtros.inicio || filtros.fim || filtros.cliente || filtros.cidade);
@@ -197,7 +199,9 @@ export default function EstatisticasPage() {
 
       {/* Cards de resumo */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-        <SummaryCard label="Total de peças produzidas" value={formatPecas(stats.resumo.totalPecas)} />
+        <SummaryCard label="Total de peças encomendadas" value={formatPecas(stats.resumo.totalEncomendadas)} />
+        <SummaryCard label="Peças prontas" value={formatPecas(stats.resumo.totalProntas)} accent="var(--status-green)" />
+        <SummaryCard label="Peças pendentes" value={formatPecas(stats.resumo.totalPendentes)} />
         <SummaryCard label="Total de pedidos" value={formatPecas(stats.resumo.totalPedidos)} />
         <SummaryCard label="Média de peças por pedido" value={formatPecas(stats.resumo.mediaPecasPorPedido)} />
         <SummaryCard
@@ -234,7 +238,7 @@ export default function EstatisticasPage() {
       {/* Ranking de clientes */}
       <div>
         <p style={{ margin: '0 0 10px', fontSize: 13, fontFamily: 'var(--font-text)', fontWeight: 700, color: 'var(--text-primary)' }}>
-          Ranking geral de clientes
+          Top 10 clientes
         </p>
         <ClientRanking ranking={stats.ranking} loading={loading && stats.ranking.length === 0} />
       </div>
