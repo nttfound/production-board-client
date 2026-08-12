@@ -1,5 +1,4 @@
-// Mapeamento completo de cidades por dia
-export const CARGA_POR_DIA = {
+const DEFAULT_CARGA_POR_DIA = {
   'Segunda': ['Pedreira', 'Amparo', 'Arcadas', 'Jaguariuna'],
   'Terca':   ['Itatiba', 'Morungaba', 'Monte Alegre do Sul', 'Pinhalzinho', '3 Pontes'],
   'Quarta':  ['Pedreira', 'Amparo', 'Arcadas', 'Jaguariuna'],
@@ -7,8 +6,9 @@ export const CARGA_POR_DIA = {
   'Sexta':   ['Lindoia', 'Aguas de Lindoia', 'Monte Siao', 'Ouro Fino', 'Jacutinga'],
 };
 
-// Itapira aparece sempre, sem prefixo CARGA
-export const CIDADE_SEMPRE = 'Itapira';
+export let CARGA_POR_DIA = { ...DEFAULT_CARGA_POR_DIA };
+export let CIDADE_SEMPRE = 'Itapira';
+export let CIDADES_SEMPRE = ['Itapira'];
 
 const ORDEM_DIAS = ['Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta'];
 const BR_TIME_ZONE = 'America/Sao_Paulo';
@@ -54,11 +54,16 @@ export function getDiasOrdenados() {
   return [...ORDEM_DIAS.slice(idx), ...ORDEM_DIAS.slice(0, idx)];
 }
 
+export function setCargaConfig(config) {
+  CARGA_POR_DIA = config?.cargaPorDia || config?.carga_por_dia || { ...DEFAULT_CARGA_POR_DIA };
+  CIDADE_SEMPRE = config?.cidadeSempre || config?.cidade_sempre || 'Itapira';
+  CIDADES_SEMPRE = config?.cidadesSempre || config?.cidades_sempre || [CIDADE_SEMPRE];
+}
+
 // Verifica se uma cidade deve aparecer agora
 export function cargaAtivaAgora(cargaValue) {
   if (!cargaValue) return false;
-  // Itapira sempre ativa
-  if (cargaValue === CIDADE_SEMPRE) return true;
+  if (CIDADES_SEMPRE.includes(cargaValue)) return true;
 
   const diaEfetivo = getDiaEfetivo();
   if (!diaEfetivo) return false;

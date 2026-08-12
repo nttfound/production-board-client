@@ -2,6 +2,7 @@ import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { CidadesProvider } from './contexts/CidadesContext';
 import LoginPage from './pages/LoginPage';
 import BoardPage from './pages/BoardPage';
 import UpdateBanner from './components/ui/UpdateBanner';
@@ -25,7 +26,9 @@ export default function App() {
     <ThemeProvider>
       <NotificationProvider>
         <AuthProvider>
-          <AppInner />
+          <CidadesProvider>
+            <AppInner />
+          </CidadesProvider>
           <UpdateBanner />
         </AuthProvider>
       </NotificationProvider>

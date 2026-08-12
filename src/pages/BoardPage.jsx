@@ -9,6 +9,7 @@ import socket from '../services/socket';
 import { cargaAtivaAgora, CARGA_POR_DIA } from '../services/cargaConfig';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
+import { useCidades } from '../contexts/CidadesContext';
 import TopBar from '../components/layout/TopBar';
 import FilterBar from '../components/layout/FilterBar';
 import ProductionCard from '../components/cards/ProductionCard';
@@ -70,6 +71,7 @@ const CARDS_PER_PAGE = 18;
 
 export default function BoardPage() {
   const { user } = useAuth();
+  const { config: cidadesConfig } = useCidades();
   const { notifyChat, notifyProducing, notifyUrgent, notifyReady, notifyAttachment, push } = useNotifications();
 
   const [cards, setCards] = useState([]);
@@ -100,6 +102,9 @@ export default function BoardPage() {
   useEffect(() => {
     if (filterStatus === 'estatisticas' && !canViewEstatisticas) setFilterStatus('fila');
   }, [filterStatus, canViewEstatisticas]);
+  useEffect(() => {
+    if (cidadesConfig) setCards(prev => sortCards(prev));
+  }, [cidadesConfig]);
 
   // Carregar cards iniciais
   useEffect(() => {
@@ -188,8 +193,10 @@ export default function BoardPage() {
   const handleStatusChange = useCallback(async (id, status, scheduled_date) => {
     try {
       await api.patch(`/api/cards/${id}/status`, { status, scheduled_date });
+      return true;
     } catch (err) {
       console.error('[BOARD] Status update failed:', err);
+      return false;
     }
   }, []);
 
@@ -320,7 +327,7 @@ export default function BoardPage() {
 
     return matchQuick && matchSearch;
     });
-  }, [cards, search, filterStatus, cargaDay]);
+  }, [cards, search, filterStatus, cargaDay, cidadesConfig]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / CARDS_PER_PAGE));
 

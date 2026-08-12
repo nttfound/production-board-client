@@ -119,6 +119,13 @@ select {
   color: var(--text-secondary) !important;
 }
 
+.card-action-btn-quick:hover {
+  background: color-mix(in srgb, var(--quick-color) 86%, white) !important;
+  border-color: color-mix(in srgb, var(--quick-color) 60%, white) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
 .card-action-btn-danger:hover {
   background: rgba(239,68,68,0.10) !important;
   border-color: rgba(239,68,68,0.30) !important;

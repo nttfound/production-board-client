@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConfig';
 import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
 import { STATUSES } from '../../services/statusConfig';
+import { useCidades } from '../../contexts/CidadesContext';
 
 const CORTE_COLOR = '#06b6d4';
 const DOBRA_COLOR = '#8b5cf6';
@@ -24,6 +25,7 @@ const TAGS = [
 const MAX_URGENT_CARDS = 2;
 
 export default function BulkActionBar({ count, onApplyTag, onApplyStatus, onApplyCarga, onDelete, onCancel, urgentCount = 0 }) {
+  useCidades();
   const [activePanel, setActivePanel] = useState(null); // 'tag' | 'status' | 'carga'
   const [diaAberto,   setDiaAberto]   = useState(null);
   const [loading,     setLoading]     = useState(false);

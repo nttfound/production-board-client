@@ -7,6 +7,14 @@ export const STATUSES = [
   { value: 'Scheduled',        label: 'Agendado',             color: '#7c3aed', bg: 'rgba(124,58,237,0.12)'  },
 ];
 
+export const INITIAL_CARD_STATUSES = STATUSES.filter(s =>
+  ['Pending', 'No Material', 'Waiting Approval', 'Scheduled'].includes(s.value)
+);
+
+export const EDIT_CARD_STATUSES = STATUSES.filter(s =>
+  !['No Material', 'Waiting Approval', 'Scheduled'].includes(s.value)
+);
+
 export function getStatus(value) {
   return STATUSES.find(s => s.value === value) || STATUSES[0];
 }

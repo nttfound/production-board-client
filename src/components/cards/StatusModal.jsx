@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { STATUSES, URGENTE_COLOR, CARGA_COLOR } from '../../services/statusConfig';
-import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
+import { EDIT_CARD_STATUSES, URGENTE_COLOR } from '../../services/statusConfig';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 
@@ -13,29 +12,17 @@ const MAX_URGENT_CARDS = 2;
 export default function StatusModal({ card, urgentCount = 0, onClose, onSave }) {
   const { user } = useAuth();
   const [selected,  setSelected]  = useState(card.status);
-  const [schedDate, setSchedDate] = useState(card.scheduled_date?.slice(0, 10) || '');
+  const schedDate = card.scheduled_date?.slice(0, 10) || '';
   const [urgente,   setUrgente]   = useState(card.urgente || false);
-  const [carga,     setCarga]     = useState(card.carga || null);
   const [corte,     setCorte]     = useState(card.corte || false);
   const [dobra,     setDobra]     = useState(card.dobra || false);
   const [maoDeObra, setMaoDeObra] = useState(card.mao_de_obra || false);
   const [calandra,  setCalandra]  = useState(card.calandra || false);
   const [tab,       setTab]       = useState('status');
-  // Ao abrir a aba "Carga", já expande o dia que contém a cidade atualmente
-  // selecionada no card — assim a seleção herdada do cliente fica visível
-  // imediatamente, sem o usuário precisar procurar em qual dia ela está.
-  const [diaAberto, setDiaAberto] = useState(() => {
-    const cargaAtual = card.carga || null;
-    if (!cargaAtual || cargaAtual === CIDADE_SEMPRE) return null;
-    const cidadeAtual = cargaAtual.startsWith('CARGA - ') ? cargaAtual.replace('CARGA - ', '') : cargaAtual;
-    const dia = Object.entries(CARGA_POR_DIA).find(([, cidades]) => cidades.includes(cidadeAtual))?.[0];
-    return dia || null;
-  });
   const [erro,      setErro]      = useState('');
 
   const isCreator = user?.role === 'creator';
   const canUrgente = isCreator || Boolean(user?.permissions?.marcar_urgente);
-  const canCarga   = isCreator || Boolean(user?.permissions?.marcar_carga);
   const canServicoCorte     = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_corte);
   const canServicoDobra     = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_dobra);
   const canServicoMaoDeObra = isCreator || Boolean(user?.permissions?.alterar_servicos || user?.permissions?.servico_mao_de_obra);
@@ -54,21 +41,15 @@ export default function StatusModal({ card, urgentCount = 0, onClose, onSave }) 
 
   const tabs = [{ key: 'status', label: 'Status' }];
   if (canUrgente) tabs.push({ key: 'urgente',  label: 'Urgente'  });
-  if (canCarga)   tabs.push({ key: 'carga',    label: 'Carga'    });
   if (canServicos)tabs.push({ key: 'servicos', label: 'Servicos' });
 
   const handleSave = async () => {
-    if (selected === 'Scheduled' && !schedDate) return;
     const updates = {};
     try {
       setErro('');
       if (canUrgente && urgente !== (card.urgente || false)) {
         await api.patch(`/api/cards/${card.id}/urgente`, { urgente });
         updates.urgente = urgente;
-      }
-      if (canCarga && carga !== (card.carga || null)) {
-        await api.patch(`/api/cards/${card.id}/carga`, { carga });
-        updates.carga = carga;
       }
       if (canServicos) {
         if (corte !== (card.corte||false) || dobra !== (card.dobra||false) || maoDeObra !== (card.mao_de_obra||false) || calandra !== (card.calandra||false)) {
@@ -138,7 +119,7 @@ export default function StatusModal({ card, urgentCount = 0, onClose, onSave }) 
         {/* STATUS */}
         {tab === 'status' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {STATUSES.map(s => (
+            {EDIT_CARD_STATUSES.map(s => (
               <button key={s.value} onClick={() => setSelected(s.value)} style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 14px', borderRadius: 12, fontSize: 13,
@@ -158,13 +139,6 @@ export default function StatusModal({ card, urgentCount = 0, onClose, onSave }) 
                 )}
               </button>
             ))}
-            {selected === 'Scheduled' && (
-              <div style={{ marginTop: 8 }}>
-                <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Data agendada</label>
-                <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)}
-                  style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-default)', borderRadius: 12, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }} />
-              </div>
-            )}
           </div>
         )}
 
@@ -193,51 +167,6 @@ export default function StatusModal({ card, urgentCount = 0, onClose, onSave }) 
             }}>
               {urgente ? 'Urgente ativado' : urgentLimitReached ? 'Limite atingido' : 'Ativar Urgente'}
             </button>
-          </div>
-        )}
-
-        {/* CARGA */}
-        {tab === 'carga' && canCarga && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div>
-              <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)', marginBottom: 8, marginTop: 0 }}>Sempre disponível</p>
-              <ToggleBtn label={CIDADE_SEMPRE} value={carga === CIDADE_SEMPRE} onChange={v => setCarga(v ? CIDADE_SEMPRE : null)} color={CARGA_COLOR} />
-            </div>
-
-            {Object.entries(CARGA_POR_DIA).map(([dia, cidades]) => (
-              <div key={dia}>
-                <button onClick={() => setDiaAberto(diaAberto === dia ? null : dia)} style={{
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '6px 10px', borderRadius: 12, fontSize: 10, fontWeight: 500,
-                  color: 'var(--text-secondary)', background: 'transparent', border: 'none',
-                  cursor: 'pointer', transition: 'all 0.13s', textTransform: 'uppercase', letterSpacing: '0.08em',
-                  fontFamily: 'var(--font-text)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface2)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
-                  <span>{dia}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                    style={{ transform: diaAberto === dia ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </button>
-                {diaAberto === dia && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6, paddingLeft: 8 }}>
-                    {cidades.map(cidade => (
-                      <ToggleBtn key={cidade} label={`CARGA - ${cidade}`} value={carga === `CARGA - ${cidade}`} onChange={v => setCarga(v ? `CARGA - ${cidade}` : null)} color={CARGA_COLOR} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {carga && (
-              <button onClick={() => setCarga(null)} style={{ padding: '6px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', transition: 'color 0.13s' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
-                Remover carga
-              </button>
-            )}
           </div>
         )}
 

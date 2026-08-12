@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { CARGA_POR_DIA, CIDADE_SEMPRE } from '../../services/cargaConfig';
+import { useCidades } from '../../contexts/CidadesContext';
 
 const EMPTY_FORM = { nome: '', cidade: '' };
 
 // Só é possível vincular cidades já existentes no projeto (mesmo conjunto usado em "Carga")
-const CIDADES_DISPONIVEIS = Array.from(new Set([
-  CIDADE_SEMPRE,
-  ...Object.values(CARGA_POR_DIA).flat(),
-])).sort((a, b) => a.localeCompare(b, 'pt-BR'));
-
 export default function ClienteManager({ onClose }) {
+  const { cidades } = useCidades();
   const [clientes,  setClientes]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [selected,  setSelected]  = useState(null); // cliente sendo editado
@@ -172,7 +168,7 @@ export default function ClienteManager({ onClose }) {
                       className="w-full bg-[var(--bg-surface2)] border border-[var(--border-default)] rounded-xl px-3 py-2 text-[var(--text-primary)] text-sm outline-none focus:border-[var(--accent-blue)] transition-all"
                     >
                       <option value="" disabled>Selecione uma cidade</option>
-                      {CIDADES_DISPONIVEIS.map(cidade => (
+                      {cidades.map(cidade => (
                         <option key={cidade} value={cidade}>{cidade}</option>
                       ))}
                     </select>

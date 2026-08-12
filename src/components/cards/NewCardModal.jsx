@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { STATUSES } from '../../services/statusConfig';
+import { INITIAL_CARD_STATUSES } from '../../services/statusConfig';
 import api from '../../services/api';
 
 const inputStyle = {
@@ -17,11 +17,24 @@ const inputStyle = {
   transition: 'border-color 0.15s, box-shadow 0.15s',
 };
 
+const SERVICE_OPTIONS = [
+  { key: 'corte', label: 'Corte', color: 'var(--corte)' },
+  { key: 'dobra', label: 'Dobra', color: 'var(--dobra)' },
+  { key: 'calandra', label: 'Calandra', color: 'var(--calandra)' },
+  { key: 'mao_de_obra', label: 'Mao de Obra', color: 'var(--mao-obra)' },
+];
+
 export default function NewCardModal({ onClose, onCreated }) {
   const [title,        setTitle]        = useState('');
   const [quantidade,   setQuantidade]   = useState('1');
   const [observation,  setObservation]  = useState('');
   const [status,       setStatus]       = useState('Pending');
+  const [servicos,     setServicos]     = useState({
+    corte: false,
+    dobra: false,
+    calandra: false,
+    mao_de_obra: false,
+  });
   const [schedDate,    setSchedDate]    = useState('');
   const [imageData,    setImageData]    = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -160,6 +173,9 @@ export default function NewCardModal({ onClose, onCreated }) {
       formData.append('quantidade',  String(quantidadeNum));
       formData.append('observation', observation.trim());
       formData.append('status',      status);
+      Object.entries(servicos).forEach(([key, value]) => {
+        formData.append(key, value ? 'true' : 'false');
+      });
       if (clienteSelecionado) {
         formData.append('cliente_nome',   clienteSelecionado.nome);
         formData.append('cliente_cidade', clienteSelecionado.cidade);
@@ -186,6 +202,33 @@ export default function NewCardModal({ onClose, onCreated }) {
   };
 
   const removeImage = () => { setImageData(null); setImagePreview(null); };
+
+  const toggleServico = (key) => {
+    setServicos(current => ({ ...current, [key]: !current[key] }));
+  };
+
+  const ToggleBtn = ({ label, value, onClick, color }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+        padding: '10px 14px', borderRadius: 12, border: '1px solid',
+        fontSize: 13, transition: 'all 0.13s', cursor: 'pointer',
+        borderColor: value ? `${color}60` : 'var(--border-default)',
+        background: value ? `${color}12` : 'transparent',
+        color: value ? color : 'var(--text-primary)',
+      }}
+    >
+      <span style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: value ? color : 'var(--text-faint)' }} />
+      {label}
+      {value && (
+        <svg style={{ marginLeft: 'auto' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      )}
+    </button>
+  );
 
   return (
     <div
@@ -323,13 +366,29 @@ export default function NewCardModal({ onClose, onCreated }) {
             />
           </div>
 
+          {/* Services */}
+          <div>
+            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Servicos</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {SERVICE_OPTIONS.map(service => (
+                <ToggleBtn
+                  key={service.key}
+                  label={service.label}
+                  value={servicos[service.key]}
+                  onClick={() => toggleServico(service.key)}
+                  color={service.color}
+                />
+              ))}
+            </div>
+          </div>
+
           {/* Status */}
           <div>
             <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-text)' }}>Status inicial</label>
             <select value={status} onChange={e => setStatus(e.target.value)} style={inputStyle}
               onFocus={e => { e.target.style.borderColor = 'var(--accent-blue)'; e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--accent-blue) 15%, transparent)'; }}
               onBlur={e => { e.target.style.borderColor = 'var(--border-default)'; e.target.style.boxShadow = 'none'; }}>
-              {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {INITIAL_CARD_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
 

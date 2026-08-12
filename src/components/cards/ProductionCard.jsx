@@ -86,7 +86,9 @@ function OrderBadge({ order, color }) {
   );
 }
 
-function ActionBtn({ onClick, title, danger, children, alwaysVisible }) {
+function ActionBtn({ onClick, title, danger, children, alwaysVisible, variant = 'icon', color = 'var(--accent-blue)' }) {
+  const isQuick = variant === 'quick';
+  const isTop = variant === 'top';
   return (
     <button
       onClick={(e) => {
@@ -96,14 +98,25 @@ function ActionBtn({ onClick, title, danger, children, alwaysVisible }) {
       title={title}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 26, height: 26, borderRadius: 8,
-        background: 'transparent',
-        border: '1px solid var(--border-default)',
-        color: 'var(--text-muted)',
+        gap: isQuick ? 6 : 0,
+        minWidth: isQuick ? 86 : 28,
+        width: isQuick ? 'auto' : 28,
+        height: isQuick ? 30 : 28,
+        padding: isQuick ? '0 10px' : 0,
+        borderRadius: 8,
+        '--quick-color': color,
+        background: isQuick ? color : isTop ? 'rgba(8,10,14,0.82)' : 'var(--bg-surface2)',
+        border: isQuick ? `1px solid color-mix(in srgb, ${color} 70%, white)` : isTop ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-light)',
+        color: isQuick ? '#fff' : isTop ? 'rgba(255,255,255,0.82)' : 'var(--text-secondary)',
+        fontFamily: 'var(--font-text)',
+        fontSize: 11,
+        fontWeight: 700,
         cursor: 'pointer', transition: 'all 0.14s',
         opacity: alwaysVisible ? 1 : undefined,
+        boxShadow: isQuick ? `0 0 0 1px rgba(255,255,255,0.04), 0 6px 14px color-mix(in srgb, ${color} 28%, transparent)` : isTop ? '0 8px 20px rgba(0,0,0,0.28)' : 'none',
+        backdropFilter: isTop ? 'blur(8px)' : undefined,
       }}
-      className={`card-action-btn${danger ? ' card-action-btn-danger' : ''}${alwaysVisible ? '' : ' group-hover:opacity-100'}`}
+      className={`card-action-btn${danger ? ' card-action-btn-danger' : ''}${isQuick ? ' card-action-btn-quick' : ''}${alwaysVisible ? '' : ' group-hover:opacity-100'}`}
     >
       {children}
     </button>
@@ -126,6 +139,7 @@ export default function ProductionCard({
   const [showObsModal,    setShowObsModal]    = useState(false);
   const [localCard,       setLocalCard]       = useState(card);
   const [imgError,        setImgError]        = useState(false);
+  const [quickSaving,     setQuickSaving]     = useState(false);
 
   useEffect(() => { setLocalCard(card); setImgError(false); }, [card]);
 
@@ -159,6 +173,11 @@ export default function ProductionCard({
   const canChangeStatus    = isCreator || Boolean(user?.permissions?.mudar_status);
   const canEditObservation = isCreator || Boolean(user?.permissions?.alterar_observacao);
   const canDelete          = isCreator || Boolean(user?.permissions?.deletar_card);
+  const quickStatusAction = localCard.status === 'Ready'
+    ? null
+    : localCard.status === 'Producing'
+      ? { status: 'Ready', title: 'Marcar pronto', label: 'Pronto', color: 'var(--status-green)', icon: 'check' }
+      : { status: 'Producing', title: 'Iniciar produção', label: 'Produzir', color: 'var(--accent-blue)', icon: 'play' };
 
   const handleCardClick = (e) => {
     if (!selectionEnabled || (!e.ctrlKey && !e.metaKey)) return;
@@ -175,6 +194,24 @@ export default function ProductionCard({
       return;
     }
     setShowImageModal(true);
+  };
+
+  const handleQuickStatus = async () => {
+    if (!quickStatusAction || quickSaving) return;
+
+    const previous = localCard;
+    const nextStatus = quickStatusAction.status;
+    setQuickSaving(true);
+    setLocalCard(prev => ({ ...prev, status: nextStatus, scheduled_date: null }));
+
+    try {
+      const saved = await onStatusChange(localCard.id, nextStatus, null);
+      if (saved === false) setLocalCard(previous);
+    } catch {
+      setLocalCard(previous);
+    } finally {
+      setQuickSaving(false);
+    }
   };
 
   // Define a cor da carga baseada no tipo
@@ -230,6 +267,37 @@ export default function ProductionCard({
           </div>
         )}
 
+        {(canChangeStatus || canDelete) && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 9,
+              right: 9,
+              zIndex: 4,
+              display: 'flex',
+              gap: 5,
+            }}
+          >
+            {canChangeStatus && (
+              <ActionBtn onClick={() => setShowStatusModal(true)} title="Alterar card" alwaysVisible variant="top">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </ActionBtn>
+            )}
+            {canDelete && (
+              <ActionBtn onClick={() => onDelete(localCard)} title="Excluir" danger alwaysVisible variant="top">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14H6L5 6"/>
+                  <path d="M10 11v6M14 11v6"/>
+                </svg>
+              </ActionBtn>
+            )}
+          </div>
+        )}
+
         {/* Image */}
         {imageUrl ? (
           <div
@@ -248,7 +316,7 @@ export default function ProductionCard({
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.18) 45%, transparent 70%)', opacity: 1 }} />
             <div
               style={{
-                position: 'absolute', top: 8, right: 8,
+                position: 'absolute', top: 8, right: 78,
                 background: 'var(--bg-overlay)', borderRadius: 8,
                 padding: '4px 6px', backdropFilter: 'blur(8px)',
                 border: '1px solid rgba(255,255,255,0.08)',
@@ -291,21 +359,18 @@ export default function ProductionCard({
               )}
             </div>
             <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-              {canChangeStatus && (
-                <ActionBtn onClick={() => setShowStatusModal(true)} title="Editar status" alwaysVisible>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </ActionBtn>
-              )}
-              {canDelete && (
-                <ActionBtn onClick={() => onDelete(localCard)} title="Excluir" danger>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6l-1 14H6L5 6"/>
-                    <path d="M10 11v6M14 11v6"/>
-                  </svg>
+              {canChangeStatus && quickStatusAction && (
+                <ActionBtn onClick={handleQuickStatus} title={quickStatusAction.title} alwaysVisible variant="quick" color={quickStatusAction.color}>
+                  {quickStatusAction.icon === 'check' ? (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: quickSaving ? 0.55 : 1 }}>
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: quickSaving ? 0.55 : 1 }}>
+                      <polygon points="8 5 19 12 8 19 8 5"/>
+                    </svg>
+                  )}
+                  <span>{quickStatusAction.label}</span>
                 </ActionBtn>
               )}
             </div>
@@ -357,13 +422,13 @@ export default function ProductionCard({
                 style={{
                   position: 'absolute', top: -1, right: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 22, height: 22, borderRadius: 5,
-                  background: 'var(--bg-surface2)', border: '1px solid var(--border-default)',
-                  color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.14s', opacity: 0,
+                  width: 26, height: 26, borderRadius: 7,
+                  background: 'var(--bg-surface2)', border: '1px solid var(--border-light)',
+                  color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.14s', opacity: 0.72,
                 }}
                 className="group-hover/obs:opacity-100"
-                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-light)'; }}
               >
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -407,7 +472,7 @@ export default function ProductionCard({
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {hasCarga && cargaOrder && <OrderBadge order={cargaOrder} color={CARGA_COLOR} />}
-              <span style={{ color: 'var(--text-faint)', fontSize: 10, fontFamily: 'var(--font-text)' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-text)' }}>
                 {formattedDate}
               </span>
             </div>
@@ -421,8 +486,12 @@ export default function ProductionCard({
           urgentCount={urgentCount}
           onClose={() => setShowStatusModal(false)}
           onSave={(status, date, updates) => {
-            setLocalCard(prev => ({ ...prev, status, scheduled_date: date, ...updates }));
-            onStatusChange(localCard.id, status, date);
+            const currentDate = localCard.scheduled_date?.slice(0, 10) || null;
+            const nextDate = status === 'Scheduled' ? (date || null) : null;
+            const statusChanged = status !== localCard.status || (status === 'Scheduled' && nextDate !== currentDate);
+
+            setLocalCard(prev => ({ ...prev, status, scheduled_date: nextDate, ...updates }));
+            if (statusChanged) onStatusChange(localCard.id, status, nextDate);
             setShowStatusModal(false);
           }}
         />

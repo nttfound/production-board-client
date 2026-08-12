@@ -3,8 +3,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import UserManager from './UserManager';
 import ClienteManager from './ClienteManager';
+import CidadeManager from './CidadeManager';
 import { NotificationBell } from '../ui/NotificationCenter';
 import { CARGA_POR_DIA, CIDADE_SEMPRE, getLabelDia, getDiasOrdenados } from '../../services/cargaConfig';
+import { useCidades } from '../../contexts/CidadesContext';
 
 const ROLE_LABELS = { creator: 'Criador', operator: 'Operador', viewer: 'Visualização' };
 
@@ -146,10 +148,11 @@ function UserAvatar({ name }) {
 
 function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards }) {
   const { user } = useAuth();
+  const { config: cidadesConfig } = useCidades();
   const [cargaOpen, setCargaOpen] = useState(false);
   const cargaRef = useRef(null);
-  const diasOrdenados = useMemo(() => getDiasOrdenados(), []);
-  const diaAtivo = useMemo(() => getLabelDia(), []);
+  const diasOrdenados = useMemo(() => getDiasOrdenados(), [cidadesConfig]);
+  const diaAtivo = useMemo(() => getLabelDia(), [cidadesConfig]);
   const canViewCaldeiraria = user?.role === 'creator' || Boolean(user?.permissions?.ver_caldeiraria);
   const canViewEstatisticas = user?.role === 'creator' || Boolean(user?.permissions?.ver_estatisticas);
   const cardsComCarga = useMemo(() =>
@@ -176,7 +179,7 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
       });
     });
     return counts;
-  }, [cardsComCarga, diasOrdenados]);
+  }, [cardsComCarga, diasOrdenados, cidadesConfig]);
 
   const navItems = [
     { key: 'fila', label: 'Fila' },
@@ -341,6 +344,7 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
   const { user, logout } = useAuth();
   const [showUsers, setShowUsers] = useState(false);
   const [showClientes, setShowClientes] = useState(false);
+  const [showCidades, setShowCidades] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { updateInfo, progress, appVersion, checkForUpdate, downloadUpdate, installUpdate } = useUpdater();
   const isCreator = user?.role === 'creator';
@@ -503,25 +507,45 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
                   </button>
                 )}
                 {isItadobras && (
-                  <button
-                    onClick={() => { setShowClientes(true); setUserMenuOpen(false); }}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 12px', borderRadius: 12, border: 'none',
-                      background: 'transparent', color: 'var(--text-secondary)',
-                      fontSize: 11, fontFamily: 'var(--font-text)', cursor: 'pointer',
-                      transition: 'all 0.13s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface3)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <rect x="3" y="4" width="18" height="16" rx="2"/>
-                      <line x1="3" y1="10" x2="21" y2="10"/>
-                      <line x1="8" y1="15" x2="12" y2="15"/>
-                    </svg>
-                    Gerenciar clientes
-                  </button>
+                  <>
+                    <button
+                      onClick={() => { setShowClientes(true); setUserMenuOpen(false); }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 12px', borderRadius: 12, border: 'none',
+                        background: 'transparent', color: 'var(--text-secondary)',
+                        fontSize: 11, fontFamily: 'var(--font-text)', cursor: 'pointer',
+                        transition: 'all 0.13s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface3)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <rect x="3" y="4" width="18" height="16" rx="2"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                        <line x1="8" y1="15" x2="12" y2="15"/>
+                      </svg>
+                      Gerenciar clientes
+                    </button>
+                    <button
+                      onClick={() => { setShowCidades(true); setUserMenuOpen(false); }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 12px', borderRadius: 12, border: 'none',
+                        background: 'transparent', color: 'var(--text-secondary)',
+                        fontSize: 11, fontFamily: 'var(--font-text)', cursor: 'pointer',
+                        transition: 'all 0.13s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-surface3)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                      Gerenciar cidades
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => { logout(); setUserMenuOpen(false); }}
@@ -549,6 +573,7 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
 
       {showUsers && <UserManager onClose={() => setShowUsers(false)} />}
       {showClientes && <ClienteManager onClose={() => setShowClientes(false)} />}
+      {showCidades && <CidadeManager onClose={() => setShowCidades(false)} />}
     </>
   );
 }
