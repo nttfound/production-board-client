@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import packageJson from '../../package.json';
+
+const UPDATE_DATE = '04/10/2026';
+const UPDATE_ITEMS = [
+  'Adicionado caixa de diálogo na exclusão do anexo.',
+  'Implementado envio de arquivos de até 100 MB no chat e nos anexos.',
+  'Implementado suporte para PDF, ZIP, RAR, imagens e arquivos do SolidWorks.',
+  'Adicionado preview de imagens e PDF no chat.',
+];
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -167,6 +176,91 @@ export default function LoginPage() {
             {loading ? 'entrando...' : 'Entrar'}
           </button>
         </form>
+
+        <section
+          aria-label="Nota de atualização"
+          style={{
+            marginTop: 16,
+            background: 'var(--bg-app)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 16,
+            padding: 16,
+            boxShadow: 'var(--shadow-card)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 12 }}>
+            <div style={{
+              width: 34,
+              height: 34,
+              borderRadius: 11,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              color: '#1d4ed8',
+              background: '#dbeafe',
+              border: '1px solid #93c5fd',
+              boxShadow: '0 6px 14px rgba(37,99,235,0.18)',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                <polyline points="21 3 21 9 15 9" />
+              </svg>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 13, fontWeight: 800, fontFamily: 'var(--font-text)' }}>
+                Atualização - Build {packageJson.version}
+              </h2>
+              <p style={{ margin: '3px 0 0', color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-text)' }}>
+                {UPDATE_DATE}
+              </p>
+            </div>
+          </div>
+
+          <div style={{
+            margin: 0,
+            display: 'grid',
+            gap: 7,
+          }}>
+            {UPDATE_ITEMS.map(item => (
+              <div
+                key={item}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 8,
+                  padding: '8px 9px',
+                  borderRadius: 10,
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-secondary)',
+                  fontSize: 11,
+                  lineHeight: 1.35,
+                  fontFamily: 'var(--font-text)',
+                }}
+              >
+                <span style={{
+                  width: 15,
+                  height: 15,
+                  borderRadius: 999,
+                  flexShrink: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginTop: 1,
+                  color: '#ffffff',
+                  background: '#2563eb',
+                  fontSize: 10,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}>
+                  -
+                </span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

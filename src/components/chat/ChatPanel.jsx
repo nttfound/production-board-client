@@ -4,6 +4,22 @@ import socket from '../../services/socket';
 import { useAuth } from '../../contexts/AuthContext';
 
 const EMOJIS = ['😀', '😄', '😂', '😊', '😍', '😎', '🤔', '😅', '🙌', '👍', '👏', '🔥', '✅', '⚠️', '🙏', '💪', '👀', '🚀', '❤️', '🎉'];
+const MAX_CHAT_FILE_SIZE = 100 * 1024 * 1024;
+const CHAT_FILE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'pdf', 'zip', 'rar', 'dxf', 'dwg', 'sldprt', 'sldasm', 'slddrw', 'step', 'stp', 'iges', 'igs'];
+const CHAT_FILE_ACCEPT = CHAT_FILE_EXTENSIONS.map(ext => `.${ext}`).join(',');
+const CHAT_FILE_FORMATS = 'PNG, JPG, JPEG, PDF, ZIP, RAR, DXF, DWG, SLDPRT, SLDASM, SLDDRW, STEP, STP, IGES ou IGS';
+
+function getFileExtension(fileName = '') {
+  return fileName.toLowerCase().split('.').pop();
+}
+
+function isImageFile(fileName) {
+  return ['png', 'jpg', 'jpeg'].includes(getFileExtension(fileName));
+}
+
+function isPdfFile(fileName) {
+  return getFileExtension(fileName) === 'pdf';
+}
 
 function formatTime(value) {
   if (!value) return '';
@@ -130,10 +146,9 @@ export default function ChatPanel({ onClose }) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    const allowed = ['png', 'jpg', 'jpeg', 'dxf', 'dwg', 'pdf'];
-    const ext = file.name.toLowerCase().split('.').pop();
-    if (!allowed.includes(ext)) { setError('Use PNG, JPG, DXF, DWG ou PDF.'); return; }
-    if (file.size > 5 * 1024 * 1024) { setError('Arquivo maximo: 5 MB.'); return; }
+    const ext = getFileExtension(file.name);
+    if (!CHAT_FILE_EXTENSIONS.includes(ext)) { setError(`Use ${CHAT_FILE_FORMATS}.`); return; }
+    if (file.size > MAX_CHAT_FILE_SIZE) { setError('Arquivo maximo: 100 MB.'); return; }
     setSendingFile(true);
     setError('');
     const reader = new FileReader();
@@ -318,31 +333,68 @@ export default function ChatPanel({ onClose }) {
                   )}
 
                   {msg.file_url && (
-                    <a
-                      href={msg.file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        marginTop: msg.text ? 6 : 0,
-                        padding: '7px 10px', borderRadius: 12,
-                        border: '1px solid var(--border-default)', background: 'var(--bg-surface)',
-                        color: 'var(--text-secondary)', fontSize: 11, textDecoration: 'none',
-                        fontFamily: 'var(--font-text)',
-                        transition: 'border-color 0.13s',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-accent)'}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <path d="M14 2v6h6"/>
-                      </svg>
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {msg.file_name || 'arquivo'}
-                      </span>
-                      <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{formatSize(msg.file_size)}</span>
-                    </a>
+                    <div style={{ marginTop: msg.text ? 6 : 0 }}>
+                      {isImageFile(msg.file_name) && (
+                        <a href={msg.file_url} target="_blank" rel="noreferrer" style={{ display: 'block', marginBottom: 7 }}>
+                          <img
+                            src={msg.file_url}
+                            alt={msg.file_name || 'imagem'}
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              maxWidth: 230,
+                              maxHeight: 180,
+                              objectFit: 'contain',
+                              borderRadius: 10,
+                              border: '1px solid var(--border-default)',
+                              background: 'var(--bg-surface1)',
+                            }}
+                          />
+                        </a>
+                      )}
+
+                      {isPdfFile(msg.file_name) && (
+                        <iframe
+                          src={msg.file_url}
+                          title={msg.file_name || 'PDF'}
+                          style={{
+                            display: 'block',
+                            width: 230,
+                            maxWidth: '100%',
+                            height: 260,
+                            marginBottom: 7,
+                            border: '1px solid var(--border-default)',
+                            borderRadius: 10,
+                            background: 'var(--bg-surface1)',
+                          }}
+                        />
+                      )}
+
+                      <a
+                        href={msg.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '7px 10px', borderRadius: 12,
+                          border: '1px solid var(--border-default)', background: 'var(--bg-surface)',
+                          color: 'var(--text-secondary)', fontSize: 11, textDecoration: 'none',
+                          fontFamily: 'var(--font-text)',
+                          transition: 'border-color 0.13s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-accent)'}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <path d="M14 2v6h6"/>
+                        </svg>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {msg.file_name || 'arquivo'}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{formatSize(msg.file_size)}</span>
+                      </a>
+                    </div>
                   )}
 
                   {canDelete && (
@@ -363,7 +415,7 @@ export default function ChatPanel({ onClose }) {
         borderTop: '1px solid var(--border-default)',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
-        <input ref={fileRef} type="file" style={{ display: 'none' }} accept=".png,.jpg,.jpeg,.dxf,.dwg,.pdf" onChange={sendFile} />
+        <input ref={fileRef} type="file" style={{ display: 'none' }} accept={CHAT_FILE_ACCEPT} onChange={sendFile} />
 
         <button
           type="button"

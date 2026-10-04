@@ -1,11 +1,17 @@
 import React, { useState, useRef } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import DeleteConfirmModal from '../ui/DeleteConfirmModal';
+
+const MAX_ATTACHMENT_SIZE = 100 * 1024 * 1024;
+const ATTACHMENT_ACCEPT = '.dxf,.dwg,.pdf,.zip,.rar,.jpg,.jpeg,.png,.sldprt,.sldasm,.slddrw,.step,.stp,.iges,.igs';
+const ATTACHMENT_FORMATS = 'DXF, DWG, PDF, ZIP, RAR, JPG, JPEG, PNG, SLDPRT, SLDASM, SLDDRW, STEP, STP, IGES ou IGS';
 
 export default function AnexoSection({ card, onUpdate }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [erro,    setErro]    = useState('');
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const inputRef = useRef();
 
   const isCreator  = user?.role === 'creator' || Boolean(user?.permissions?.upload_anexo);
@@ -26,8 +32,15 @@ export default function AnexoSection({ card, onUpdate }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErro('Arquivo muito grande. Maximo 5MB.');
+    const ext = file.name.toLowerCase().split('.').pop();
+    const allowed = ATTACHMENT_ACCEPT.split(',').map(item => item.replace('.', ''));
+    if (!allowed.includes(ext)) {
+      setErro(`Use ${ATTACHMENT_FORMATS}.`);
+      return;
+    }
+
+    if (file.size > MAX_ATTACHMENT_SIZE) {
+      setErro('Arquivo muito grande. Maximo 100MB.');
       return;
     }
 
@@ -54,6 +67,7 @@ export default function AnexoSection({ card, onUpdate }) {
     try {
       const res = await api.delete(`/api/cards/${card.id}/anexo`);
       onUpdate(res.data);
+      setConfirmRemove(false);
     } catch (err) {
       setErro('Erro ao remover anexo');
     } finally {
@@ -82,7 +96,7 @@ export default function AnexoSection({ card, onUpdate }) {
             </a>
           )}
           {isCreator && (
-            <button onClick={handleRemove} disabled={loading}
+            <button onClick={() => setConfirmRemove(true)} disabled={loading}
               className="text-[#555] hover:text-[#ef4444] transition-colors" title="Remover">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -94,7 +108,7 @@ export default function AnexoSection({ card, onUpdate }) {
         isCreator && (
           <div>
             <input ref={inputRef} type="file" className="hidden"
-              accept=".dxf,.dwg,.png,.jpg,.jpeg"
+              accept={ATTACHMENT_ACCEPT}
               onChange={handleUpload} />
             <button
               onClick={() => inputRef.current?.click()}
@@ -110,6 +124,16 @@ export default function AnexoSection({ card, onUpdate }) {
         )
       )}
       {erro && <p className="text-[#ef4444] text-[10px] mt-1">{erro}</p>}
+      {confirmRemove && (
+        <DeleteConfirmModal
+          subject="anexo"
+          title={card.anexo_nome}
+          description="Esta acao remove o anexo deste card e ele nao ficara mais disponivel para download."
+          loading={loading}
+          onCancel={() => setConfirmRemove(false)}
+          onConfirm={handleRemove}
+        />
+      )}
     </div>
   );
 }

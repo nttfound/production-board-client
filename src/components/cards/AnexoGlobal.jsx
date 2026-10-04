@@ -2,12 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
 import socket from '../../services/socket';
 import { useAuth } from '../../contexts/AuthContext';
+import DeleteConfirmModal from '../ui/DeleteConfirmModal';
+
+const MAX_ATTACHMENT_SIZE = 100 * 1024 * 1024;
+const ATTACHMENT_ACCEPT = '.dxf,.dwg,.pdf,.zip,.rar,.jpg,.jpeg,.png,.sldprt,.sldasm,.slddrw,.step,.stp,.iges,.igs';
+const ATTACHMENT_FORMATS = 'DXF, DWG, PDF, ZIP, RAR, JPG, JPEG, PNG, SLDPRT, SLDASM, SLDDRW, STEP, STP, IGES ou IGS';
 
 export default function AnexoGlobal() {
   const { user } = useAuth();
   const [anexo,   setAnexo]   = useState(null);
   const [loading, setLoading] = useState(false);
   const [tempo,   setTempo]   = useState('');
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const inputRef = useRef();
 
   const isCreator  = user?.role === 'creator' || Boolean(user?.permissions?.upload_anexo);
@@ -40,7 +46,10 @@ export default function AnexoGlobal() {
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert('Maximo 5MB'); return; }
+    const ext = file.name.toLowerCase().split('.').pop();
+    const allowed = ATTACHMENT_ACCEPT.split(',').map(item => item.replace('.', ''));
+    if (!allowed.includes(ext)) { alert(`Use ${ATTACHMENT_FORMATS}.`); return; }
+    if (file.size > MAX_ATTACHMENT_SIZE) { alert('Maximo 100MB'); return; }
 
     setLoading(true);
     const formData = new FormData();
@@ -64,6 +73,7 @@ export default function AnexoGlobal() {
     try {
       await api.delete(`/api/anexo/${anexo.id}`);
       setAnexo(null);
+      setConfirmRemove(false);
     } catch (err) {
       alert('Erro ao remover');
     } finally {
@@ -77,7 +87,7 @@ export default function AnexoGlobal() {
         ref={inputRef}
         type="file"
         className="hidden"
-        accept=".dxf,.dwg,.png,.jpg,.jpeg"
+        accept={ATTACHMENT_ACCEPT}
         onChange={handleUpload}
       />
 
@@ -115,7 +125,7 @@ export default function AnexoGlobal() {
         )}
 
           {isCreator && (
-            <button onClick={handleRemove} disabled={loading}
+            <button onClick={() => setConfirmRemove(true)} disabled={loading}
               className="text-[#555] hover:text-[#ef4444] transition-colors flex-shrink-0" title="Remover">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -138,6 +148,16 @@ export default function AnexoGlobal() {
         ) : (
           <span className="text-[#555] text-xs">Sem anexo</span>
         )
+      )}
+      {confirmRemove && anexo && (
+        <DeleteConfirmModal
+          subject="anexo"
+          title={anexo.nome}
+          description="Esta acao remove o anexo global e ele nao ficara mais disponivel para download."
+          loading={loading}
+          onCancel={() => setConfirmRemove(false)}
+          onConfirm={handleRemove}
+        />
       )}
     </div>
   );

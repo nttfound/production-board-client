@@ -1,6 +1,15 @@
 import React, { useEffect } from 'react';
 
-export default function DeleteConfirmModal({ title, description, count = 1, loading = false, onCancel, onConfirm }) {
+export default function DeleteConfirmModal({
+  title,
+  description,
+  count = 1,
+  loading = false,
+  subject,
+  confirmLabel = 'Excluir',
+  onCancel,
+  onConfirm,
+}) {
   useEffect(() => {
     const handler = (event) => {
       if (event.key === 'Escape' && !loading) onCancel();
@@ -61,7 +70,7 @@ export default function DeleteConfirmModal({ title, description, count = 1, load
 
           <div style={{ minWidth: 0, flex: 1 }}>
             <h2 style={{ margin: '0 0 5px', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700 }}>
-              Excluir {count === 1 ? 'card' : 'cards'}
+              Excluir {subject || (count === 1 ? 'card' : 'cards')}
             </h2>
             <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.55, fontFamily: 'var(--font-text)' }}>
               {description}
@@ -140,7 +149,7 @@ export default function DeleteConfirmModal({ title, description, count = 1, load
                 animation: 'spin 0.8s linear infinite',
               }} />
             )}
-            Excluir
+            {confirmLabel}
           </button>
         </div>
       </div>
