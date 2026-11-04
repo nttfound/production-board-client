@@ -2,8 +2,9 @@ import React, { useState, useRef } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import DeleteConfirmModal from '../ui/DeleteConfirmModal';
+import { uploadAsset } from '../../services/storage';
 
-const MAX_ATTACHMENT_SIZE = 100 * 1024 * 1024;
+const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024;
 const ATTACHMENT_ACCEPT = '.dxf,.dwg,.pdf,.zip,.rar,.jpg,.jpeg,.png,.sldprt,.sldasm,.slddrw,.step,.stp,.iges,.igs';
 const ATTACHMENT_FORMATS = 'DXF, DWG, PDF, ZIP, RAR, JPG, JPEG, PNG, SLDPRT, SLDASM, SLDDRW, STEP, STP, IGES ou IGS';
 
@@ -40,19 +41,15 @@ export default function AnexoSection({ card, onUpdate }) {
     }
 
     if (file.size > MAX_ATTACHMENT_SIZE) {
-      setErro('Arquivo muito grande. Maximo 100MB.');
+      setErro('Arquivo muito grande. Máximo 50 MB.');
       return;
     }
 
     setLoading(true);
     setErro('');
-    const formData = new FormData();
-    formData.append('anexo', file);
-
     try {
-      const res = await api.post(`/api/cards/${card.id}/anexo`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const file_path = await uploadAsset(file, 'card-attachment');
+      const res = await api.post(`/api/cards/${card.id}/anexo`, { file_path, file_name: file.name });
       onUpdate(res.data);
     } catch (err) {
       setErro(err.response?.data?.error || 'Erro no upload');

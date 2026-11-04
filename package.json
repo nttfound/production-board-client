@@ -1,6 +1,6 @@
 {
   "name": "producao-laser",
-  "version": "10.0.0",
+  "version": "10.2.0",
   "description": "Controle de Producao - Itadobras",
   "main": "electron/main.js",
   "homepage": "./",
@@ -12,12 +12,12 @@
     "electron-build": "npm run build && electron-builder"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "axios": "^1.7.2",
     "electron-updater": "^6.8.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
-    "socket.io-client": "^4.7.5",
     "three": "^0.185.1"
   },
   "devDependencies": {
@@ -32,7 +32,9 @@
   "build": {
     "appId": "com.productionboard.app",
     "productName": "Producao Laser",
-    "directories": { "output": "dist" },
+    "directories": {
+      "output": "dist"
+    },
     "extraMetadata": {
       "main": "electron/main.js"
     },

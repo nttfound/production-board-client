@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import api, { getAuthToken } from '../services/api';
+import api from '../services/api';
 import socket from '../services/socket';
 import { cargaAtivaAgora, CARGA_POR_DIA } from '../services/cargaConfig';
 import { useAuth } from '../contexts/AuthContext';
@@ -114,17 +114,8 @@ export default function BoardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Socket com autenticação e reconexão
+  // Supabase Realtime is connected by AuthContext after login.
   useEffect(() => {
-    const token = getAuthToken();
-
-    if (token) {
-      socket.auth = { token };
-      if (!socket.connected) {
-        socket.connect();
-      }
-    }
-
     setConnected(socket.connected);
 
     const handleConnect    = () => setConnected(true);
@@ -132,10 +123,6 @@ export default function BoardPage() {
     const handleConnectError = (err) => {
       console.log('[WS] Erro de conexão:', err.message);
       setConnected(false);
-    };
-    const handleReconnect = () => {
-      const t = getAuthToken();
-      if (t) socket.auth = { token: t };
     };
     const handleCardCreated = (card) => {
       setCards(prev => sortCards([normalizeCard(card), ...prev]));
@@ -170,7 +157,6 @@ export default function BoardPage() {
     socket.on('connect',       handleConnect);
     socket.on('disconnect',    handleDisconnect);
     socket.on('connect_error', handleConnectError);
-    socket.on('reconnect',     handleReconnect);
     socket.on('card:created',  handleCardCreated);
     socket.on('card:updated',  handleCardUpdated);
     socket.on('card:deleted',  handleCardDeleted);
@@ -181,7 +167,6 @@ export default function BoardPage() {
       socket.off('connect',       handleConnect);
       socket.off('disconnect',    handleDisconnect);
       socket.off('connect_error', handleConnectError);
-      socket.off('reconnect',     handleReconnect);
       socket.off('card:created',  handleCardCreated);
       socket.off('card:updated',  handleCardUpdated);
       socket.off('card:deleted',  handleCardDeleted);

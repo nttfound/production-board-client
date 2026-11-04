@@ -3,8 +3,9 @@ import api from '../../services/api';
 import socket from '../../services/socket';
 import { useAuth } from '../../contexts/AuthContext';
 import DeleteConfirmModal from '../ui/DeleteConfirmModal';
+import { uploadAsset } from '../../services/storage';
 
-const MAX_ATTACHMENT_SIZE = 100 * 1024 * 1024;
+const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024;
 const ATTACHMENT_ACCEPT = '.dxf,.dwg,.pdf,.zip,.rar,.jpg,.jpeg,.png,.sldprt,.sldasm,.slddrw,.step,.stp,.iges,.igs';
 const ATTACHMENT_FORMATS = 'DXF, DWG, PDF, ZIP, RAR, JPG, JPEG, PNG, SLDPRT, SLDASM, SLDDRW, STEP, STP, IGES ou IGS';
 
@@ -49,15 +50,12 @@ export default function AnexoGlobal() {
     const ext = file.name.toLowerCase().split('.').pop();
     const allowed = ATTACHMENT_ACCEPT.split(',').map(item => item.replace('.', ''));
     if (!allowed.includes(ext)) { alert(`Use ${ATTACHMENT_FORMATS}.`); return; }
-    if (file.size > MAX_ATTACHMENT_SIZE) { alert('Maximo 100MB'); return; }
+    if (file.size > MAX_ATTACHMENT_SIZE) { alert('Máximo 50 MB'); return; }
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append('arquivo', file);
     try {
-      const res = await api.post('/api/anexo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const file_path = await uploadAsset(file, 'global-attachment');
+      const res = await api.post('/api/anexo', { file_path, file_name: file.name });
       setAnexo(res.data);
     } catch (err) {
       alert(err.response?.data?.error || 'Erro no upload');

@@ -13,11 +13,7 @@ export function AuthProvider({ children }) {
       .then(res => {
         setAuthToken(res.data.token);
         setUser(res.data.user);
-        // Conecta o socket assim que confirma autenticação
-        if (res.data.user && res.data.token) {
-          socket.auth = { token: res.data.token };
-          socket.connect();
-        }
+        if (res.data.user && res.data.realtimeToken) socket.connect(res.data.realtimeToken);
       })
       .catch(() => {
         setAuthToken(null);
@@ -32,12 +28,24 @@ export function AuthProvider({ children }) {
     // desmonta/remonta o componente e mataria a conexão.
   }, []);
 
+  useEffect(() => {
+    if (!user) return undefined;
+    const timer = setInterval(async () => {
+      try {
+        const res = await api.get('/api/auth/me');
+        if (res.data.realtimeToken) await socket.refreshAuth(res.data.realtimeToken);
+      } catch {
+        // The regular authenticated API request will handle an expired session.
+      }
+    }, 45 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [user]);
+
   const login = async (username, password) => {
     const res = await api.post('/api/auth/login', { username, password });
     setAuthToken(res.data.token);
     setUser(res.data.user);
-    socket.auth = { token: res.data.token };
-    socket.connect();
+    socket.connect(res.data.realtimeToken);
     return res.data.user;
   };
 

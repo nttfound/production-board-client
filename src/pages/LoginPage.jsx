@@ -5,7 +5,7 @@ import packageJson from '../../package.json';
 const UPDATE_DATE = '04/10/2026';
 const UPDATE_ITEMS = [
   'Adicionado caixa de diálogo na exclusão do anexo.',
-  'Implementado envio de arquivos de até 100 MB no chat e nos anexos.',
+  'Envio de arquivos de até 50 MB no chat e nos anexos.',
   'Implementado suporte para PDF, ZIP, RAR, imagens e arquivos do SolidWorks.',
   'Adicionado preview de imagens e PDF no chat.',
 ];

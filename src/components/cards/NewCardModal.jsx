@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { INITIAL_CARD_STATUSES } from '../../services/statusConfig';
 import api from '../../services/api';
+import { uploadAsset } from '../../services/storage';
 
 const inputStyle = {
   width: '100%',
@@ -168,29 +169,27 @@ export default function NewCardModal({ onClose, onCreated }) {
     if (status === 'Scheduled' && !schedDate) { setError('Informe a data de agendamento.'); return; }
     setLoading(true); setError('');
     try {
-      const formData = new FormData();
-      formData.append('title',       title.trim());
-      formData.append('quantidade',  String(quantidadeNum));
-      formData.append('observation', observation.trim());
-      formData.append('status',      status);
-      Object.entries(servicos).forEach(([key, value]) => {
-        formData.append(key, value ? 'true' : 'false');
-      });
+      const payload = {
+        title: title.trim(),
+        quantidade: String(quantidadeNum),
+        observation: observation.trim(),
+        status,
+        ...servicos,
+      };
       if (clienteSelecionado) {
-        formData.append('cliente_nome',   clienteSelecionado.nome);
-        formData.append('cliente_cidade', clienteSelecionado.cidade);
+        payload.cliente_nome = clienteSelecionado.nome;
+        payload.cliente_cidade = clienteSelecionado.cidade;
       }
-      if (status === 'Scheduled') formData.append('scheduled_date', schedDate);
+      if (status === 'Scheduled') payload.scheduled_date = schedDate;
       if (imageData) {
+        let imageFile = imageData;
         if (typeof imageData === 'string') {
-          const res  = await fetch(imageData);
-          const blob = await res.blob();
-          formData.append('image', blob, 'pasted-image.png');
-        } else {
-          formData.append('image', imageData);
+          const response = await fetch(imageData);
+          imageFile = new File([await response.blob()], 'pasted-image.png', { type: 'image/png' });
         }
+        payload.image_path = await uploadAsset(imageFile, 'card-image');
       }
-      const response = await api.post('/api/cards', formData);
+      const response = await api.post('/api/cards', payload);
       onCreated(response.data);
       onClose();
     } catch (err) {

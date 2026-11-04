@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL } from './config';
+import { API_BASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config';
 
 // Restaura token da sessão anterior (mesma aba/reload)
 let authToken = sessionStorage.getItem('auth_token') || null;
@@ -21,6 +21,9 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
   withCredentials: true,
+  headers: {
+    apikey: SUPABASE_PUBLISHABLE_KEY,
+  },
 });
 
 api.interceptors.request.use(config => {

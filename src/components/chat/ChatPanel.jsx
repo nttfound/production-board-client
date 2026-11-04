@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import api from '../../services/api';
 import socket from '../../services/socket';
+import { uploadAsset } from '../../services/storage';
 import { useAuth } from '../../contexts/AuthContext';
 
 const EMOJIS = ['😀', '😄', '😂', '😊', '😍', '😎', '🤔', '😅', '🙌', '👍', '👏', '🔥', '✅', '⚠️', '🙏', '💪', '👀', '🚀', '❤️', '🎉'];
-const MAX_CHAT_FILE_SIZE = 100 * 1024 * 1024;
+const MAX_CHAT_FILE_SIZE = 50 * 1024 * 1024;
 const CHAT_FILE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'pdf', 'zip', 'rar', 'dxf', 'dwg', 'sldprt', 'sldasm', 'slddrw', 'step', 'stp', 'iges', 'igs'];
 const CHAT_FILE_ACCEPT = CHAT_FILE_EXTENSIONS.map(ext => `.${ext}`).join(',');
 const CHAT_FILE_FORMATS = 'PNG, JPG, JPEG, PDF, ZIP, RAR, DXF, DWG, SLDPRT, SLDASM, SLDDRW, STEP, STP, IGES ou IGS';
@@ -132,14 +133,18 @@ export default function ChatPanel({ onClose }) {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [showEmojiPicker]);
 
-  const sendText = (event) => {
+  const sendText = async (event) => {
     event.preventDefault();
     const trimmed = text.trim();
     if (!trimmed) return;
-    socket.emit('chat:send', { text: trimmed });
-    setText('');
-    setError('');
-    inputRef.current?.focus();
+    try {
+      await api.post('/api/chat/messages', { text: trimmed });
+      setText('');
+      setError('');
+      inputRef.current?.focus();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao enviar mensagem.');
+    }
   };
 
   const sendFile = async (event) => {
@@ -148,17 +153,22 @@ export default function ChatPanel({ onClose }) {
     if (!file) return;
     const ext = getFileExtension(file.name);
     if (!CHAT_FILE_EXTENSIONS.includes(ext)) { setError(`Use ${CHAT_FILE_FORMATS}.`); return; }
-    if (file.size > MAX_CHAT_FILE_SIZE) { setError('Arquivo maximo: 100 MB.'); return; }
+    if (file.size > MAX_CHAT_FILE_SIZE) { setError('Arquivo máximo: 50 MB.'); return; }
     setSendingFile(true);
     setError('');
-    const reader = new FileReader();
-    reader.onload = () => { socket.emit('chat:file', { file_name: file.name, file_data: reader.result }); setSendingFile(false); };
-    reader.onerror = () => { setError('Nao foi possivel ler o arquivo.'); setSendingFile(false); };
-    reader.readAsDataURL(file);
+    try {
+      const file_path = await uploadAsset(file, 'chat');
+      await api.post('/api/chat/files', { file_name: file.name, file_path, file_size: file.size });
+    } catch (err) {
+      setError(err.response?.data?.error || 'Nao foi possivel enviar o arquivo.');
+    } finally {
+      setSendingFile(false);
+    }
   };
 
-  const deleteMessage = (id) => {
-    socket.emit('chat:delete', { id });
+  const deleteMessage = async (id) => {
+    try { await api.delete(`/api/chat/${id}`); }
+    catch (err) { setError(err.response?.data?.error || 'Erro ao excluir mensagem.'); }
   };
 
   const insertEmoji = (emoji) => {
