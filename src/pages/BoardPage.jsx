@@ -106,13 +106,38 @@ export default function BoardPage() {
     if (cidadesConfig) setCards(prev => sortCards(prev));
   }, [cidadesConfig]);
 
-  // Carregar cards iniciais
+  // Load cards initially and poll while Realtime is disconnected as a fallback.
   useEffect(() => {
-    api.get('/api/cards')
-      .then(res => setCards(sortCards(res.data.map(normalizeCard))))
-      .catch(err => console.error('[BOARD] Failed to load cards:', err))
-      .finally(() => setLoading(false));
-  }, []);
+    let active = true;
+    let inFlight = false;
+    const loadCards = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const res = await api.get('/api/cards');
+        if (!active) return;
+        const nextCards = sortCards(res.data.map(normalizeCard));
+        setCards((current) => {
+          const unchanged = current.length === nextCards.length && current.every((card, index) => (
+            card.id === nextCards[index]?.id && card.updated_at === nextCards[index]?.updated_at
+          ));
+          return unchanged ? current : nextCards;
+        });
+      } catch (err) {
+        console.error('[BOARD] Failed to load cards:', err);
+      } finally {
+        inFlight = false;
+        if (active) setLoading(false);
+      }
+    };
+
+    loadCards();
+    const interval = connected ? null : setInterval(loadCards, 5000);
+    return () => {
+      active = false;
+      if (interval) clearInterval(interval);
+    };
+  }, [connected]);
 
   // Supabase Realtime is connected by AuthContext after login.
   useEffect(() => {
@@ -125,7 +150,8 @@ export default function BoardPage() {
       setConnected(false);
     };
     const handleCardCreated = (card) => {
-      setCards(prev => sortCards([normalizeCard(card), ...prev]));
+      const normalized = normalizeCard(card);
+      setCards(prev => sortCards([normalized, ...prev.filter(existing => existing.id !== normalized.id)]));
     };
     const handleCardUpdated = (updated) => {
       const normalized = normalizeCard(updated);
@@ -603,7 +629,13 @@ export default function BoardPage() {
       </button>
 
       {showNewModal && (
-        <NewCardModal onClose={() => setShowNewModal(false)} onCreated={() => setShowNewModal(false)} />
+        <NewCardModal
+          onClose={() => setShowNewModal(false)}
+          onCreated={(card) => {
+            const normalized = normalizeCard(card);
+            setCards(prev => sortCards([normalized, ...prev.filter(existing => existing.id !== normalized.id)]));
+          }}
+        />
       )}
 
       {showChat && <ChatPanel onClose={() => setShowChat(false)} />}

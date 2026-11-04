@@ -59,7 +59,10 @@ const socket = {
     try {
       await supabase.realtime.setAuth(token);
       supabase.storage.setHeader('Authorization', `Bearer ${token}`);
-      const activeChannel = supabase.channel('production-board', { config: { private: true } });
+      // This topic only carries Postgres Changes. The table RLS policies below
+      // still authorize every row; private-channel authorization is for
+      // Broadcast/Presence and adds an unrelated second policy check here.
+      const activeChannel = supabase.channel('production-board', { config: { private: false } });
       channel = activeChannel;
 
       activeChannel
