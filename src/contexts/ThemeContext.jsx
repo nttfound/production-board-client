@@ -4,110 +4,110 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const THEMES = {
   dark: {
     // Backgrounds
-    bgApp:        '#0a0a0a',
-    bgSurface:    '#0e0e0e',
-    bgSurface1:   '#111111',
-    bgSurface2:   '#141414',
-    bgSurface3:   '#1a1a1a',
-    bgInput:      '#0e0e0e',
-    bgCard:       '#111111',
-    bgOverlay:    'rgba(0,0,0,0.75)',
+    bgApp:        '#0c1420',
+    bgSurface:    '#111b29',
+    bgSurface1:   '#172436',
+    bgSurface2:   '#1b2a3e',
+    bgSurface3:   '#26374d',
+    bgInput:      '#111b29',
+    bgCard:       '#142033',
+    bgOverlay:    'rgba(4,10,18,0.78)',
 
     // Borders
-    borderDefault: '#1e1e1e',
-    borderLight:   '#2a2a2a',
-    borderAccent:  '#333333',
+    borderDefault: '#26364b',
+    borderLight:   '#344962',
+    borderAccent:  '#4a6583',
 
     // Text
-    textPrimary:   '#e8e8e8',
-    textSecondary: '#888888',
-    textMuted:     '#555555',
-    textFaint:     '#333333',
-    textDisabled:  '#2a2a2a',
+    textPrimary:   '#f1f5fa',
+    textSecondary: '#aebdd0',
+    textMuted:     '#8497ad',
+    textFaint:     '#667b94',
+    textDisabled:  '#4b5d73',
 
     // Accent (brand)
-    accentBlue:    '#3b82f6',
-    accentBlueDim: '#2563eb',
-    accentOrange:  '#F75003',
+    accentBlue:    '#5b91fa',
+    accentBlueDim: '#3974e8',
+    accentOrange:  '#f29145',
 
     // Status colors (fixos — independem de tema)
-    statusGreen:   '#22c55e',
-    statusRed:     '#ef4444',
-    statusYellow:  '#f59e0b',
-    statusPurple:  '#7c3aed',
+    statusGreen:   '#40c98b',
+    statusRed:     '#f47b78',
+    statusYellow:  '#f3bd58',
+    statusPurple:  '#a58cf2',
 
     // Service colors
-    corte:    '#8d99ae',
-    dobra:    '#81b29a',
-    maoObra:  '#f59e0b',
-    calandra: '#5a189a',
-    urgente:  '#f35b04',
-    carga:    '#99d98c',
-    cargaitapira:  '#d9ed92',
+    corte:    '#8ca4c1',
+    dobra:    '#58c4a0',
+    maoObra:  '#f3bd58',
+    calandra: '#b292f4',
+    urgente:  '#ff8b61',
+    carga:    '#76c98f',
+    cargaitapira:  '#e3c75f',
 
     // Misc
-    scrollbar:      '#2a2a2a',
-    scrollbarHover: '#3a3a3a',
-    gridLine:       'rgba(255,255,255,0.025)',
+    scrollbar:      '#34465d',
+    scrollbarHover: '#4e6580',
+    gridLine:       'rgba(185,205,229,0.035)',
 
     // Shadows
-    shadowCard:      '0 2px 12px rgba(0,0,0,0.5)',
-    shadowCardHover: '0 8px 28px rgba(0,0,0,0.65)',
-    shadowModal:     '0 24px 80px rgba(0,0,0,0.8)',
+    shadowCard:      '0 2px 8px rgba(3,10,20,0.22), 0 12px 30px rgba(3,10,20,0.12)',
+    shadowCardHover: '0 12px 32px rgba(3,10,20,0.28)',
+    shadowModal:     '0 24px 72px rgba(3,10,20,0.55)',
   },
 
   light: {
     // Backgrounds — tom quente levemente acinzentado, sem branco puro
-    bgApp:        '#ebebed',
-    bgSurface:    '#f2f2f4',
-    bgSurface1:   '#f7f7f9',
-    bgSurface2:   '#e8e8eb',
-    bgSurface3:   '#dddde1',
-    bgInput:      '#f7f7f9',
-    bgCard:       '#f7f7f9',
-    bgOverlay:    'rgba(0,0,0,0.45)',
+    bgApp:        '#f2f5f9',
+    bgSurface:    '#ffffff',
+    bgSurface1:   '#ffffff',
+    bgSurface2:   '#f2f5f9',
+    bgSurface3:   '#e7edf5',
+    bgInput:      '#ffffff',
+    bgCard:       '#ffffff',
+    bgOverlay:    'rgba(15,27,43,0.52)',
 
     // Borders — mais definidas para dar estrutura
-    borderDefault: '#d2d2d8',
-    borderLight:   '#c4c4cc',
-    borderAccent:  '#9494a0',
+    borderDefault: '#dce4ee',
+    borderLight:   '#cbd6e4',
+    borderAccent:  '#a6b7cc',
 
     // Text — contraste firme
-    textPrimary:   '#1a1a22',
-    textSecondary: '#46464f',
-    textMuted:     '#8a8a96',
-    textFaint:     '#c0c0cc',
-    textDisabled:  '#d8d8e0',
+    textPrimary:   '#182638',
+    textSecondary: '#53647a',
+    textMuted:     '#78899d',
+    textFaint:     '#a4b0c0',
+    textDisabled:  '#c7d0dc',
 
     // Accent (brand)
-    accentBlue:    '#2563eb',
-    accentBlueDim: '#1d4ed8',
-    accentOrange:  '#F75003',
+    accentBlue:    '#3168db',
+    accentBlueDim: '#2454bd',
+    accentOrange:  '#d86c22',
 
     // Status colors
-    statusGreen:   '#16a34a',
-    statusRed:     '#dc2626',
-    statusYellow:  '#d97706',
-    statusPurple:  '#7c3aed',
+    statusGreen:   '#16895c',
+    statusRed:     '#c74545',
+    statusYellow:  '#b97812',
+    statusPurple:  '#704fc0',
 
     // Service colors
-   corte:    '#8d99ae',
-    dobra:    '#81b29a',
-    maoObra:  '#f59e0b',
-    calandra: '#5a189a',
-    urgente:  '#f35b04',
-    carga:    '#99d98c',
-    cargaitapira:  '#d9ed92',
+    corte:    '#52729a',
+    dobra:    '#27856b',
+    maoObra:  '#a96706',
+    calandra: '#704fc0',
+    urgente:  '#c24d22',
+    carga:    '#328450',
+    cargaitapira:  '#9b7b08',
 
     // Misc
-    scrollbar:      '#c4c4cc',
-    scrollbarHover: '#9494a0',
-    gridLine:       'rgba(0,0,0,0.055)',
+    scrollbar:      '#cbd5e2',
+    scrollbarHover: '#a8b6c8',
+    gridLine:       'rgba(38,60,88,0.06)',
 
     // Shadows — mais presentes para separar camadas
-    shadowCard:      '0 1px 3px rgba(0,0,0,0.10), 0 3px 14px rgba(0,0,0,0.08)',
-    shadowCardHover: '0 4px 22px rgba(0,0,0,0.15)',
-    shadowModal:     '0 24px 80px rgba(0,0,0,0.28)',
+    shadowCard:      '0 1px 2px rgba(24,38,56,0.04), 0 8px 24px rgba(24,38,56,0.06)',
+    shadowCardHover: '0 14px 34px rgba(24,38,56,0.12)',
+    shadowModal:     '0 24px 72px rgba(24,38,56,0.22)',
   },
 };
 

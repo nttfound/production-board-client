@@ -1,6 +1,6 @@
 {
   "name": "producao-laser",
-  "version": "10.5.0",
+  "version": "11.0.0",
   "description": "Controle de Producao - Itadobras",
   "main": "electron/main.js",
   "homepage": "./",
@@ -9,7 +9,8 @@
     "build": "react-scripts build",
     "electron": "electron .",
     "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3001 && set ELECTRON_OPEN_DEVTOOLS=true&& electron .\"",
-    "electron-build": "npm run build && electron-builder"
+    "electron-build": "npm run build && electron-builder",
+    "test": "react-scripts test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

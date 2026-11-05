@@ -3,7 +3,7 @@ import AnexoGlobal from '../cards/AnexoGlobal';
 
 export default function FilterBar({ search, onSearch }) {
   return (
-    <div style={{
+    <div className="filter-toolbar" style={{
       padding: '10px 20px',
       borderBottom: '1px solid var(--border-default)',
       flexShrink: 0,
@@ -13,11 +13,11 @@ export default function FilterBar({ search, onSearch }) {
       gap: 10,
       justifyContent: 'space-between',
     }}>
-      <div style={{ position: 'relative', width: 300, flexShrink: 0 }}>
+      <div className="filter-search-wrapper" style={{ position: 'relative', width: 300, flexShrink: 0 }}>
         <svg
-          style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}
-          width="13"
-          height="13"
+          style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }}
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -28,10 +28,12 @@ export default function FilterBar({ search, onSearch }) {
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <input
+          className="filter-search"
+          aria-label="Buscar pedidos"
           type="text"
           value={search}
           onChange={e => onSearch(e.target.value)}
-          placeholder="buscar..."
+          placeholder="Buscar pedidos..."
           style={{
             width: '100%',
             background: 'var(--bg-surface2)',

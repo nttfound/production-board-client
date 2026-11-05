@@ -6,6 +6,7 @@ import { CidadesProvider } from './contexts/CidadesContext';
 import LoginPage from './pages/LoginPage';
 import BoardPage from './pages/BoardPage';
 import UpdateBanner from './components/ui/UpdateBanner';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 
 function AppInner() {
   const { user, loading } = useAuth();
@@ -23,7 +24,8 @@ function AppInner() {
 
 export default function App() {
   return (
-    <ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
       <NotificationProvider>
         <AuthProvider>
           <CidadesProvider>
@@ -32,6 +34,7 @@ export default function App() {
           <UpdateBanner />
         </AuthProvider>
       </NotificationProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

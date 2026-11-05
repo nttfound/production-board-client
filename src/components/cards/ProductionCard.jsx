@@ -301,6 +301,7 @@ const ProductionCard = memo(function ProductionCard({
         {/* Image */}
         {imageUrl ? (
           <div
+            className="production-card-media"
             style={{ height: 160, background: 'var(--bg-surface2)', flexShrink: 0, overflow: 'hidden', position: 'relative', cursor: 'zoom-in' }}
             onClick={handleImageClick}
           >
@@ -330,7 +331,7 @@ const ProductionCard = memo(function ProductionCard({
             </div>
           </div>
         ) : (
-          <div style={{
+          <div className="production-card-media production-card-media--empty" style={{
             height: 44, flexShrink: 0, background: 'var(--bg-surface2)',
             borderBottom: '1px solid var(--border-default)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',

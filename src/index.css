@@ -144,15 +144,18 @@ select {
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* Theme transition */
-*, *::before, *::after {
-  transition-property: background-color, border-color, color, box-shadow;
-  transition-duration: 0.18s;
-  transition-timing-function: ease;
+/* Motion is scoped to interactive controls. Live board updates stay immediate. */
+button, input, select, textarea, a {
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
 }
 
-.production-card, button, input, select {
-  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .app-topbar,
@@ -242,3 +245,110 @@ select {
   }
 }
 
+
+
+
+/* Shared feedback states */
+.board-feedback {
+  min-height: min(52vh, 420px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px;
+  text-align: center;
+}
+.board-feedback h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(18px, 2vw, 22px);
+  letter-spacing: -0.025em;
+}
+.board-feedback p {
+  max-width: 380px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.board-feedback-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 4px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--status-red) 35%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--status-red) 10%, var(--bg-surface));
+  color: var(--status-red);
+  font-weight: 700;
+}
+.board-feedback button {
+  min-height: 38px;
+  margin-top: 8px;
+  padding: 0 15px;
+  border: 1px solid color-mix(in srgb, var(--accent-blue) 45%, var(--border-default));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent-blue) 12%, var(--bg-surface));
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.board-feedback button:hover {
+  background: color-mix(in srgb, var(--accent-blue) 22%, var(--bg-surface));
+}
+.board-feedback button:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .board-main { padding: 14px !important; }
+}
+
+.page-loading { min-height: 32vh; display: grid; place-items: center; color: var(--text-muted); font-size: 13px; }
+
+:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
+
+.app-error-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: #0a0a0a;
+  color: #e8e8e8;
+  text-align: center;
+  font-family: var(--font-text);
+}
+.app-error-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid rgba(239,68,68,.35);
+  border-radius: 15px;
+  color: #ef4444;
+  font-size: 22px;
+  font-weight: 800;
+}
+.app-error-eyebrow { margin: 22px 0 8px; color: #888; font-size: 10px; letter-spacing: .14em; }
+.app-error-screen h1 { max-width: 440px; margin: 0; font-size: clamp(22px, 4vw, 30px); }
+.app-error-screen p:not(.app-error-eyebrow) { max-width: 420px; color: #999; font-size: 13px; line-height: 1.6; }
+.app-error-screen button {
+  min-height: 40px;
+  margin-top: 12px;
+  padding: 0 16px;
+  border: 1px solid #3b82f6;
+  border-radius: 9px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}

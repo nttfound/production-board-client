@@ -99,6 +99,7 @@ function ThemeToggle() {
   const [hover, setHover] = useState(false);
   return (
     <button
+      className="theme-toggle"
       onClick={toggle}
       title={isDark ? 'Tema claro' : 'Tema escuro'}
       onMouseEnter={() => setHover(true)}
@@ -214,7 +215,7 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
   }
 
   return (
-    <nav className="topbar-quick-nav" style={{
+    <nav className="topbar-quick-nav" aria-label="Navegação principal" style={{
       position: 'absolute',
       left: '50%',
       top: 0,
@@ -233,6 +234,7 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
           <div key={item.key} ref={isCarga ? cargaRef : null} style={{ position: 'relative', display: 'flex', marginLeft: item.separated ? 18 : 0 }}>
             <button
               onClick={() => handleNavClick(item.key)}
+              className={`topbar-tab${active ? ' is-active' : ''}${item.key === 'caldeiraria' ? ' is-special' : ''}`}
               style={{
                 position: 'relative',
                 minWidth: item.minWidth || (item.key === 'caldeiraria' ? 94 : 52),
@@ -259,7 +261,7 @@ function QuickNav({ filterStatus, onFilterStatus, cargaDay, onCargaDay, cards })
                   {DIA_LABEL[cargaDay]}
                 </span>
               )}
-              <span style={{
+              <span className="topbar-tab-indicator" style={{
                 position: 'absolute',
                 left: 0,
                 right: 0,
@@ -390,6 +392,7 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {canCreateCard && (
             <button
+              className="topbar-new-card"
               onClick={onNewCard}
               style={{
                 display: 'flex', alignItems: 'center', gap: 7,
@@ -418,8 +421,14 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
 
           {/* User */}
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', position: 'relative' }}
+              className="topbar-user"
+            role="button"
+            tabIndex={0}
+            aria-haspopup="menu"
+            aria-expanded={userMenuOpen}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', position: 'relative' }}
             onClick={() => setUserMenuOpen(v => !v)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setUserMenuOpen(v => !v); } }}
           >
             <UserAvatar name={user?.display_name} />
             <div>
@@ -436,6 +445,8 @@ export default function TopBar({ onNewCard, connected, filterStatus, onFilterSta
 
             {userMenuOpen && (
               <div
+                className="topbar-user-menu"
+                role="menu"
                 style={{
                   position: 'absolute', top: 'calc(100% + 10px)', right: 0, zIndex: 50,
                   background: 'var(--bg-surface1)', border: '1px solid var(--border-default)',

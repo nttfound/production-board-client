@@ -3,8 +3,9 @@ import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import { uploadAsset } from '../../services/storage';
+import { getUploadErrorMessage } from '../../services/uploadErrors';
 
-const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024;
+const MAX_ATTACHMENT_SIZE = 100 * 1024 * 1024;
 const ATTACHMENT_ACCEPT = '.dxf,.dwg,.pdf,.zip,.rar,.jpg,.jpeg,.png,.sldprt,.sldasm,.slddrw,.step,.stp,.iges,.igs';
 const ATTACHMENT_FORMATS = 'DXF, DWG, PDF, ZIP, RAR, JPG, JPEG, PNG, SLDPRT, SLDASM, SLDDRW, STEP, STP, IGES ou IGS';
 
@@ -40,8 +41,14 @@ export default function AnexoSection({ card, onUpdate }) {
       return;
     }
 
+    if (file.size === 0) {
+      setErro('O arquivo está vazio (0 bytes). Verifique o arquivo antes de anexar.');
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
+
     if (file.size > MAX_ATTACHMENT_SIZE) {
-      setErro('Arquivo muito grande. Máximo 50 MB.');
+      setErro('Arquivo muito grande. Máximo 100 MB.');
       return;
     }
 
@@ -52,7 +59,7 @@ export default function AnexoSection({ card, onUpdate }) {
       const res = await api.post(`/api/cards/${card.id}/anexo`, { file_path, file_name: file.name });
       onUpdate(res.data);
     } catch (err) {
-      setErro(err.response?.data?.error || 'Erro no upload');
+      setErro(getUploadErrorMessage(err, 'Erro no upload'));
     } finally {
       setLoading(false);
       if (inputRef.current) inputRef.current.value = '';

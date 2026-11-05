@@ -7,7 +7,7 @@ export default function StatusBadge({ status, size = 'sm' }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-mono font-medium tracking-wide uppercase rounded-tag ${
+      className={`status-badge inline-flex items-center gap-1.5 font-mono font-medium tracking-wide uppercase rounded-tag ${
         isLg ? 'px-3 py-1.5 text-[11px]' : 'px-2 py-[5px] text-[10px]'
       }`}
       style={{
@@ -18,6 +18,7 @@ export default function StatusBadge({ status, size = 'sm' }) {
       }}
     >
       <span
+        className="status-badge-dot"
         className="rounded-full flex-shrink-0"
         style={{
           width: isLg ? 6 : 5,

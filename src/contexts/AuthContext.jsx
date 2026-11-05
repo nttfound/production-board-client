@@ -15,10 +15,12 @@ export function AuthProvider({ children }) {
         setUser(res.data.user);
         if (res.data.user && res.data.realtimeToken) socket.connect(res.data.realtimeToken);
       })
-      .catch(() => {
-        setAuthToken(null);
+      .catch((error) => {
         setUser(null);
-        socket.disconnect();
+        if (error.response?.status === 401) {
+          setAuthToken(null);
+          socket.disconnect();
+        }
       })
       .finally(() => {
         setLoading(false);

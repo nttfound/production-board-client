@@ -8,7 +8,11 @@ export async function uploadAsset(file, purpose) {
     size: file.size,
     purpose,
   });
-  const { path, token } = signed.data;
+  const path = signed.data?.path;
+  const token = signed.data?.token;
+  if (!path || !token) {
+    throw new Error('O servidor nao retornou a autorizacao de upload.');
+  }
   const { error } = await uploadSignedFile(path, token, file);
   if (error) throw error;
   return path;

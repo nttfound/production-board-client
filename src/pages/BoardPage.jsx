@@ -3,10 +3,9 @@
  * Main production board — card grid with real-time updates.
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../services/api';
 import socket from '../services/socket';
-import { cargaAtivaAgora, CARGA_POR_DIA } from '../services/cargaConfig';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useCidades } from '../contexts/CidadesContext';
@@ -17,84 +16,34 @@ import BulkActionBar from '../components/cards/BulkActionBar';
 import NewCardModal from '../components/cards/NewCardModal';
 import ChatPanel from '../components/chat/ChatPanel';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
-import ConeCalculator from '../components/caldeiraria/ConeCalculator';
-import EstatisticasPage from '../components/estatisticas/EstatisticasPage';
+import { CARDS_PER_PAGE, filterCards, getPageNumbers, normalizeCard, sortCards } from '../features/board/model/boardModel';
+import useBoardData from '../features/board/model/useBoardData';
+import useBoardActions from '../features/board/model/useBoardActions';
 
-// Prioridade de serviço: dobra > calandra > corte
-function getServiceOrder(card) {
-  if (card.dobra) return 0;
-  if (card.calandra) return 1;
-  if (card.corte) return 2;
-  return 3;
-}
-
-// Função para verificar se é carga ativa (excluindo Itapira)
-function isCargaAtiva(carga) {
-  if (!carga) return false;
-  if (carga === 'Itapira') return false;
-  return cargaAtivaAgora(carga);
-}
-
-function normalizeCard(card) {
-  return {
-    ...card,
-    _createdAtMs: card._createdAtMs || new Date(card.created_at).getTime(),
-  };
-}
-
-function sortCards(cards) {
-  return [...cards].sort((a, b) => {
-    if (a.urgente && !b.urgente) return -1;
-    if (!a.urgente && b.urgente) return 1;
-
-    const aCargaAtiva = isCargaAtiva(a.carga);
-    const bCargaAtiva = isCargaAtiva(b.carga);
-    if (aCargaAtiva && !bCargaAtiva) return -1;
-    if (!aCargaAtiva && bCargaAtiva) return 1;
-
-    if (!aCargaAtiva && !bCargaAtiva) {
-      const aItapira = a.carga === 'Itapira';
-      const bItapira = b.carga === 'Itapira';
-      if (aItapira && !bItapira) return -1;
-      if (!aItapira && bItapira) return 1;
-    }
-
-    const svcA = getServiceOrder(a);
-    const svcB = getServiceOrder(b);
-    if (svcA !== svcB) return svcA - svcB;
-
-    return (a._createdAtMs || new Date(a.created_at).getTime()) - (b._createdAtMs || new Date(b.created_at).getTime());
-  });
-}
-
-const CARDS_PER_PAGE = 18;
+const ConeCalculator = lazy(() => import('../components/caldeiraria/ConeCalculator'));
+const EstatisticasPage = lazy(() => import('../components/estatisticas/EstatisticasPage'));
 
 export default function BoardPage() {
   const { user } = useAuth();
   const { config: cidadesConfig } = useCidades();
-  const { notifyChat, notifyProducing, notifyUrgent, notifyReady, notifyAttachment, push } = useNotifications();
+  const { push } = useNotifications();
 
-  const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('fila');
   const [cargaDay, setCargaDay] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
-  const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [deleteRequest, setDeleteRequest] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const cardsRef = useRef([]);
   const showChatRef = useRef(showChat);
   const mainRef = useRef(null);
+  const { cards, setCards, connected, loading, loadError, retry } = useBoardData({ showChatRef, setChatUnread });
+  const boardActions = useBoardActions({ cards, user, push });
+  const { canSelect, selectedIdSet, selectedFilteredIds, handleStatusChange, handleDelete, toggleCardSelection, clearSelection, handleBulkTag, handleBulkStatus, handleBulkCarga, handleBulkDelete, deleteRequest, deleteLoading, closeDeleteModal, confirmDelete } = boardActions;
   const canViewCaldeiraria = user?.role === 'creator' || Boolean(user?.permissions?.ver_caldeiraria);
   const canViewEstatisticas = user?.role === 'creator' || Boolean(user?.permissions?.ver_estatisticas);
 
-  useEffect(() => { cardsRef.current = cards; }, [cards]);
   useEffect(() => { showChatRef.current = showChat; }, [showChat]);
   useEffect(() => {
     if (filterStatus === 'caldeiraria' && !canViewCaldeiraria) setFilterStatus('fila');
@@ -102,243 +51,20 @@ export default function BoardPage() {
   useEffect(() => {
     if (filterStatus === 'estatisticas' && !canViewEstatisticas) setFilterStatus('fila');
   }, [filterStatus, canViewEstatisticas]);
-  useEffect(() => {
-    if (cidadesConfig) setCards(prev => sortCards(prev));
-  }, [cidadesConfig]);
-
-  // Load cards initially and poll while Realtime is disconnected as a fallback.
-  useEffect(() => {
-    let active = true;
-    let inFlight = false;
-    const loadCards = async () => {
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        const res = await api.get('/api/cards');
-        if (!active) return;
-        const nextCards = sortCards(res.data.map(normalizeCard));
-        setCards((current) => {
-          const unchanged = current.length === nextCards.length && current.every((card, index) => (
-            card.id === nextCards[index]?.id && card.updated_at === nextCards[index]?.updated_at
-          ));
-          return unchanged ? current : nextCards;
-        });
-      } catch (err) {
-        console.error('[BOARD] Failed to load cards:', err);
-      } finally {
-        inFlight = false;
-        if (active) setLoading(false);
-      }
-    };
-
-    loadCards();
-    const interval = connected ? null : setInterval(loadCards, 5000);
-    return () => {
-      active = false;
-      if (interval) clearInterval(interval);
-    };
-  }, [connected]);
-
-  // Supabase Realtime is connected by AuthContext after login.
-  useEffect(() => {
-    setConnected(socket.connected);
-
-    const handleConnect    = () => setConnected(true);
-    const handleDisconnect = () => setConnected(false);
-    const handleConnectError = (err) => {
-      console.log('[WS] Erro de conexão:', err.message);
-      setConnected(false);
-    };
-    const handleCardCreated = (card) => {
-      const normalized = normalizeCard(card);
-      setCards(prev => sortCards([normalized, ...prev.filter(existing => existing.id !== normalized.id)]));
-    };
-    const handleCardUpdated = (updated) => {
-      const normalized = normalizeCard(updated);
-      const prev = cardsRef.current.find(c => c.id === normalized.id);
-      if (prev) {
-        if (prev.status !== normalized.status && normalized.status === 'Producing') notifyProducing(normalized.title);
-        if (prev.status !== normalized.status && normalized.status === 'Ready') notifyReady(normalized.title);
-        if (!prev.urgente && normalized.urgente) notifyUrgent(normalized.title, normalized.updated_by || normalized.created_by);
-        if (prev.anexo_path !== normalized.anexo_path && normalized.anexo_path) notifyAttachment(normalized.anexo_nome);
-      }
-      setCards(prev => sortCards(prev.map(c => c.id === normalized.id ? normalized : c)));
-    };
-    const handleCardDeleted = ({ id }) => {
-      setCards(prev => prev.filter(c => c.id !== id));
-      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
-    };
-    const handleChatMessage = (msg) => {
-      if (!showChatRef.current) {
-        setChatUnread(prev => prev + 1);
-        const sender = msg?.username || msg?.display_name || 'Alguém';
-        const preview = msg?.text || '';
-        if (preview) notifyChat(sender, preview.slice(0, 80));
-      }
-    };
-    const handleAnexoAtualizado = (anexo) => {
-      if (anexo?.url) notifyAttachment(anexo.nome);
-    };
-
-    socket.on('connect',       handleConnect);
-    socket.on('disconnect',    handleDisconnect);
-    socket.on('connect_error', handleConnectError);
-    socket.on('card:created',  handleCardCreated);
-    socket.on('card:updated',  handleCardUpdated);
-    socket.on('card:deleted',  handleCardDeleted);
-    socket.on('chat:message',  handleChatMessage);
-    socket.on('anexo:atualizado', handleAnexoAtualizado);
-
-    return () => {
-      socket.off('connect',       handleConnect);
-      socket.off('disconnect',    handleDisconnect);
-      socket.off('connect_error', handleConnectError);
-      socket.off('card:created',  handleCardCreated);
-      socket.off('card:updated',  handleCardUpdated);
-      socket.off('card:deleted',  handleCardDeleted);
-      socket.off('chat:message',  handleChatMessage);
-      socket.off('anexo:atualizado', handleAnexoAtualizado);
-    };
-  }, [user, notifyChat, notifyProducing, notifyUrgent, notifyReady, notifyAttachment]);
-
-  const handleStatusChange = useCallback(async (id, status, scheduled_date) => {
-    try {
-      await api.patch(`/api/cards/${id}/status`, { status, scheduled_date });
-      return true;
-    } catch (err) {
-      console.error('[BOARD] Status update failed:', err);
-      return false;
-    }
-  }, []);
-
-  const handleDelete = useCallback((card) => {
-    setDeleteRequest({
-      type: 'single',
-      id: card.id,
-      title: card.title,
-      count: 1,
-    });
-  }, []);
-
-  const canSelect = user?.role === 'creator' || Boolean(user?.permissions?.selecionar);
-  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-  const cardIdSet = useMemo(() => new Set(cards.map(card => card.id)), [cards]);
-  const selectedFilteredIds = useMemo(
-    () => selectedIds.filter(id => cardIdSet.has(id)),
-    [selectedIds, cardIdSet]
-  );
-
-  const toggleCardSelection = useCallback((id) => {
-    if (!canSelect) return;
-    setSelectedIds(prev => prev.includes(id)
-      ? prev.filter(selectedId => selectedId !== id)
-      : [...prev, id]
-    );
-  }, [canSelect]);
-
-  const clearSelection = useCallback(() => setSelectedIds([]), []);
-
-  const handleBulkTag = useCallback(async (tagKey, value) => {
-    if (!selectedFilteredIds.length) return;
-    try {
-      if (tagKey === 'urgente') {
-        await api.patch('/api/cards/bulk/urgente', { ids: selectedFilteredIds, urgente: value });
-      } else {
-        await api.patch('/api/cards/bulk/servicos', { ids: selectedFilteredIds, tagKey, value });
-      }
-    } catch (err) {
-      console.error('[BOARD] Bulk tag update failed:', err);
-      push('info', 'Nao foi possivel alterar', err.response?.data?.error || 'Tente novamente em alguns instantes.');
-    }
-  }, [selectedFilteredIds, push]);
-
-  const handleBulkStatus = useCallback(async (status) => {
-    if (!selectedFilteredIds.length) return;
-    try {
-      await api.patch('/api/cards/bulk/status', { ids: selectedFilteredIds, status });
-    } catch (err) {
-      console.error('[BOARD] Bulk status update failed:', err);
-    }
-  }, [selectedFilteredIds]);
-
-  const handleBulkCarga = useCallback(async (carga) => {
-    if (!selectedFilteredIds.length) return;
-    try {
-      await api.patch('/api/cards/bulk/carga', { ids: selectedFilteredIds, carga });
-    } catch (err) {
-      console.error('[BOARD] Bulk carga update failed:', err);
-    }
-  }, [selectedFilteredIds]);
-
-  const handleBulkDelete = useCallback(() => {
-    if (!selectedFilteredIds.length) return;
-    setDeleteRequest({
-      type: 'bulk',
-      ids: selectedFilteredIds,
-      count: selectedFilteredIds.length,
-    });
-  }, [selectedFilteredIds]);
-
-  const closeDeleteModal = useCallback(() => {
-    if (!deleteLoading) setDeleteRequest(null);
-  }, [deleteLoading]);
-
-  const confirmDelete = useCallback(async () => {
-    if (!deleteRequest) return;
-    setDeleteLoading(true);
-    try {
-      if (deleteRequest.type === 'single') {
-        await api.delete(`/api/cards/${deleteRequest.id}`);
-      } else {
-        await api.delete('/api/cards/bulk', { data: { ids: deleteRequest.ids } });
-        clearSelection();
-      }
-      setDeleteRequest(null);
-    } catch (err) {
-      console.error('[BOARD] Delete failed:', err);
-    } finally {
-      setDeleteLoading(false);
-    }
-  }, [deleteRequest, clearSelection]);
 
   const totalOpenCards = useMemo(() => cards.filter(c => c.status !== 'Ready').length, [cards]);
   const urgentCount = useMemo(() => cards.filter(c => c.urgente).length, [cards]);
+  const viewTitles = {
+    fila: 'Fila de produção',
+    Ready: 'Prontos para envio',
+    carga: 'Programação de carga',
+    producing: 'Em produção',
+    estatisticas: 'Estatísticas',
+    caldeiraria: 'Caldeiraria',
+  };
+  const viewTitle = viewTitles[filterStatus] || 'Fila de produção';
 
-  const filtered = useMemo(() => {
-    if (filterStatus === 'caldeiraria' || filterStatus === 'estatisticas') return [];
-
-    const q = search.trim().toLowerCase();
-    const todasCidades = filterStatus === 'carga'
-      ? new Set(Object.values(CARGA_POR_DIA).flat())
-      : null;
-
-    return cards.filter(c => {
-    // Filtro rápido: Produzindo
-    if (filterStatus === 'producing') {
-      return c.status === 'Producing';
-    }
-
-    // Filtro rápido: Carga (por dia)
-    if (filterStatus === 'carga') {
-      if (c.status === 'Ready') return false;
-      if (!c.carga) return false;
-      const cidade = c.carga.startsWith('CARGA - ') ? c.carga.replace('CARGA - ', '') : c.carga;
-      if (cargaDay) {
-        const cidadesDoDia = CARGA_POR_DIA[cargaDay] || [];
-        return cidadesDoDia.includes(cidade);
-      }
-      return todasCidades.has(cidade);
-    }
-
-    const matchQuick = filterStatus === 'Ready' ? c.status === 'Ready' : c.status !== 'Ready';
-
-    const matchSearch = !q || c.title.toLowerCase().includes(q)
-      || c.observation?.toLowerCase().includes(q)
-      || c.created_by.toLowerCase().includes(q);
-
-    return matchQuick && matchSearch;
-    });
-  }, [cards, search, filterStatus, cargaDay, cidadesConfig]);
+  const filtered = useMemo(() => filterCards(cards, { search, status: filterStatus, cargaDay }), [cards, search, filterStatus, cargaDay, cidadesConfig]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / CARDS_PER_PAGE));
 
@@ -355,22 +81,7 @@ export default function BoardPage() {
     return filtered.slice(start, start + CARDS_PER_PAGE);
   }, [filtered, currentPage]);
 
-  const pageNumbers = useMemo(() => {
-    const maxButtons = 7;
-    if (totalPages <= maxButtons) {
-      return Array.from({ length: totalPages }, (_, index) => index + 1);
-    }
-
-    const half = Math.floor(maxButtons / 2);
-    let start = Math.max(1, currentPage - half);
-    let end = Math.min(totalPages, start + maxButtons - 1);
-
-    if (end - start + 1 < maxButtons) {
-      start = Math.max(1, end - maxButtons + 1);
-    }
-
-    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
-  }, [currentPage, totalPages]);
+  const pageNumbers = useMemo(() => getPageNumbers(currentPage, totalPages), [currentPage, totalPages]);
 
   const goToPage = useCallback((page) => {
     setCurrentPage(Math.min(Math.max(1, page), totalPages));
@@ -422,9 +133,9 @@ export default function BoardPage() {
         }}
       >
         {filterStatus === 'caldeiraria' && canViewCaldeiraria ? (
-          <ConeCalculator />
+          <Suspense fallback={<div className="page-loading">Carregando calculadora...</div>}><ConeCalculator /></Suspense>
         ) : filterStatus === 'estatisticas' && canViewEstatisticas ? (
-          <EstatisticasPage />
+          <Suspense fallback={<div className="page-loading">Carregando estatisticas...</div>}><EstatisticasPage /></Suspense>
         ) : loading ? (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -432,19 +143,49 @@ export default function BoardPage() {
               <span style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-text)' }}>carregando...</span>
             </div>
           </div>
+        ) : loadError && cards.length === 0 ? (
+          <section className="board-feedback board-feedback-error" role="alert">
+            <span className="board-feedback-mark" aria-hidden="true">!</span>
+            <h2>Nao foi possivel carregar o quadro</h2>
+            <p>Verifique sua conexao e tente novamente.</p>
+            <button type="button" onClick={retry}>Tentar novamente</button>
+          </section>
         ) : filtered.length === 0 ? (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ textAlign: 'center' }}>
+          <section className="board-empty" aria-live="polite">
+            <div className="board-empty-mark" aria-hidden="true">
               <svg style={{ margin: '0 auto 12px', display: 'block', color: 'var(--border-default)' }} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <line x1="9" y1="9" x2="15" y2="15" /><line x1="15" y1="9" x2="9" y2="15" />
               </svg>
-              <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-text)' }}>nenhum card encontrado</p>
             </div>
-          </div>
+            <h2>{search || cargaDay ? 'Nenhum pedido encontrado' : 'Nenhum pedido nesta fila'}</h2>
+            <p>{search || cargaDay ? 'Tente mudar a busca ou remover os filtros.' : 'Os pedidos aparecerão aqui quando forem cadastrados.'}</p>
+            {(search || cargaDay || filterStatus !== 'fila') && (
+              <button type="button" onClick={() => { setSearch(''); setCargaDay(null); setFilterStatus('fila'); }}>Limpar filtros</button>
+            )}
+          </section>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+          <div className="board-content">
+            <section className="board-heading" aria-label="Resumo da visualização">
+              <div>
+                <p className="board-eyebrow">ITADOBRAS · PRODUÇÃO</p>
+                <h1>{viewTitle}</h1>
+                <p className="board-description">Acompanhe os pedidos e atualize o andamento da equipe.</p>
+              </div>
+              <div className="board-summary">
+                <div className="board-summary-item">
+                  <span className="board-summary-value">{filtered.length}</span>
+                  <span className="board-summary-label">{filtered.length === 1 ? 'pedido nesta visão' : 'pedidos nesta visão'}</span>
+                </div>
+                <span className="board-summary-divider" aria-hidden="true" />
+                <div className="board-summary-item board-summary-item--urgent">
+                  <span className="board-summary-value">{urgentCount}</span>
+                  <span className="board-summary-label">urgentes</span>
+                </div>
+              </div>
+            </section>
+
+            <div className="board-card-grid">
               {paginatedCards.map(card => (
                 <ProductionCard
                   key={card.id}

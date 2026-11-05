@@ -4,8 +4,9 @@ import socket from '../../services/socket';
 import { useAuth } from '../../contexts/AuthContext';
 import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import { uploadAsset } from '../../services/storage';
+import { getUploadErrorMessage } from '../../services/uploadErrors';
 
-const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024;
+const MAX_ATTACHMENT_SIZE = 100 * 1024 * 1024;
 const ATTACHMENT_ACCEPT = '.dxf,.dwg,.pdf,.zip,.rar,.jpg,.jpeg,.png,.sldprt,.sldasm,.slddrw,.step,.stp,.iges,.igs';
 const ATTACHMENT_FORMATS = 'DXF, DWG, PDF, ZIP, RAR, JPG, JPEG, PNG, SLDPRT, SLDASM, SLDDRW, STEP, STP, IGES ou IGS';
 
@@ -50,7 +51,12 @@ export default function AnexoGlobal() {
     const ext = file.name.toLowerCase().split('.').pop();
     const allowed = ATTACHMENT_ACCEPT.split(',').map(item => item.replace('.', ''));
     if (!allowed.includes(ext)) { alert(`Use ${ATTACHMENT_FORMATS}.`); return; }
-    if (file.size > MAX_ATTACHMENT_SIZE) { alert('Máximo 50 MB'); return; }
+    if (file.size === 0) {
+      alert('O arquivo está vazio (0 bytes). Verifique o arquivo antes de anexar.');
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
+    if (file.size > MAX_ATTACHMENT_SIZE) { alert('Máximo 100 MB'); return; }
 
     setLoading(true);
     try {
@@ -58,7 +64,7 @@ export default function AnexoGlobal() {
       const res = await api.post('/api/anexo', { file_path, file_name: file.name });
       setAnexo(res.data);
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro no upload');
+      alert(getUploadErrorMessage(err, 'Erro no upload'));
     } finally {
       setLoading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -80,7 +86,7 @@ export default function AnexoGlobal() {
   };
 
   return (
-    <div className="flex items-center justify-center gap-1.5 px-2 rounded-md bg-[#1a1a1a] border border-[#2a2a2a] w-[128px] max-w-[24vw] h-[30px] overflow-hidden">
+    <div className="global-attachment-control flex items-center justify-center gap-1.5 px-2 rounded-md bg-[#1a1a1a] border border-[#2a2a2a] w-[128px] max-w-[24vw] h-[30px] overflow-hidden">
       <input
         ref={inputRef}
         type="file"
@@ -135,6 +141,8 @@ export default function AnexoGlobal() {
         isCreator ? (
           <button
             onClick={() => inputRef.current?.click()}
+            aria-label="Anexar arquivo global"
+            title="Anexar arquivo global"
             disabled={loading}
             className="flex items-center justify-center gap-1.5 text-[#555] hover:text-[#8a8a8a] text-[11px] transition-colors w-full h-full disabled:opacity-50"
           >

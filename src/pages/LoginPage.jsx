@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import packageJson from '../../package.json';
 
-const UPDATE_DATE = '04/11/2026';
+const UPDATE_DATE = '05/11/2026';
 const UPDATE_ITEMS = [
-  'Melhorias de desempenho ao atualizar cards e navegar pelo quadro.',
-  'Adicionado caixa de diálogo na exclusão do anexo.',
-  'Envio de arquivos de até 50 MB no chat e nos anexos.',
-  'Implementado suporte para PDF, ZIP, RAR, imagens e arquivos do SolidWorks.',
-  'Adicionado preview de imagens e PDF no chat.',
+  'Busca e ordenacao do quadro mais seguras para dados incompletos.',
+  'Sincronizacao em tempo real com fallback de conexao e tentativa manual.',
+  'Estatisticas e calculadora carregadas somente quando abertas.',
+  'Mensagens de erro mais claras e recuperacao de sessao ao reconectar.',
 ];
 
 export default function LoginPage() {
@@ -24,21 +23,29 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
-    } catch {
-      setError('Usuário ou senha inválidos.');
+    } catch (loginError) {
+      if (loginError.response?.status === 401) {
+        setError('Usuário ou senha inválidos.');
+      } else if (loginError.response?.status === 429) {
+        setError(loginError.response.data?.error || 'Muitas tentativas. Aguarde alguns minutos e tente novamente.');
+      } else if (loginError.response?.data?.error) {
+        setError(loginError.response.data.error);
+      } else {
+        setError('Não foi possível conectar ao serviço. Verifique a conexão e tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{
+    <div className="login-screen" style={{
       minHeight: '100vh', background: 'var(--bg-app)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       position: 'relative',
     }}>
       {/* Grid background */}
-      <div style={{ 
+      <div className="login-container" style={{ 
         position: 'absolute', inset: 0, opacity: 0.6,
         backgroundImage: 'radial-gradient(var(--border-default) 0.5px, transparent 0.5px)',
         backgroundSize: '24px 24px',
@@ -83,6 +90,7 @@ export default function LoginPage() {
         {/* Form */}
         <form
           onSubmit={handleSubmit}
+          className="login-form"
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-default)',
@@ -93,7 +101,7 @@ export default function LoginPage() {
         >
           <div style={{ display: 'grid', gap: 14 }}>
             <div>
-              <label style={{
+              <label htmlFor="login-username" style={{
                 display: 'block', fontSize: 9, fontWeight: 600,
                 color: 'var(--text-faint)', fontFamily: 'var(--font-text)',
                 letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 7,
@@ -101,6 +109,7 @@ export default function LoginPage() {
                 Usuário
               </label>
               <input
+                id="login-username"
                 type="text"
                 autoComplete="username"
                 value={username}
@@ -120,7 +129,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label style={{
+              <label htmlFor="login-password" style={{
                 display: 'block', fontSize: 9, fontWeight: 600,
                 color: 'var(--text-faint)', fontFamily: 'var(--font-text)',
                 letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 7,
@@ -128,6 +137,7 @@ export default function LoginPage() {
                 Senha
               </label>
               <input
+                id="login-password"
                 type="password"
                 autoComplete="current-password"
                 value={password}
@@ -149,7 +159,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div style={{
+            <div role="alert" aria-live="polite" style={{
               marginTop: 14, padding: '9px 12px', borderRadius: 12,
               background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)',
               color: 'var(--status-red)', fontSize: 11, fontFamily: 'var(--font-text)',

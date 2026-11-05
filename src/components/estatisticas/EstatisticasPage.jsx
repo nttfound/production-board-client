@@ -152,9 +152,14 @@ export default function EstatisticasPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1100, margin: '0 auto' }}>
+    <div className="stats-page" style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1100, margin: '0 auto' }}>
+      <header className="stats-page-header">
+        <p className="board-eyebrow">INDICADORES</p>
+        <h1>Resultados da produção</h1>
+        <p>Consulte volume, pedidos concluídos e desempenho por cliente.</p>
+      </header>
       {/* Filtros */}
-      <div style={{
+      <div className="stats-filter-panel" style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 10,
         background: 'var(--bg-surface)', border: '1px solid var(--border-default)',
         borderRadius: 14, padding: '12px 16px',
@@ -198,7 +203,7 @@ export default function EstatisticasPage() {
       </div>
 
       {/* Cards de resumo */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+      <div className="stats-summary-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         <SummaryCard label="Total de peças encomendadas" value={formatPecas(stats.resumo.totalEncomendadas)} />
         <SummaryCard label="Peças prontas" value={formatPecas(stats.resumo.totalProntas)} accent="var(--status-green)" />
         <SummaryCard label="Peças pendentes" value={formatPecas(stats.resumo.totalPendentes)} />
@@ -213,7 +218,7 @@ export default function EstatisticasPage() {
       </div>
 
       {/* Gráfico semanal */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 14, padding: '16px 18px' }}>
+      <div className="stats-chart-panel" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 14, padding: '16px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
           <p style={{ margin: 0, fontSize: 13, fontFamily: 'var(--font-text)', fontWeight: 700, color: 'var(--text-primary)' }}>
             Produção semanal
@@ -228,7 +233,7 @@ export default function EstatisticasPage() {
       </div>
 
       {/* Gráfico mensal */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 14, padding: '16px 18px' }}>
+      <div className="stats-chart-panel" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 14, padding: '16px 18px' }}>
         <p style={{ margin: '0 0 4px', fontSize: 13, fontFamily: 'var(--font-text)', fontWeight: 700, color: 'var(--text-primary)' }}>
           Produção mensal
         </p>

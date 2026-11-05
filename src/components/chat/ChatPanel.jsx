@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import api from '../../services/api';
 import socket from '../../services/socket';
 import { uploadAsset } from '../../services/storage';
+import { getUploadErrorMessage } from '../../services/uploadErrors';
 import { useAuth } from '../../contexts/AuthContext';
 
 const EMOJIS = ['😀', '😄', '😂', '😊', '😍', '😎', '🤔', '😅', '🙌', '👍', '👏', '🔥', '✅', '⚠️', '🙏', '💪', '👀', '🚀', '❤️', '🎉'];
@@ -160,7 +161,7 @@ export default function ChatPanel({ onClose }) {
       const file_path = await uploadAsset(file, 'chat');
       await api.post('/api/chat/files', { file_name: file.name, file_path, file_size: file.size });
     } catch (err) {
-      setError(err.response?.data?.error || 'Nao foi possivel enviar o arquivo.');
+      setError(getUploadErrorMessage(err));
     } finally {
       setSendingFile(false);
     }
@@ -197,7 +198,7 @@ export default function ChatPanel({ onClose }) {
   }));
 
   return (
-    <aside style={{
+    <aside className="chat-panel" style={{
       position: 'fixed', right: 0, top: 0, zIndex: 50,
       height: '100vh', width: 360, maxWidth: '92vw',
       background: 'var(--bg-app)',
