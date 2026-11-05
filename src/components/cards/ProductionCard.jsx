@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import StatusBadge from '../ui/StatusBadge';
 import StatusModal from './StatusModal';
 import ImageModal from './ImageModal';
@@ -123,7 +123,7 @@ function ActionBtn({ onClick, title, danger, children, alwaysVisible, variant = 
   );
 }
 
-export default function ProductionCard({
+const ProductionCard = memo(function ProductionCard({
   card,
   cargaOrder,
   onStatusChange,
@@ -508,4 +508,6 @@ export default function ProductionCard({
       )}
     </>
   );
-}
+});
+
+export default ProductionCard;

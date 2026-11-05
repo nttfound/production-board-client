@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import packageJson from '../../package.json';
 
-const UPDATE_DATE = '04/10/2026';
+const UPDATE_DATE = '04/11/2026';
 const UPDATE_ITEMS = [
+  'Melhorias de desempenho ao atualizar cards e navegar pelo quadro.',
   'Adicionado caixa de diálogo na exclusão do anexo.',
   'Envio de arquivos de até 50 MB no chat e nos anexos.',
   'Implementado suporte para PDF, ZIP, RAR, imagens e arquivos do SolidWorks.',
